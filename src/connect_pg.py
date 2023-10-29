@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 import psycopg2
-from config import config
+from src.config import config
 
 
 def connect(filename='config.ini', section='postgresql'):
