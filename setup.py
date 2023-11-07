@@ -15,6 +15,7 @@ setup(
     version='0.1.0',
     description="Package du back-end de l'emploie du temps",
     long_description=readme,
+    long_description_content_type="text/markdown",
     url='https://github.com/DUT-Info-Montreuil/SAE-5.A-Back-EDT-APP.git',
     license=license,
     packages=find_packages("src")
