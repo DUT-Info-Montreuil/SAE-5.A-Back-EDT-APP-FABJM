@@ -1,6 +1,5 @@
 # Tâches
 
-
 help:
 	echo "pytest :  Installe la variable d'environment pytest"
 	echo "setup : Installe le projet en tant que package"
@@ -17,10 +16,10 @@ setup:
 	pip install -e .
 
 install:
-	pip install -r requirements.txt
+	pipenv requirements > requirements.txt 
 
-test:
-	python -m pytest tests/test_rest_api.py
+tests:
+	python -m pytest tests/test_rest_api.py -v --html=tests/rapport.html
 
 clean:
 	rm -rf __pycache__ .pytest_cache
@@ -32,4 +31,14 @@ git:
 	echo "a définir"
 	
 docker:
-	echo "a définir"
+	echo "a définir
+
+init: 
+	pymake setup
+	pymake sphinx
+	
+env:
+	pipenv install
+	pipenv shell python -m main  
+	
+

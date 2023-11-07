@@ -7,29 +7,34 @@ Guide de la partie back-end du projet Edt
    :scale: 50%
 
 Bienvenue dans la documentation du projet Edt. Ce document vous guidera à travers les différentes fonctionnalités et composants de notre projet. 
-
-ps : Les commandes suivantes sont à executer depuis le repertoire racine.
+Les commandes suivantes sont à executer depuis le repertoire racine.
 
 Installation
 ------------
 
+Pour démarrer l'environnement virtuelle , exécutez la commande suivante :
+
+.. code-block:: python
+
+    pymake env
+
 Pour installer le projet , exécutez la commande suivante :
 
-.. code-block:: bash
+.. code-block:: python
 
     pymake setup 
 	
-	
-Si vous n'arrivez pas à définir la variable pytest alors que le module est bien installé, vous pouvez essayer la commande suivants  :
+Pour quitter l'environnement virtuelle , exécutez la commande suivante :
 
-.. code-block:: bash
+.. code-block:: python
 
-    pymake pytest
+    exit
+
 
 Utilisation
 -----------
 
-Après l'installation, vous pouvez lancer les tests de la manière suivante :
+Après l'installation, vous pouvez lancer les tests et générer un rapport de la manière suivante :
 
 .. code-block:: python
 
@@ -38,7 +43,7 @@ Après l'installation, vous pouvez lancer les tests de la manière suivante :
 
 .. note::
 
-   Assurez-vous d'avoir toutes les dépendances requises installées (sinon exécutez la pip install -r requirements.txt ) .
+   Assurez-vous d'avoir toutes les dépendances requises installées (sinon exécutez la pymake env ) .
 	
 	
 Pour mettre à jour vos dépendances :
@@ -46,6 +51,16 @@ Pour mettre à jour vos dépendances :
 .. code-block:: python
 	
 	pymake install
+	
+Pour installer un module :
+
+.. code-block:: python
+	
+	pipenv install {nom-module}
+
+.. note::
+
+   Penser à mettre jour les dépendances avec pymake install après avoir installer un nouveau module
 	
 Documentation
 --------------
@@ -68,7 +83,7 @@ Pour créer une nouvelle page  :
 	
 	créer un fichier.rst dans le dossier ./docs/documentDev/source/ puis ajouter le dans "l'arbre" du fichier index.rst présent dans le même répertoire.
 	
-Pour documenter vos fonctions, vous devrez écrire des docstrings suivant la syntaxe ci-dessous (voir exemple index) :
+Pour documenter vos fonctions, vous devrez écrire des docstrings suivant la syntaxe ci-dessous (voir exemple src.rest_api.create_app) :
 
 .. code-block:: python
 	
@@ -144,6 +159,8 @@ Ce projet est composés de différents fichiers et répertoires.
 - Un fichier MANIFEST.in permettant d'inclure des fichiers ou des répertoires qui ne sont pas automatiquement inclus par les outils de construction de paquets.
 - Un fichier README.md servant de documentation d'introduction pour le projet
 - Un fichier requirements.txt contenant toutes les dépendances externes dont à besoin notre projet pour fonctionner
+- Un fichier Pipfile qui stocke les dépendances d'un projet Python géré par Pipenv
+- Un fichier Pipfile.lock qui verrouille les versions exactes des dépendances d'un projet Python géré par Pipenv
 - Et un fichier setup.py qui s'occupe de la gestion de la distribution et de la création des paquets
 
 Contributeurs
