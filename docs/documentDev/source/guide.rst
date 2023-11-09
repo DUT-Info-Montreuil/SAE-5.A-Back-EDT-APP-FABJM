@@ -88,12 +88,13 @@ Pour documenter vos fonctions, vous devrez écrire des docstrings suivant la syn
 .. code-block:: python
 	
 	"""
-	Définition du but de cette fonction et de sa route 
+	Résumé de la fonction
 
-	:param parametre1: "Explication des paramètres d'entrées"
-	:type parametre1: "Type des paramètres d'entrées"
-	:return: "Explication de la valeur renvoyé"
-	:rtype: "Type de la valeur renvoyé"
+	:param [nomParamètre]: [descriptionParamètre]
+	:type [nomParamètre]: [typeParamètre]
+	:return: [DescriptionReturn]
+	:rtype: [TypeReturn]
+	:raises [TypeException]: [DescriptionErreur]
 	"""
 
 	

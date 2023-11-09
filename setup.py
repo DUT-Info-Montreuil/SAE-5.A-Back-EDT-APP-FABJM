@@ -18,7 +18,7 @@ setup(
     long_description_content_type="text/markdown",
     url='https://github.com/DUT-Info-Montreuil/SAE-5.A-Back-EDT-APP.git',
     license=license,
-    packages=find_packages("src")
+    packages=find_packages()
 )
 
 
