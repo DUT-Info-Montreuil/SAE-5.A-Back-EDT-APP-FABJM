@@ -60,7 +60,7 @@ def index():
 if __name__ == "__main__":
     # read server parameters
     params = config('config.ini', 'server')
-    context = (params['cert'], params['key']) #certificate and key files
+    #context = (params['cert'], params['key']) #certificate and key files
     # Launch Flask server
-    app.run(debug=params['debug'], host=params['host'], port=params['port'], ssl_context=context)
+    app.run(debug=params['debug'], host=params['host'], port=params['port'])
 

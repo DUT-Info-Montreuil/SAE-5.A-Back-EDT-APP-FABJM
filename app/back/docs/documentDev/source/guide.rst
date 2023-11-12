@@ -94,6 +94,7 @@ Pour documenter vos fonctions, vous devrez écrire des docstrings suivant la syn
 	:type parametre1: "Type des paramètres d'entrées"
 	:return: "Explication de la valeur renvoyé"
 	:rtype: "Type de la valeur renvoyé"
+	:raises [TypeException]: [DescriptionErreur]
 	"""
 
 	
