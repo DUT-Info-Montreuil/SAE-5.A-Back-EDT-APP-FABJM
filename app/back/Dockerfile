@@ -15,9 +15,3 @@ RUN pip install pipenv --upgrade
 RUN pipenv lock
 RUN pipenv install --dev --deploy --system
 RUN make setup
-
-
-
-
-
-
