@@ -18,7 +18,7 @@ setup:
 install:
 	pipenv requirements > requirements.txt 
 
-tests:
+test:
 	python -m pytest tests/test_rest_api.py -v --html=tests/rapport.html
 
 clean:
@@ -31,7 +31,8 @@ git:
 	echo "a définir"
 	
 docker:
-	echo "a définir
+	docker build . -t projet_edt
+	docker run -it --entrypoint /bin/bash --name projet_edt_instance projet_edt
 
 init: 
 	pymake setup
