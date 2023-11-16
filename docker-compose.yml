@@ -1,9 +1,7 @@
 version: "3.8"
 services:
   app :
-    build: ./app/
-    volumes:
-      - .:/usr/src/app
+    build: ./app/back
 
   db:
     build: ./database/
