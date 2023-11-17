@@ -99,6 +99,7 @@ def get_one_utilisateur(idUser):
 
     if len(rows) > 0:
         returnStatement = get_utilisateur_statement(rows[0])
+    	
     
     connect_pg.disconnect(conn)
 
@@ -138,9 +139,9 @@ def get_utilisateur_statement(row) :
         'IdUtilisateur':row[0],
         'FirstName':row[1],
         'LastName':row[2],
-        'Login':row[3],
+        'Username':row[3],
         'PassWord':row[4],
-        'Email':row[5],
+        'FirstLogin': row[5],
     }
 
 

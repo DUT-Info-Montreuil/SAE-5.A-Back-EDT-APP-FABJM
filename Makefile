@@ -18,8 +18,8 @@ setup:
 install:
 	pipenv requirements > requirements.txt 
 
-tests:
-	python -m pytest tests/test_rest_api.py -v --html=tests/rapport.html
+test:
+	python3 -m pytest tests/test_rest_api.py -v --html=tests/rapport.html
 
 clean:
 	rm -rf __pycache__ .pytest_cache
