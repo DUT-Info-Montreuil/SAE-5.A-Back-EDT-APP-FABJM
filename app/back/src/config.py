@@ -4,11 +4,11 @@ from configparser import ConfigParser
 def config(filename='config.ini', section='postgresql'):
     """Récupere les paramètres de l'application dans le fichier de configuration
 
-    :param filename: chemin vers le fichier de configuration
-    :type filename: String
+    :param filename: chemin vers le fichier de configuration, par défaut config.ini
+    :type filename: String, optionnel
     
-    :param section: nom de la section à rechercher
-    :type section: String
+    :param section: nom de la section à rechercher, par défaut postgresql
+    :type section: String, optionnel
     
     :raises Exception: Une section dans le fichier de configuration n'a pas été trouvé
     

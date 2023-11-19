@@ -7,11 +7,11 @@ from src.config import config
 def connect(filename='config.ini', section='postgresql'):
     """Établit la connection à la base de donnée
 
-    :param filename: chemin vers le fichier de configuration
-    :type filename: String
+    :param filename: chemin vers le fichier de configuration, par défaut config.ini
+    :type filename: String, optionnel
     
-    :param section: nom de la section à rechercher
-    :type section: String
+    :param section: nom de la section à rechercher, par défaut postgresql
+    :type section: String, optionnel
     
     :raises Exception: Une erreur est survenue lors de l'éxécution de la fonction
     :raises psycopg2.DatabaseError: Une erreur liée à la base de données est survenue

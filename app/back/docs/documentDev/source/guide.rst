@@ -83,18 +83,20 @@ Pour créer une nouvelle page  :
 	
 	créer un fichier.rst dans le dossier ./docs/documentDev/source/ puis ajouter le dans "l'arbre" du fichier index.rst présent dans le même répertoire.
 	
-Pour documenter vos fonctions, vous devrez écrire des docstrings suivant la syntaxe ci-dessous (voir exemple src.rest_api.create_app) :
+Pour documenter vos fonctions, vous devrez écrire des docstrings suivant la syntaxe ci-dessous (voir dans références) :
 
 .. code-block:: python
 	
-	"""
-	Résumé de la fonction
+	"""Résumé de la fonction
 
-	:param [nomParamètre]: [descriptionParamètre]
-	:type [nomParamètre]: [typeParamètre]
+	:param [nomParamètre]: [descriptionParamètre], par défaut [valeurParDefaut]
+	:type [nomParamètre]: [typeParamètre](, optionnel)
+	
+	:raises [TypeException]: [DescriptionErreur]
+	
 	:return: [DescriptionReturn]
 	:rtype: [TypeReturn]
-	:raises [TypeException]: [DescriptionErreur]
+
 	"""
 
 	
@@ -178,3 +180,4 @@ Références
 - `Documentation Sphinx <https://www.sphinx-doc.org/en/master/>`_
 - `reStructuredText Directives <https://docutils.sourceforge.io/docs/ref/rst/directives.html>`_
 - `Structure projet Flask <https://python-guide-pt-br.readthedocs.io/fr/latest/writing/structure.html>`_
+- `Structure docstring Sphinx <https://sphinx-rtd-tutorial.readthedocs.io/en/latest/docstrings.html>`_
