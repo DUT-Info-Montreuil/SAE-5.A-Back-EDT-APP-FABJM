@@ -2,6 +2,19 @@
 from configparser import ConfigParser
 
 def config(filename='config.ini', section='postgresql'):
+    """Récupere les paramètres de l'application dans le fichier de configuration
+
+    :param filename: chemin vers le fichier de configuration
+    :type filename: String
+    
+    :param section: nom de la section à rechercher
+    :type section: String
+    
+    :raises Exception: Une section dans le fichier de configuration n'a pas été trouvé
+    
+    :return: les paramètre de la base donnée
+    :rtype: dictionnaire
+    """
     parser = ConfigParser()
     parser.read(filename)
     db = {}

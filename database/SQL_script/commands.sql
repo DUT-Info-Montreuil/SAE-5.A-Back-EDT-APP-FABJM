@@ -18,6 +18,8 @@ DROP TABLE IF EXISTS Equipement cascade;
 DROP TABLE IF EXISTS Salle cascade;
 DROP TABLE IF EXISTS Groupe cascade;
 
+-- CREATE SEQUENCE code_sequence_idUtilisateur;
+
 -- Create tables
 CREATE TABLE Groupe(
    idGroupe INTEGER,
@@ -62,12 +64,12 @@ CREATE TABLE Ressource(
 );
 
 CREATE TABLE Utilisateur(
-   idUtilisateur VARCHAR(50) ,
+   idUtilisateur VARCHAR(50) , -- nextval('code_sequence_idUtilisateur')
    FirstName VARCHAR(50) ,
    LastName VARCHAR(50) ,
    Username VARCHAR(50) ,
    PassWord VARCHAR(50) ,
-   FirstLogin Boolean ,
+   FirstLogin Boolean DEFAULT true,
    PRIMARY KEY(idUtilisateur),
    UNIQUE(Username)
 );
@@ -175,9 +177,9 @@ CREATE TABLE Etudier(
    FOREIGN KEY(idCours) REFERENCES Cours(idCours)
 );
 
---Utilisateur (IdUtilisateur, FirstName, LastName, Username, PassWord, FirstLogin)
-INSERT INTO Utilisateur values (1, 'Junko', 'Enoshima', 'monokuma', 'despair', false);
-INSERT INTO Utilisateur values (2, 'Gilgamesh', 'Elish', 'Uruk', 'Enkidu', true);
-INSERT INTO Utilisateur values (3, 'Aya', 'Rindo', 'detective', 'immortal', true);
-INSERT INTO Utilisateur values (4, 'Tsugaru ', 'Shinuchi', 'assistant', 'OniKiller', true);
+-- Utilisateur (IdUtilisateur, FirstName, LastName, Username, PassWord, FirstLogin)
+INSERT INTO Utilisateur values ('1','Junko', 'Enoshima', 'monokuma', 'despair', false);
+INSERT INTO Utilisateur values ('2','Gilgamesh', 'Elish', 'Uruk', 'Enkidu', true);
+INSERT INTO Utilisateur values ('3','Aya', 'Rindo', 'detective', 'immortal', true);
+INSERT INTO Utilisateur values ('4','Tsugaru ', 'Shinuchi', 'assistant', 'OniKiller', true);
 
