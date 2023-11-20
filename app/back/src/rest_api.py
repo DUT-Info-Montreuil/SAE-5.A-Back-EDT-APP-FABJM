@@ -36,7 +36,7 @@ def create_app(config):
     """Cette fonction crée l'application
 
     :param config: définit les options souhaité
-    :type config: dict
+    :type config: Objet
     
     :return:  l'application configurer
     :rtype: flask.app.Flask
@@ -53,7 +53,7 @@ def index():
     :return:  la chaine 'Hello, World!'
     :rtype: String
     """
-    return get_utilisateur_statement('H')
+    return 'Hello, World!'
 
 
 @app.route('/utilisateurs/get', methods=['GET','POST'])
@@ -62,7 +62,7 @@ def get_utilisateur():
     
     :raises AucuneDonneeTrouverException: Aucune donnée n'a été trouvé dans la table utilisateur
     
-    :return: une liste de tout les utisatateurs sous le format json
+    :return: une liste de tout les utilisateurs sous le format json
     :rtype: json
     """
     query = "SELECT * FROM utilisateur"
@@ -87,10 +87,10 @@ def get_one_utilisateur(idUser):
     """Renvoit un utilisateur spécifié par son id via la route /utilisateurs/get<idUser>
     
     :param IdUtilisateur: id d'un utilisateur présent dans la base de donnée
-    :type IdUtilisateur: int
+    :type IdUtilisateur: Numérique
     
     :raises DonneeIntrouvableException: Impossible de trouver l'id spécifié dans la table utilisateur
-    :raises ParamètreTypeInvalideException: Impossible de trouver l'id spécifié dans la table utilisateur
+    :raises ParamètreTypeInvalideException: Le type de l’id est invalide
     
     :return:  l'utilisateur a qui appartient cette id
     :rtype: json
@@ -103,8 +103,8 @@ def get_one_utilisateur(idUser):
 
     returnStatement = {}
     
-    if not idUser.isdigit():
-        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idUser", "int"))}), 400
+    if idUser.isdigit():
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idUser", "Numérique"))}), 400
     
     try:
         if len(rows) > 0:
@@ -124,7 +124,7 @@ def add_utilisateur():
     :param IdUtilisateur: donnée représentant un utilisateur
     :type IdUtilisateur: json
     
-    :raises DonneeIntrouvableException: Impossible d'ajouter l'utilisateur spécifié dans la table utilisateur
+    :raises InsertionImpossibleException: Impossible d'ajouter l'utilisateur spécifié dans la table utilisateur
     
     :return: l'utilisateur qui vient d'être crée
     :rtype: json
@@ -152,10 +152,10 @@ def get_utilisateur_statement(row) :
     """ 
     Fonction de mappage de la table utilisateur
     
-    :param row: donnée représentant un utlisateur
+    :param row: donnée représentant un utilisateur
     :type row: tableau
     
-    :return: les données représentant un utlisateur
+    :return: les données représentant un utilisateur
     :rtype: dictionnaire
     """
     return {

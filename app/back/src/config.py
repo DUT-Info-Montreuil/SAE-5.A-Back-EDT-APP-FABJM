@@ -12,7 +12,7 @@ def config(filename='config.ini', section='postgresql'):
     
     :raises Exception: Une section dans le fichier de configuration n'a pas été trouvé
     
-    :return: les paramètre de la base donnée
+    :return: les paramètres de configuration
     :rtype: dictionnaire
     """
     parser = ConfigParser()
