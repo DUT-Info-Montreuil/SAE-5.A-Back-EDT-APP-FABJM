@@ -36,10 +36,10 @@ class InsertionImpossibleException(Exception): # post(...)
 class ParamètreTypeInvalideException(Exception): 
     """Lever si un type d'un paramètre ne correspond pas à celui attendue
     
-    :param table: nom de la table spécifié
+    :param table: le nom du paramètre spécifié
     :type table: String
     
-    :param id: l'id recherché
+    :param id: le type valide
     :type id: String
 	"""
     def __init__(self, paramètre, type_valide):
