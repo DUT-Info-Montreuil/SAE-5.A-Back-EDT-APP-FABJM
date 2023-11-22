@@ -1,3 +1,26 @@
+-- Drop tables if they exist
+DROP TABLE IF EXISTS Accuellir cascade;
+DROP TABLE IF EXISTS Enseigner cascade;
+DROP TABLE IF EXISTS Equiper cascade;
+DROP TABLE IF EXISTS Etudier cascade;
+DROP TABLE IF EXISTS Responsable cascade;
+DROP TABLE IF EXISTS Cours cascade;
+DROP TABLE IF EXISTS Eleve cascade;
+DROP TABLE IF EXISTS Professeur cascade;
+DROP TABLE IF EXISTS Admin cascade;
+DROP TABLE IF EXISTS Token cascade;
+DROP TABLE IF EXISTS Action cascade;
+DROP TABLE IF EXISTS Manager cascade;
+DROP TABLE IF EXISTS Utilisateur cascade;
+DROP TABLE IF EXISTS Ressource cascade;
+DROP TABLE IF EXISTS Semestre cascade;
+DROP TABLE IF EXISTS Equipement cascade;
+DROP TABLE IF EXISTS Salle cascade;
+DROP TABLE IF EXISTS Groupe cascade;
+
+-- CREATE SEQUENCE code_sequence_idUtilisateur;
+
+-- Create tables
 CREATE TABLE Groupe(
    idGroupe INTEGER,
    Nom VARCHAR(50) ,
@@ -41,16 +64,16 @@ CREATE TABLE Ressource(
 );
 
 CREATE TABLE Utilisateur(
-   idUtilisateur VARCHAR(50) ,
+   idUtilisateur VARCHAR(50) , -- nextval('code_sequence_idUtilisateur')
    FirstName VARCHAR(50) ,
    LastName VARCHAR(50) ,
-   Login VARCHAR(50) ,
+   Username VARCHAR(50) ,
    PassWord VARCHAR(50) ,
-   Email VARCHAR(50) ,
+   FirstLogin Boolean DEFAULT true,
    PRIMARY KEY(idUtilisateur),
-   UNIQUE(Login),
-   UNIQUE(Email)
+   UNIQUE(Username)
 );
+
 
 CREATE TABLE Manager(
    idManager VARCHAR(50) ,
@@ -153,3 +176,10 @@ CREATE TABLE Etudier(
    FOREIGN KEY(idGroupe) REFERENCES Groupe(idGroupe),
    FOREIGN KEY(idCours) REFERENCES Cours(idCours)
 );
+
+-- Utilisateur (IdUtilisateur, FirstName, LastName, Username, PassWord, FirstLogin)
+INSERT INTO Utilisateur values ('1','Junko', 'Enoshima', 'monokuma', 'despair', false);
+INSERT INTO Utilisateur values ('2','Gilgamesh', 'Elish', 'Uruk', 'Enkidu', true);
+INSERT INTO Utilisateur values ('3','Aya', 'Rindo', 'detective', 'immortal', true);
+INSERT INTO Utilisateur values ('4','Tsugaru ', 'Shinuchi', 'assistant', 'OniKiller', true);
+

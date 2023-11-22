@@ -5,7 +5,20 @@ from src.config import config
 
 
 def connect(filename='config.ini', section='postgresql'):
-    """ Connect to the PostgreSQL database server """
+    """Établit la connection à la base de donnée
+
+    :param filename: chemin vers le fichier de configuration, par défaut config.ini
+    :type filename: String, optionnel
+    
+    :param section: nom de la section à rechercher, par défaut postgresql
+    :type section: String, optionnel
+    
+    :raises Exception: Une erreur est survenue lors de l'éxécution de la fonction
+    :raises psycopg2.DatabaseError: Une erreur liée à la base de données est survenue
+    
+    :return: un objet représentant la connection à la base de donnée
+    :rtype: psycopg2.extensions.connection
+    """
     conn = None
     try:
         # read connection parameters
@@ -32,19 +45,34 @@ def connect(filename='config.ini', section='postgresql'):
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
         print(error)
+        return error
     finally:
         if conn is not None:
             return conn
 
 
 def disconnect(conn):
-    # close the connexion
+    """ferme la connection à la base de donnée
+
+    :param conn: objet représentant la connection à la base de donnée
+    :type conn: psycopg2.extensions.connection
+    """
     conn.close()
     print('Database connection closed.')
 
 
 def execute_commands(conn, commands):
-    """ Execute a SQL command """
+    """Execute la commande sql
+
+    :param conn: objet représentant la connection à la base de donnée
+    :type conn: psycopg2.extensions.connection
+    
+    :param commands: commande sql
+    :type commands: String
+    
+    :return:  si il y a une valeur de retour de la commande
+    :rtype: Boolean
+    """
     cur = conn.cursor()
 
     returningValue = False
@@ -65,7 +93,20 @@ def execute_commands(conn, commands):
 
 
 def get_query(conn, query):
-    """ query data from db """
+    """Récupère les données dans la base de donnée
+
+    :param conn: objet représentant la connection à la base de donnée
+    :type conn: psycopg2.extensions.connection
+    
+    :param query: requete sql
+    :type query: String
+    
+    :raises Exception: Une erreur est survenue lors de l'éxécution de la fonction
+    :raises psycopg2.DatabaseError: Une erreur liée à la base de données est survenue
+    
+    :return:  la valeur souhaité
+    :rtype: tableau
+    """
     try:
         cur = conn.cursor()
         cur.execute(query)
@@ -73,6 +114,7 @@ def get_query(conn, query):
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
         print(error)
+        return error
     finally:
         if conn is not None:
             return rows
