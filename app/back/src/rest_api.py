@@ -171,7 +171,7 @@ def get_utilisateur_statement(row) :
 
 if __name__ == "__main__":
     # read server parameters
-    params = config('config.ini', 'server')
+    params = config('./app/back/src/config.ini', 'server')
     #context = (params['cert'], params['key']) #certificate and key files
     # Launch Flask server
     app.run(debug=params['debug'], host=params['host'], port=params['port'])

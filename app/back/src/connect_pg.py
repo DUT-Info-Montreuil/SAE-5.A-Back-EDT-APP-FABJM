@@ -4,7 +4,7 @@ import psycopg2
 from src.config import config
 
 
-def connect(filename='config.ini', section='postgresql'):
+def connect(filename='./app/back/src/config.ini', section='postgresql'):
     """Établit la connection à la base de donnée
 
     :param filename: chemin vers le fichier de configuration, par défaut config.ini
