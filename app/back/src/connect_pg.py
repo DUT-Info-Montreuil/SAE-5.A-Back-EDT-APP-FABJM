@@ -78,16 +78,13 @@ def execute_commands(conn, commands):
     returningValue = False
 
     # create table one by one
-    for command in commands:
-        if command:
-            print(command)
-            cur.execute(command)
-            if " returning " in command.lower():
-                returningValue = cur.fetchone()[0]
+    cur.execute(commands)
+    if " returning " in commands.lower():
+            returningValue = cur.fetchone()[0]
+            # commit the changes
+    conn.commit()
     # close communication with the PostgreSQL database server
     cur.close()
-    # commit the changes
-    conn.commit()
     if returningValue:
         return returningValue
 
