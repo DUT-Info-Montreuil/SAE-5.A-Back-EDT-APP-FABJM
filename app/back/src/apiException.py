@@ -32,6 +32,21 @@ class InsertionImpossibleException(Exception): # post(...)
     def __init__(self, table):
         self.message = f" La donnée n'a pas pu être inséré dans la table {table}"
         super().__init__(self.message)
+
+class DonneeExistanteException(Exception): # post(...)
+    """Lever si une donnée existe déjà sur une clé unique
+    
+    :param table: nom de la table spécifié
+    :type table: String
+    :param column: nom de la colonne spécifié
+    :type column: String
+    :param value: valeur de la colonne spécifié
+    :type value: String
+    """
+    def __init__(self, value, column, table):
+        self.message = f" La donnée {value} existe déjà dans la colonne {column} de la table {table} "
+        super().__init__(self.message)
+        
         
 class ParamètreTypeInvalideException(Exception): 
     """Lever si un type d'un paramètre ne correspond pas à celui attendue

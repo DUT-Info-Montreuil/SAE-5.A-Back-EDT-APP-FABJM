@@ -7,6 +7,9 @@ import src.apiException as apiException
 from src.config import config
 from src.services.user_service import get_utilisateur_statement
 
+import psycopg2
+from psycopg2 import errorcodes
+
 user = Blueprint('user', __name__)
 
 
@@ -72,29 +75,20 @@ def add_utilisateur():
     :return: l'utilisateur qui vient d'être créé
     :rtype: json
     """
-    # jsonDatas = request.get_json()
-    # returnStatement = {}
-    
-    # query = f"Insert into edt.utilisateur (FirstName, LastName, Username, PassWord) values ('{jsonDatas['FirstName']}', '{jsonDatas['LastName']}', '{jsonDatas['Username']}', '{jsonDatas['PassWord']}') returning IdUtilisateur"
-    # print(query)
-    # conn = connect_pg.connect()
-    # try:
-    #     returnStatement = connect_pg.insert_query(conn, query)
-    #     print("returnStatement")
-    # except(TypeError) as e:
-    #     print("error")
-    #     return jsonify({'error': str (apiException.InsertionImpossibleException("utilisateur", jsonDatas['Username']))}), 404
-    # connect_pg.disconnect(conn)
-    # return jsonify(returnStatement)
-    
     json_datas = request.get_json()
     returnStatement = {}
     query = f"Insert into edt.utilisateur (FirstName, LastName, Username, PassWord) values ('{json_datas['FirstName']}', '{json_datas['LastName']}', '{json_datas['Username']}', '{json_datas['PassWord']}') returning IdUtilisateur"
     conn = connect_pg.connect()
     try:
         returnStatement = connect_pg.execute_commands(conn, query)
-    except(TypeError) as e:
-        return jsonify({'error': str(apiException.InsertionImpossibleException("utilisateur", json_datas['Username']))}), 404
+    except psycopg2.IntegrityError as e:
+        if e.pgcode == errorcodes.UNIQUE_VIOLATION:
+            # Erreur violation de contrainte unique
+            return jsonify({'error': str(apiException.DonneeExistanteException(json_datas['Username'], "Username", "utilisateur"))}), 400
+        else:
+            # Erreur inconnue
+            return jsonify({'error': str(apiException.InsertionImpossibleException("utilisateur"))}), 500
+
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 
