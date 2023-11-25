@@ -475,3 +475,8 @@ pyrightconfig.json
 
 # End of https://www.toptal.com/developers/gitignore/api/pycharm,visualstudiocode,intellij,python,flask
 
+
+
+# delete generated file
+app/back/tests/rapport.html
+

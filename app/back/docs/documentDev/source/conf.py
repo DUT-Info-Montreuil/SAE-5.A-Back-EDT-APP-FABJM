@@ -17,7 +17,7 @@ from __future__ import unicode_literals
 
 import os
 
-path = os.path.dirname(os.path.dirname(os.path.dirname(os.getcwd()))) + "\src"
+path = os.path.dirname(os.path.dirname(os.path.dirname(os.getcwd()))) + "/src"
 
 
 

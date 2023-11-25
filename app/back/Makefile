@@ -34,9 +34,14 @@ docker:
 	docker build . -t projet_edt
 	docker run -it --entrypoint /bin/bash --name projet_edt_instance projet_edt
 
-init: 
+initW:
+	pymake env
 	pymake setup
 	pymake sphinx
+
+initL:
+	make setup
+	make sphinx
 	
 env:
 	pipenv install
