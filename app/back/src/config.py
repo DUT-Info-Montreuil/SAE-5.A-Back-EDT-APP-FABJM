@@ -1,7 +1,7 @@
 #!/usr/bin/python
 from configparser import ConfigParser
 
-def config(filename='config.ini', section='postgresql'):
+def config(filename='./app/back/src/config.ini', section='postgresql'):
     """Récupere les paramètres de l'application dans le fichier de configuration
 
     :param filename: chemin vers le fichier de configuration, par défaut config.ini

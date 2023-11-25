@@ -17,22 +17,25 @@ DROP TABLE IF EXISTS Semestre cascade;
 DROP TABLE IF EXISTS Equipement cascade;
 DROP TABLE IF EXISTS Salle cascade;
 DROP TABLE IF EXISTS Groupe cascade;
+DROP SCHEMA IF EXISTS EDT;
 
+CREATE SCHEMA EDT;
+SET SEARCH_PATH TO EDT;
 -- CREATE SEQUENCE code_sequence_idUtilisateur;
 
 -- Create tables
 CREATE TABLE Groupe(
-   idGroupe INTEGER,
+   idGroupe SERIAL,
    Nom VARCHAR(50) ,
    AnneeScolaire INTEGER,
-   Annee TIMESTAMP,
+   Annee INTEGER,
    idGroupe_1 INTEGER,
    PRIMARY KEY(idGroupe),
    FOREIGN KEY(idGroupe_1) REFERENCES Groupe(idGroupe)
 );
 
 CREATE TABLE Salle(
-   idSalle INTEGER,
+   idSalle SERIAL,
    Numero VARCHAR(50) ,
    Capacite INTEGER,
    PRIMARY KEY(idSalle),
@@ -40,19 +43,19 @@ CREATE TABLE Salle(
 );
 
 CREATE TABLE Equipement(
-   idEquipement INTEGER,
+   idEquipement SERIAL,
    Nom VARCHAR(50) ,
    PRIMARY KEY(idEquipement)
 );
 
 CREATE TABLE Semestre(
-   idSemestre INTEGER,
+   idSemestre SERIAL,
    Numero INTEGER,
    PRIMARY KEY(idSemestre)
 );
 
 CREATE TABLE Ressource(
-   idRessource INTEGER,
+   idRessource SERIAL,
    Titre VARCHAR(50) ,
    Numero VARCHAR(50) ,
    NbrHeureSemestre INTEGER,
@@ -64,29 +67,21 @@ CREATE TABLE Ressource(
 );
 
 CREATE TABLE Utilisateur(
-   idUtilisateur VARCHAR(50) , -- nextval('code_sequence_idUtilisateur')
+   idUtilisateur SERIAL,
    FirstName VARCHAR(50) ,
    LastName VARCHAR(50) ,
    Username VARCHAR(50) ,
    PassWord VARCHAR(50) ,
-   FirstLogin Boolean DEFAULT true,
+   FirstLogin BOOLEAN DEFAULT true,
    PRIMARY KEY(idUtilisateur),
    UNIQUE(Username)
-);
-
-
-CREATE TABLE Manager(
-   idManager VARCHAR(50) ,
-   idUtilisateur VARCHAR(50)  NOT NULL,
-   PRIMARY KEY(idManager),
-   FOREIGN KEY(idUtilisateur) REFERENCES Utilisateur(idUtilisateur)
 );
 
 CREATE TABLE Action(
    idAction SERIAL,
    ActionName VARCHAR(50) ,
    TimeAction TIMESTAMP,
-   idUtilisateur VARCHAR(50)  NOT NULL,
+   idUtilisateur INTEGER NOT NULL,
    PRIMARY KEY(idAction),
    FOREIGN KEY(idUtilisateur) REFERENCES Utilisateur(idUtilisateur)
 );
@@ -95,46 +90,57 @@ CREATE TABLE Token(
    idToken SERIAL,
    CodeToken VARCHAR(50) ,
    TimeCreation TIME,
-   idUtilisateur VARCHAR(50)  NOT NULL,
+   idUtilisateur INTEGER NOT NULL,
    PRIMARY KEY(idToken),
    FOREIGN KEY(idUtilisateur) REFERENCES Utilisateur(idUtilisateur)
 );
 
 CREATE TABLE Admin(
-   IDAdmin INTEGER,
-   idUtilisateur VARCHAR(50)  NOT NULL,
+   IDAdmin SERIAL,
+   idUtilisateur INTEGER NOT NULL,
    PRIMARY KEY(IDAdmin),
+   UNIQUE(idUtilisateur),
    FOREIGN KEY(idUtilisateur) REFERENCES Utilisateur(idUtilisateur)
 );
 
 CREATE TABLE Professeur(
-   idProf INTEGER,
+   idProf SERIAL,
    Initiale VARCHAR(50) ,
    idSalle INTEGER NOT NULL,
-   idUtilisateur VARCHAR(50)  NOT NULL,
+   idUtilisateur INTEGER NOT NULL,
    PRIMARY KEY(idProf),
+   UNIQUE(idUtilisateur),
    UNIQUE(Initiale),
    FOREIGN KEY(idSalle) REFERENCES Salle(idSalle),
    FOREIGN KEY(idUtilisateur) REFERENCES Utilisateur(idUtilisateur)
 );
 
 CREATE TABLE Eleve(
-   idEleve INTEGER,
+   idEleve SERIAL,
    idGroupe INTEGER NOT NULL,
-   idUtilisateur VARCHAR(50)  NOT NULL,
+   idUtilisateur INTEGER NOT NULL,
    PRIMARY KEY(idEleve),
+   UNIQUE(idUtilisateur),
    FOREIGN KEY(idGroupe) REFERENCES Groupe(idGroupe),
    FOREIGN KEY(idUtilisateur) REFERENCES Utilisateur(idUtilisateur)
 );
 
 CREATE TABLE Cours(
-   idCours INTEGER,
+   idCours SERIAL,
    HeureDebut TIME,
    NombreHeure INTEGER,
    Jour TIMESTAMP,
    idRessource INTEGER NOT NULL,
    PRIMARY KEY(idCours),
    FOREIGN KEY(idRessource) REFERENCES Ressource(idRessource)
+);
+
+CREATE TABLE Manager(
+   idManager SERIAL,
+   idProf INTEGER NOT NULL,
+   PRIMARY KEY(idManager),
+   UNIQUE(idProf),
+   FOREIGN KEY(idProf) REFERENCES Professeur(idProf)
 );
 
 CREATE TABLE Accuellir(
@@ -178,8 +184,8 @@ CREATE TABLE Etudier(
 );
 
 -- Utilisateur (IdUtilisateur, FirstName, LastName, Username, PassWord, FirstLogin)
-INSERT INTO Utilisateur values ('1','Junko', 'Enoshima', 'monokuma', 'despair', false);
-INSERT INTO Utilisateur values ('2','Gilgamesh', 'Elish', 'Uruk', 'Enkidu', true);
-INSERT INTO Utilisateur values ('3','Aya', 'Rindo', 'detective', 'immortal', true);
-INSERT INTO Utilisateur values ('4','Tsugaru ', 'Shinuchi', 'assistant', 'OniKiller', true);
+INSERT INTO Utilisateur (FirstName, LastName, Username, PassWord) values ('Junko', 'Enoshima', 'monokuma', 'despair');
+INSERT INTO Utilisateur (FirstName, LastName, Username, PassWord) values ('Gilgamesh', 'Elish', 'Uruk', 'Enkidu');
+INSERT INTO Utilisateur (FirstName, LastName, Username, PassWord) values ('Aya', 'Rindo', 'detective', 'immortal');
+INSERT INTO Utilisateur (FirstName, LastName, Username, PassWord) values ('Tsugaru ', 'Shinuchi', 'assistant', 'OniKiller');
 
