@@ -22,11 +22,11 @@ def connect(filename='./app/back/src/config.ini', section='postgresql'):
     conn = None
     try:
         # read connection parameters
-        params = config(filename, section)
+        #params = config(filename, section)
 
         # connect to the PostgreSQL server
         print('Connecting to the PostgreSQL database...')
-        conn = psycopg2.connect(**params)
+        conn = psycopg2.connect(host="localhost" ,  port="5432" , database="postgres" , user="postgres" ,password="1234")
 
         conn.set_client_encoding('UTF8')
 

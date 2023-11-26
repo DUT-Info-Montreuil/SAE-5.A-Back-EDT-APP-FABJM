@@ -20,7 +20,7 @@ def get_utilisateur():
     :return:  tous les utilisateurs
     :rtype: json
     """
-    query = "select * from utilisateur order by IdUtilisateur asc"
+    query = "select * from edt.utilisateur order by IdUtilisateur asc"
     conn = connect_pg.connect()
     rows = connect_pg.get_query(conn, query)
     returnStatement = []
@@ -76,6 +76,10 @@ def add_utilisateur():
     :rtype: json
     """
     json_datas = request.get_json()
+    if not json_datas:
+        return jsonify({'error': str(apiException.ParametreManquantException("json"))}), 400
+    if (json_datas['role'] != "admin" and json_datas['role'] != "professeur" and json_datas['role'] != "etudiant" and json_datas['role'] != "manager"):
+        return jsonify({'error: le role doit etre admin ,professeur, etudiant ou manager' )}), 400
     returnStatement = {}
     query = f"Insert into edt.utilisateur (FirstName, LastName, Username, PassWord) values ('{json_datas['FirstName']}', '{json_datas['LastName']}', '{json_datas['Username']}', '{json_datas['PassWord']}') returning IdUtilisateur"
     conn = connect_pg.connect()
@@ -90,6 +94,17 @@ def add_utilisateur():
             return jsonify({'error': str(apiException.InsertionImpossibleException("utilisateur"))}), 500
 
     connect_pg.disconnect(conn)
+
+    #switch case pour le role
+    if json_datas['role'] == "admin":
+        query = f"Insert into edt.admin (IdUtilisateur) values ({returnStatement})"
+    elif json_datas['role'] == "professeur":
+        query = f"Insert into edt.professeur (IdUtilisateur) values ({returnStatement})"
+    elif json_datas['role'] == "etudiant":
+        query = f"Insert into edt.etudiant (IdUtilisateur) values ({returnStatement})"
+    elif json_datas['role'] == "manager":
+        query = f"Insert into edt.manager (IdUtilisateur) values ({returnStatement})"+
+
     return jsonify(returnStatement)
 
 
