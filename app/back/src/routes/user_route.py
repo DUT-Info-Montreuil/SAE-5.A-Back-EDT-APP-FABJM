@@ -78,8 +78,8 @@ def add_utilisateur():
     json_datas = request.get_json()
     if not json_datas:
         return jsonify({'error': str(apiException.ParametreManquantException("json"))}), 400
-    if (json_datas['role'] != "admin" and json_datas['role'] != "professeur" and json_datas['role'] != "etudiant" and json_datas['role'] != "manager"):
-        return jsonify({'error: le role doit etre admin ,professeur, etudiant ou manager' )}), 400
+    if (json_datas['role'] != "admin" and json_datas['role'] != "professeur" and json_datas['role'] != "Eleve" and json_datas['role'] != "manager"):
+        return jsonify('error: le role doit etre admin ,professeur, Eleve ou manager' ), 400
     returnStatement = {}
     query = f"Insert into edt.utilisateur (FirstName, LastName, Username, PassWord) values ('{json_datas['FirstName']}', '{json_datas['LastName']}', '{json_datas['Username']}', '{json_datas['PassWord']}') returning IdUtilisateur"
     conn = connect_pg.connect()
@@ -93,17 +93,23 @@ def add_utilisateur():
             # Erreur inconnue
             return jsonify({'error': str(apiException.InsertionImpossibleException("utilisateur"))}), 500
 
-    connect_pg.disconnect(conn)
+    
 
     #switch case pour le role
     if json_datas['role'] == "admin":
         query = f"Insert into edt.admin (IdUtilisateur) values ({returnStatement})"
     elif json_datas['role'] == "professeur":
-        query = f"Insert into edt.professeur (IdUtilisateur) values ({returnStatement})"
-    elif json_datas['role'] == "etudiant":
-        query = f"Insert into edt.etudiant (IdUtilisateur) values ({returnStatement})"
+        query = f"Insert into edt.professeur (initial , idsalle ,  Idutilisateur) values ({json_datas["info"]["initial"] ,json_datas["info"]["idsalle"] ,  returnStatement})"
+    elif json_datas['role'] == "Eleve":
+        query = f"Insert into edt.Eleve (idgroupe , Idutilisateur) values ({json_datas["info"]["idgroupe"] , returnStatement})returning idprof"
     elif json_datas['role'] == "manager":
-        query = f"Insert into edt.manager (IdUtilisateur) values ({returnStatement})"+
+        query = f"Insert into edt.professeur (idgroupe  Idutilisateur) values ({json_datas["info"]["idgroupe"] ,returnStatement})returning idprof"
+        returnStatement = connect_pg.execute_commands(conn, query)
+        query = f"Insert into edt.manager (IdProf) values ({returnStatement})"
+    
+    returnStatement = connect_pg.execute_commands(conn, query)
+
+    connect_pg.disconnect(conn)
 
     return jsonify(returnStatement)
 
