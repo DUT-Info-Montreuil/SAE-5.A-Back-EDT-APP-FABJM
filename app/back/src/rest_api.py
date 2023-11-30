@@ -6,6 +6,7 @@ import os
 from flask import Flask, request, jsonify
 from flask_restful import reqparse, abort, Api, Resource
 from flask_cors import CORS
+from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity
 import json
 import psycopg2
 import requests
@@ -14,10 +15,18 @@ from contextlib import closing
 from src.config import config
 import src.connect_pg as connect_pg
 import src.apiException as apiException
-
+from datetime import timedelta
 from src.routes.user_route import user
 
 app = Flask(__name__)
+"""JWT CONFIGURATION"""
+
+secret_key = os.urandom(32)
+app.config['SECRET_KEY'] = secret_key
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(minutes=15)
+
+jwt = JWTManager(app)
+
 
 """Register blueprints"""
 app.register_blueprint(user)

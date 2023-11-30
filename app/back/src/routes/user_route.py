@@ -11,10 +11,12 @@ import psycopg2
 from psycopg2 import errorcodes
 from psycopg2 import OperationalError, Error
 
+from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity  
 user = Blueprint('user', __name__)
 
 
 @user.route('/utilisateurs/getAll', methods=['GET','POST'])
+@jwt_required()
 def get_utilisateur():
     """Renvoit tous les utilisateurs via la route /utilisateurs/get
     
@@ -35,6 +37,7 @@ def get_utilisateur():
 
 
 @user.route('/utilisateurs/get/<userName>', methods=['GET','POST'])
+@jwt_required()
 def get_one_utilisateur(userName):
     """Renvoit un utilisateur spécifié par son id via la route /utilisateurs/get<userName>
     
@@ -65,11 +68,9 @@ def get_one_utilisateur(userName):
 
 
 @user.route('/utilisateurs/add', methods=['POST'])
+@jwt_required()
 def add_utilisateur():
     """Permet d'ajouter un utilisateur via la route /utilisateurs/add
-    
-    :param IdUtilisateur: donnée représentant un utilisateur
-    :type IdUtilisateur: json
     
     :raises InsertionImpossibleException: Impossible d'ajouter l'utilisateur spécifié dans la table utilisateur
     
@@ -85,7 +86,7 @@ def add_utilisateur():
         return jsonify({'error ': 'le role doit etre admin ,professeur, eleve ou manager'}), 400
     
 
-    returnStatement = {}
+
     query = f"Insert into edt.utilisateur (FirstName, LastName, Username, PassWord) values ('{json_datas['FirstName']}', '{json_datas['LastName']}', '{json_datas['Username']}', '{json_datas['Password']}') returning IdUtilisateur"
     conn = connect_pg.connect()
     try:
@@ -129,7 +130,57 @@ def add_utilisateur():
 
     return jsonify(returnStatement)
 
+@user.route('/utilisateurs/auth', methods=['GET'])
+def auth_utilisateur():
+    """ Permet d'authentifier un utilisateur via la route /utilisateurs/auth
 
+    :raises DonneeIntrouvableException: Impossible de trouver l'Username spécifié dans la table utilisateur
+    :raises ParamètreTypeInvalideException: Le type de l’Username est invalide
+    
+    :return: jwt token
+    """
+    
+    json_datas = request.get_json()
+    username = json_datas['Username']
+    password = json_datas['PassWord']
+    query = f"select PassWord, FirstLogin from utilisateur where Username='{username}'"
+    conn = connect_pg.connect()
+    
+    rows = connect_pg.get_query(conn, query)
+    
+    if (username.isdigit() or type(username) != str):
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("username", "string"))}), 400
+    if (not rows):
+        return jsonify({'error': str(apiException.DonneeIntrouvableException("utilisateur", username))}), 404
+    
+    
+    if (rows[0][0] == password):
+       accessToken =  create_access_token(identity=username)
+       return jsonify(accessToken=accessToken, firstLogin=rows[0][1])
+   
+    return jsonify({'error': str(apiException.LoginOuMotDePasseInvalideException())}), 400
+
+
+#firstLogin route wich update the password and the firstLogin column
+@user.route('/utilisateurs/firstLogin', methods=['POST'])
+@jwt_required()
+def firstLogin_utilisateur():
+    username = get_jwt_identity()
+    json_datas = request.get_json()
+    password = json_datas['PassWord']
+    if(password == ""):
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("password", "string"))}), 400    
+    query = f"update utilisateur set PassWord='{password}', FirstLogin=false where Username='{username}'"
+    conn = connect_pg.connect()
+    try:
+        
+        connect_pg.execute_commands(conn, query)
+    except:
+        return jsonify({'error': str(apiException.InsertionImpossibleException("utilisateur"))}), 500
+    connect_pg.disconnect(conn)
+    
+    
+        
     
     
 

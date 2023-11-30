@@ -61,4 +61,10 @@ class ParamètreTypeInvalideException(Exception):
         self.message = f" Le paramètre {paramètre} doit être de type {type_valide} "
         super().__init__(self.message)
         
-        
+class LoginOuMotDePasseInvalideException(Exception): 
+    """Lever si le login ou le mot de passe est invalide
+
+    """
+    def __init__(self):
+        self.message = f" Le login ou le mot de passe est invalide "
+        super().__init__(self.message)
