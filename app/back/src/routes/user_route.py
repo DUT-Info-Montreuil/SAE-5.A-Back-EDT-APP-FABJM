@@ -50,8 +50,8 @@ def get_one_utilisateur(userName):
     :return:  l'utilisateur a qui appartient cette id
     :rtype: json
     """
-    #query = "select * from utilisateur where IdUtilisateur=%(IdUtilisateur)s" % {'IdUtilisateur': userName}
-    query = f"select * from utilisateur where Username='{userName}'"
+
+    query = f"select * from edt.utilisateur where Username='{userName}'"
 
     conn = connect_pg.connect()
     rows = connect_pg.get_query(conn, query)
@@ -143,7 +143,7 @@ def auth_utilisateur():
     json_datas = request.get_json()
     username = json_datas['Username']
     password = json_datas['PassWord']
-    query = f"select PassWord, FirstLogin from utilisateur where Username='{username}'"
+    query = f"select PassWord, FirstLogin from edt.utilisateur where Username='{username}'"
     conn = connect_pg.connect()
     
     rows = connect_pg.get_query(conn, query)
@@ -170,7 +170,7 @@ def firstLogin_utilisateur():
     password = json_datas['PassWord']
     if(password == ""):
         return jsonify({'error': str(apiException.ParamètreTypeInvalideException("password", "string"))}), 400    
-    query = f"update utilisateur set PassWord='{password}', FirstLogin=false where Username='{username}'"
+    query = f"update edt.utilisateur set PassWord='{password}', FirstLogin=false where Username='{username}'"
     conn = connect_pg.connect()
     try:
         
