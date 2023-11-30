@@ -24,7 +24,8 @@ app.register_blueprint(user)
 
 """Variable représentant l'application web"""
 
-cors = CORS(app, resources={r"*": {"origins": "*"}})
+CORS(app, origins=['http://localhost:4200'])
+
 
 api = Api(app)
 
