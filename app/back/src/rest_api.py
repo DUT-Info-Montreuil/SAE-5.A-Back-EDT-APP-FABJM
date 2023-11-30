@@ -66,5 +66,5 @@ if __name__ == "__main__":
     #params = config('./app/back/src/config.ini', 'server')
     #context = (params['cert'], params['key']) #certificate and key files
     # Launch Flask server
-    app.run(debug=True, host="0.0.0.0", port="5050")
+    app.run(debug=True, host="localhost", port="5050")#debug=True, host="0.0.0.0", port="5050"
 

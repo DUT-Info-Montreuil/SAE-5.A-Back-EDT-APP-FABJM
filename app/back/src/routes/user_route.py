@@ -9,11 +9,12 @@ from src.services.user_service import get_utilisateur_statement
 
 import psycopg2
 from psycopg2 import errorcodes
+from psycopg2 import OperationalError, Error
 
 user = Blueprint('user', __name__)
 
 
-@user.route('/utilisateurs/get', methods=['GET','POST'])
+@user.route('/utilisateurs/getAll', methods=['GET','POST'])
 def get_utilisateur():
     """Renvoit tous les utilisateurs via la route /utilisateurs/get
     
@@ -72,7 +73,7 @@ def add_utilisateur():
     
     :raises InsertionImpossibleException: Impossible d'ajouter l'utilisateur spécifié dans la table utilisateur
     
-    :return: l'utilisateur qui vient d'être créé
+    :return: l'id de l'utilisateur crée
     :rtype: json
     """
     json_datas = request.get_json()
@@ -81,12 +82,15 @@ def add_utilisateur():
     if "info" not in json_datas.keys():
         return jsonify({'error': 'missing "info" part of the body'}), 400
     if (json_datas['role'] != "admin" and json_datas['role'] != "professeur" and json_datas['role'] != "eleve" and json_datas['role'] != "manager"):
-        return jsonify('error: le role doit etre admin ,professeur, eleve ou manager' ), 400
+        return jsonify({'error ': 'le role doit etre admin ,professeur, eleve ou manager'}), 400
+    
+
     returnStatement = {}
-    query = f"Insert into edt.utilisateur (FirstName, LastName, Username, PassWord) values ('{json_datas['FirstName']}', '{json_datas['LastName']}', '{json_datas['Username']}', '{json_datas['PassWord']}') returning IdUtilisateur"
+    query = f"Insert into edt.utilisateur (FirstName, LastName, Username, PassWord) values ('{json_datas['FirstName']}', '{json_datas['LastName']}', '{json_datas['Username']}', '{json_datas['Password']}') returning IdUtilisateur"
     conn = connect_pg.connect()
     try:
         returnStatement = connect_pg.execute_commands(conn, query)
+        idUser = returnStatement
     except psycopg2.IntegrityError as e:
         if e.pgcode == errorcodes.UNIQUE_VIOLATION:
             # Erreur violation de contrainte unique
@@ -96,24 +100,32 @@ def add_utilisateur():
             return jsonify({'error': str(apiException.InsertionImpossibleException("utilisateur"))}), 500
 
     
-
-    #switch case pour le role
-    if json_datas['role'] == "admin":
-        query = f"Insert into edt.admin (IdUtilisateur) values ({returnStatement}) returning IdUtilisateur"
-    elif json_datas['role'] == "professeur":
-        query = f"Insert into edt.professeur (initiale , idsalle , Idutilisateur) values ({json_datas["info"]["initiale"] , json_datas["info"]["idsalle"] ,returnStatement}) returning IdUtilisateur"
-    elif json_datas['role'] == "eleve":
-        query = f"Insert into edt.Eleve (idgroupe , Idutilisateur) values ({json_datas["info"]["idgroupe"] , returnStatement})returning IdUtilisateur"
-    elif json_datas['role'] == "manager":
-        userId = returnStatement
-        query = f"Insert into edt.professeur (idgroupe  Idutilisateur) values ({json_datas["info"]["idgroupe"] ,returnStatement})returning idprof"
+    try : 
+        
+        #switch case pour le role
+        if json_datas['role'] == "admin":
+            query = f"Insert into edt.admin (IdUtilisateur) values ({idUser}) returning IdUtilisateur"
+        elif json_datas['role'] == "professeur":
+            query = f"Insert into edt.professeur (initiale , idsalle , Idutilisateur) values ('{json_datas['info']['initiale']}' , '{json_datas['info']['idsalle']}' ,'{idUser}') returning IdUtilisateur"
+        elif json_datas['role'] == "eleve":
+            query = f"Insert into edt.Eleve (idgroupe , Idutilisateur) values ({json_datas['info']['idgroupe'] , idUser})returning IdUtilisateur"
+        elif json_datas['role'] == "manager":
+            userId = returnStatement
+            query = f"Insert into edt.professeur (idgroupe  Idutilisateur) values ('{json_datas['info']['initiale']}' , '{json_datas['info']['idsalle']}' ,'{idUser}')returning idprof"
+            returnStatement = connect_pg.execute_commands(conn, query)
+            query = f"Insert into edt.manager (IdProf) values ({returnStatement}) returning IdUtilisateur"
+            returnStatement = userId
+        
         returnStatement = connect_pg.execute_commands(conn, query)
-        query = f"Insert into edt.manager (IdProf) values ({returnStatement}) returning IdUtilisateur"
-        returnStatement = userId
-    
-    returnStatement = connect_pg.execute_commands(conn, query)
-
-    connect_pg.disconnect(conn)
+        
+    except :
+        connect_pg.disconnect(conn)
+        conn = connect_pg.connect()
+        query =f'delete from edt.utilisateur where idutilisateur = {idUser}'
+        returnStatement = connect_pg.execute_commands(conn , query)
+        return jsonify({"error" : "info part is wrong "}) , 400
+    finally : 
+        connect_pg.disconnect(conn)
 
     return jsonify(returnStatement)
 
