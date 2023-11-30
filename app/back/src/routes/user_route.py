@@ -15,6 +15,7 @@ user = Blueprint('user', __name__)
 
 
 @user.route('/utilisateurs/get', methods=['GET','POST'])
+@jwt_required()
 def get_utilisateur():
     """Renvoit tous les utilisateurs via la route /utilisateurs/get
     
@@ -35,6 +36,7 @@ def get_utilisateur():
 
 
 @user.route('/utilisateurs/get/<userName>', methods=['GET','POST'])
+@jwt_required()
 def get_one_utilisateur(userName):
     """Renvoit un utilisateur spécifié par son id via la route /utilisateurs/get<userName>
     
@@ -65,6 +67,7 @@ def get_one_utilisateur(userName):
 
 
 @user.route('/utilisateurs/add', methods=['POST'])
+@jwt_required()
 def add_utilisateur():
     """Permet d'ajouter un utilisateur via la route /utilisateurs/add
     
@@ -103,7 +106,7 @@ def auth_utilisateur():
     json_datas = request.get_json()
     username = json_datas['Username']
     password = json_datas['PassWord']
-    query = f"select PassWord from utilisateur where Username='{username}'"
+    query = f"select PassWord, FirstLogin from utilisateur where Username='{username}'"
     conn = connect_pg.connect()
     
     rows = connect_pg.get_query(conn, query)
@@ -116,8 +119,31 @@ def auth_utilisateur():
     
     if (rows[0][0] == password):
        accessToken =  create_access_token(identity=username)
-       return jsonify(accessToken=accessToken)
+       return jsonify(accessToken=accessToken, firstLogin=rows[0][1])
+   
+    return jsonify({'error': str(apiException.LoginOuMotDePasseInvalideException())}), 400
+
+
+#firstLogin route wich update the password and the firstLogin column
+@user.route('/utilisateurs/firstLogin', methods=['POST'])
+@jwt_required()
+def firstLogin_utilisateur():
+    username = get_jwt_identity()
+    json_datas = request.get_json()
+    password = json_datas['PassWord']
+    if(password == ""):
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("password", "string"))}), 400    
+    query = f"update utilisateur set PassWord='{password}', FirstLogin=false where Username='{username}'"
+    conn = connect_pg.connect()
+    try:
+        
+        connect_pg.execute_commands(conn, query)
+    except:
+        return jsonify({'error': str(apiException.InsertionImpossibleException("utilisateur"))}), 500
+    connect_pg.disconnect(conn)
     
+    
+        
     
     
 
