@@ -24,7 +24,8 @@ app.register_blueprint(user)
 
 """Variable représentant l'application web"""
 
-cors = CORS(app, resources={r"*": {"origins": "*"}})
+CORS(app, origins=['http://localhost:4200'])
+
 
 api = Api(app)
 
@@ -63,8 +64,8 @@ def index():
 
 if __name__ == "__main__":
     # read server parameters
-    params = config('./app/back/src/config.ini', 'server')
+    #params = config('./app/back/src/config.ini', 'server')
     #context = (params['cert'], params['key']) #certificate and key files
     # Launch Flask server
-    app.run(debug=params['debug'], host=params['host'], port=params['port'])
+    app.run(debug=True, host="localhost", port="5050")#debug=True, host="0.0.0.0", port="5050"
 
