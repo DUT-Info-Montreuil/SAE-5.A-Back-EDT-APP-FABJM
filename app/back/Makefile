@@ -47,4 +47,5 @@ env:
 	pipenv install
 	pipenv shell python -m main  
 	
-
+run:
+	python rest_api.py
