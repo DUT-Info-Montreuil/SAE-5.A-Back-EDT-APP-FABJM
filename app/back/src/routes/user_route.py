@@ -39,15 +39,15 @@ def get_utilisateur():
 @user.route('/utilisateurs/get/<userName>', methods=['GET','POST'])
 @jwt_required()
 def get_one_utilisateur(userName):
-    """Renvoit un utilisateur spécifié par son id via la route /utilisateurs/get<userName>
+    """Renvoit un utilisateur spécifié par son userName via la route /utilisateurs/get<userName>
     
-    :param IdUtilisateur: id d'un utilisateur présent dans la base de donnée
-    :type IdUtilisateur: Numérique
+    :param userName: nom d'un utilisateur présent dans la base de donnée
+    :type userName: str
     
-    :raises DonneeIntrouvableException: Impossible de trouver l'id spécifié dans la table utilisateur
-    :raises ParamètreTypeInvalideException: Le type de l’id est invalide
+    :raises DonneeIntrouvableException: Impossible de trouver l'userName spécifié dans la table utilisateur
+    :raises ParamètreTypeInvalideException: Le type de l’userName est invalide, un string est attendue
     
-    :return:  l'utilisateur a qui appartient cette id
+    :return:  l'utilisateur a qui appartient cette userName
     :rtype: json
     """
 
@@ -72,6 +72,8 @@ def get_one_utilisateur(userName):
 def add_utilisateur():
     """Permet d'ajouter un utilisateur via la route /utilisateurs/add
     
+    :param Username: login de l'utilisateur spécifié dans le body
+    :type Username: String
     :raises InsertionImpossibleException: Impossible d'ajouter l'utilisateur spécifié dans la table utilisateur
     
     :return: l'id de l'utilisateur crée
