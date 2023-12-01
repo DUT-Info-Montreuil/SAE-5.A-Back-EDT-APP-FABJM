@@ -48,4 +48,4 @@ env:
 	pipenv shell python -m main  
 	
 run:
-	python rest_api.py
+	cd src && python rest_api.py
