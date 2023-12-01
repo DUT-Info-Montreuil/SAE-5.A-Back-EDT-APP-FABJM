@@ -181,6 +181,7 @@ def firstLogin_utilisateur():
         return jsonify({'error': str(apiException.InsertionImpossibleException("utilisateur"))}), 500
     connect_pg.disconnect(conn)
     
+    return jsonify({'success': 'password updated'}), 200
     
         
     
