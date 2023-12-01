@@ -1,9 +1,6 @@
 # Created by https://www.toptal.com/developers/gitignore/api/pycharm,visualstudiocode,intellij,python,flask
 # Edit at https://www.toptal.com/developers/gitignore?templates=pycharm,visualstudiocode,intellij,python,flask
 
-app/back/src/config.ini
-app/back/src/config.ini
-
 ### Flask ###
 instance/*
 !instance/.gitignore
