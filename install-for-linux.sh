@@ -30,12 +30,16 @@ chose_to_do () {
     done
     return $codeSortie
 }
-setup_bdd(){
+setup_bdd_host(){
     read -p "Qu'elle est l'host : " host
+    echo $'[postgresql]\nhost='"$hostBDD" >> config.ini
+    return 0
+}
+setup_bdd_user(){
     read -p "Qu'elle est la database : " database
     read -p "Qu'elle est l'user : " user
     read -p "Qu'elle est le mot de passe : " host
-    echo $'[postgresql]\nhost='"$hostBDD"$'\ndatabase='"$database"$'\nuser='"$user"$'\npassword='"$password" >> config.ini
+    echo $'database='"$database"$'\nuser='"$user"$'\npassword='"$password" >> config.ini
     return 0
 }
 setup_server() {
@@ -64,7 +68,7 @@ setup_server() {
 }
 setup_config_ini() {
     # BDD default value
-    hostBDD=localhost
+    hostBDD=database-etudiants.iut.univ-paris8.fr
     database=postgres
     user=postgres
     password=postgres
@@ -78,16 +82,23 @@ setup_config_ini() {
     draw_progress_bar 46
     # default file
     rm config.ini
-    echo $'[postgresql]\nhost='"$hostBDD"$'\ndatabase='"$database"$'\nuser='"$user"$'\npassword='"$password" > bddFileTemp
+    echo $'[postgresql]\nhost='"$hostBDD"$'\ndatabase='"$database" > bddHostFileTemp
+    echo $'user='"$user"$'\npassword='"$password" > bddUserFileTemp
     echo $'[server]\nhost='"$hostServer"$'\nport='"$portServer"$'\ndebug='"$debug" > serverFileTemp
     draw_progress_bar 50
     # put content in config.ini file
-    chose_to_do setup_bdd "Voulez-vous modifiez la partie BDD par défaut host=$hostBDD datbase=$database user=$user password=$password"
+    chose_to_do setup_bdd_host "Voulez-vous modifiez la partie BDD par défaut host=$hostBDD"
     if [ $? -eq 1 ]; then
-        cat bddFileTemp > config.ini
+        cat bddHostFileTemp >> config.ini
     fi
-    rm bddFileTemp
-    draw_progress_bar 65
+    rm bddHostFileTemp
+    draw_progress_bar 60
+    chose_to_do setup_bdd_user "Voulez-vous modifiez la partie BDD par défaut datbase=$database user=$user password=$password"
+    if [ $? -eq 1 ]; then
+        cat bddUserFileTemp >> config.ini
+    fi
+    rm bddUserFileTemp
+    draw_progress_bar 70
     chose_to_do setup_server "Voulez-vous modifiez la partie server par défaut $hostServer:$portServer debug=$debug"
     if [ $? -eq 1 ]; then
         cat serverFileTemp >> config.ini
@@ -98,15 +109,21 @@ setup_config_ini() {
     return 0
 }
 alias_python() {
-    
+    alias python=python3
+    return 0
+}
+download_setup_and_test() {
+    pip install -r requirement.txt
+    draw_progress_bar 5
+    make setup
+    draw_progress_bar 15
+    make pytest
 }
 
 setup_scroll_area
 cd app/back
 draw_progress_bar 1
-make setup
-draw_progress_bar 15
-make pytest
+chose_to_do download_setup_and_test "Do you want to make requirement, setup and pytest"
 draw_progress_bar 45
 chose_to_do setup_config_ini "Do you want to change config.ini"
 draw_progress_bar 81
