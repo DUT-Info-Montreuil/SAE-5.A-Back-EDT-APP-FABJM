@@ -68,3 +68,11 @@ class LoginOuMotDePasseInvalideException(Exception):
     def __init__(self):
         self.message = f" Le login ou le mot de passe est invalide "
         super().__init__(self.message)
+
+class ParamètreBodyManquantException(Exception): 
+    """Lever si Au moins un paramètre d'entrée attendue dans le body est manquant
+    
+	"""
+    def __init__(self):
+        self.message = f"Au moins un paramètre d'entrée attendue dans le body est manquant"
+        super().__init__(self.message)
