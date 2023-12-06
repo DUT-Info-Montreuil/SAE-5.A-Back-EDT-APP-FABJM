@@ -184,7 +184,57 @@ def firstLogin_utilisateur():
     
         
     
-    
+    @user.route('/utilisateurs/update/<id>', methods=['POST'])
+    #@jwt_required()
+    def update_utilisateur(id):
+        """Permet de modifier un utilisateur via la route /utilisateurs/update
+        
+        :param Username: login de l'utilisateur spécifié dans le body
+        :type Username: String
+        :raises InsertionImpossibleException: Impossible de modifier l'utilisateur spécifié dans la table utilisateur
+        
+        :return: l'id de l'utilisateur modifié
+        :rtype: json
+        """
+        json_datas = request.get_json()
+        if not json_datas:
+            return jsonify({'error ': 'missing json body'}), 400
+        if 'role' in json_datas.keys():
+            if (json_datas['role'] != "admin" and json_datas['role'] != "professeur" and json_datas['role'] != "eleve" and json_datas['role'] != "manager"):
+                return jsonify({'error ': 'le role doit etre admin ,professeur, eleve ou manager'}), 400
+        
+            if "info" not in json_datas.keys():
+                return jsonify({'error': 'missing "info" part of the body'}), 400
+        
+        req = "Insert into edt.utilisateur (FirstName, LastName, Username, PassWord) values ('{json_datas['FirstName']}', '{json_datas['LastName']}', '{json_datas['Username']}', '{json_datas['Password']}') returning IdUtilisateur" 
+
+        req = "update edt.utilisateur set "
+        if 'FirstName' in json_datas.keys():
+            req += f"FirstName='{json_datas['FirstName']} and'"
+        if 'LastName' in json_datas.keys():
+            req += f"LastName='{json_datas['LastName']} and'"
+        if 'Username' in json_datas.keys():
+            req += f"Username='{json_datas['Username']} and'"
+        if 'Password' in json_datas.keys():
+            req += f"Password='{json_datas['Password']}'"
+        
+        #remove and if there is no update
+        if req[-3:] == "and":
+            req = req[:-3]
+
+        req += f" where IdUtilisateur={id}"
+        conn = connect_pg.connect()
+        try:
+            returnStatement = connect_pg.execute_commands(conn, req)
+        except psycopg2.IntegrityError as e:
+            if e.pgcode == errorcodes.UNIQUE_VIOLATION:
+                # Erreur violation de contrainte unique
+                return jsonify({'error': str(apiException.DonneeExistanteException(json_datas['Username'], "Username", "utilisateur"))}), 400
+            else:
+                # Erreur inconnue
+                return jsonify({'error': str(apiException.InsertionImpossibleException("utilisateur"))}), 500
+
+        
 
 
 
