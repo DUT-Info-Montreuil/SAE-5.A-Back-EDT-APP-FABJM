@@ -74,6 +74,7 @@ def add_utilisateur():
     
     :param Username: login de l'utilisateur spécifié dans le body
     :type Username: String
+    
     :raises InsertionImpossibleException: Impossible d'ajouter l'utilisateur spécifié dans la table utilisateur
     
     :return: l'id de l'utilisateur crée
@@ -135,11 +136,18 @@ def add_utilisateur():
 @user.route('/utilisateurs/auth', methods=['GET'])
 def auth_utilisateur():
     """ Permet d'authentifier un utilisateur via la route /utilisateurs/auth
+    
+    :param Username: login de l'utilisateur spécifié dans le body
+    :type Username: String
+    
+    :param PassWord: mot de passe de l'utilisateur spécifié dans le body
+    :type PassWord: String
 
     :raises DonneeIntrouvableException: Impossible de trouver l'Username spécifié dans la table utilisateur
     :raises ParamètreTypeInvalideException: Le type de l’Username est invalide
     
     :return: jwt token
+    :rtype: str
     """
     
     json_datas = request.get_json()
@@ -167,6 +175,16 @@ def auth_utilisateur():
 @user.route('/utilisateurs/firstLogin', methods=['POST'])
 @jwt_required()
 def firstLogin_utilisateur():
+    """ Permet à un utilisateur de définir un mot de passe lors de la première connexion via la route /utilisateurs/firstLogin
+    
+    :param password: mot de passe définie par le nouvel utilisateur spécifié dans le body
+    :type password: String
+
+    :raises ParamètreTypeInvalideException: Le type de password doit être un string non vide
+    :raises InsertionImpossibleException: Impossible d'ajouter l'utilisateur spécifié dans la table utilisateur
+    
+
+    """
     username = get_jwt_identity()
     json_datas = request.get_json()
     password = json_datas['PassWord']
