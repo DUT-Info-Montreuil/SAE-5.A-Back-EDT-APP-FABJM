@@ -21,7 +21,6 @@ DROP SCHEMA IF EXISTS EDT;
 
 CREATE SCHEMA EDT;
 SET SEARCH_PATH TO EDT;
--- CREATE SEQUENCE code_sequence_idUtilisateur;
 
 -- Create tables
 CREATE TABLE Groupe(
@@ -189,3 +188,6 @@ INSERT INTO Utilisateur (FirstName, LastName, Username, PassWord) values ('Gilga
 INSERT INTO Utilisateur (FirstName, LastName, Username, PassWord) values ('Aya', 'Rindo', 'detective', 'immortal');
 INSERT INTO Utilisateur (FirstName, LastName, Username, PassWord) values ('Tsugaru ', 'Shinuchi', 'assistant', 'OniKiller');
 
+
+INSERT INTO Semestre (Numero) values (3);
+INSERT INTO Ressource (Titre, Numero, NbrHeureSemestre, idSemestre) values ('test ', 'R3-04', '10', '1');

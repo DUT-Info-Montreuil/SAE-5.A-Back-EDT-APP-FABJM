@@ -17,6 +17,7 @@ import src.connect_pg as connect_pg
 import src.apiException as apiException
 from datetime import timedelta
 from src.routes.user_route import user
+from src.routes.cours_route import cours
 
 app = Flask(__name__)
 """JWT CONFIGURATION"""
@@ -30,6 +31,7 @@ jwt = JWTManager(app)
 
 """Register blueprints"""
 app.register_blueprint(user)
+app.register_blueprint(cours)
 
 """Variable représentant l'application web"""
 
