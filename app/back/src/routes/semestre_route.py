@@ -33,7 +33,7 @@ def get_semestre():
 
 
 @semestre.route('/semestre/add', methods=['POST'])
-@jwt_required()
+#@jwt_required()
 def add_semestre():
     json_datas = request.get_json()
     if not json_datas:
@@ -53,7 +53,7 @@ def add_semestre():
             # Erreur inconnue
             return jsonify({'error': str(apiException.InsertionImpossibleException("semestre"))}), 500
 
-    return jsonify(returnStatement)
+    return jsonify({"success" : "semestre was added"}), 200
 
 
 @semestre.route('/semestre/get/<numeroSemestre>', methods=['GET', 'POST'])
@@ -84,4 +84,4 @@ def get_one_semestre(numeroSemestre):
     except TypeError as e:
         return jsonify({'error': str(apiException.DonneeIntrouvableException("semestre", numeroSemestre))}), 404
     connect_pg.disconnect(conn)
-    return jsonify(returnStatement)
+    return jsonify("success"), 200
