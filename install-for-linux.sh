@@ -82,7 +82,9 @@ setup_config_ini() {
     draw_progress_bar 46
     # default file
     rm config.ini
-    echo $'[postgresql]\nhost='"$hostBDD"$'\ndatabase='"$database" > bddHostFileTemp
+
+    echo $'[postgresql]\nhost='"$hostBDD" > bddHostFileTemp
+
     echo $'user='"$user"$'\npassword='"$password" > bddUserFileTemp
     echo $'[server]\nhost='"$hostServer"$'\nport='"$portServer"$'\ndebug='"$debug" > serverFileTemp
     draw_progress_bar 50
@@ -93,7 +95,9 @@ setup_config_ini() {
     fi
     rm bddHostFileTemp
     draw_progress_bar 60
-    chose_to_do setup_bdd_user "Voulez-vous modifiez la partie BDD par défaut datbase=$database user=$user password=$password"
+
+    chose_to_do setup_bdd_user "Voulez-vous modifiez la partie BDD par défaut database=$database user=$user password=$password"
+
     if [ $? -eq 1 ]; then
         cat bddUserFileTemp >> config.ini
     fi
@@ -110,24 +114,29 @@ setup_config_ini() {
 }
 alias_python() {
     alias python=python3
+
+    python --version
     return 0
 }
 download_setup_and_test() {
-    pip install -r requirement.txt
+    draw_progress_bar 1
+    pip install -r requirements.txt
+    pip install flask_jwt_extended
     draw_progress_bar 5
+    cd app/back
     make setup
     draw_progress_bar 15
     make pytest
+    return 0
 }
 
 setup_scroll_area
-cd app/back
-draw_progress_bar 1
-chose_to_do download_setup_and_test "Do you want to make requirement, setup and pytest"
+chose_to_do download_setup_and_test "Veux-tu refaire tes requirement, setup and pytest ?"
+
 draw_progress_bar 45
-chose_to_do setup_config_ini "Do you want to change config.ini"
+chose_to_do setup_config_ini "Veux-tu changer ton config.ini ?"
 draw_progress_bar 81
-chose_to_do alias_python "Is your alias for python incorect ?"
+chose_to_do alias_python "Est-ce que ton alias python ne lance pas la bonne version de python ?"
 draw_progress_bar 85
 make run
 draw_progress_bar 95
