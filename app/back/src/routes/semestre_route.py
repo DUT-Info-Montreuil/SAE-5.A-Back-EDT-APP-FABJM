@@ -54,3 +54,34 @@ def add_semestre():
             return jsonify({'error': str(apiException.InsertionImpossibleException("semestre"))}), 500
 
     return jsonify(returnStatement)
+
+
+@semestre.route('/semestre/get/<numeroSemestre>', methods=['GET', 'POST'])
+@jwt_required()
+def get_one_semestre(numeroSemestre):
+    """Renvoit un semestre spécifié par son numéro via la route /semestre/get<numeroSemestre>
+
+    :param numeroSemestre: numéro d'un semestre présent dans la base de donnée
+    :type numeroSemestre: int
+
+    :raises DonneeIntrouvableException: Impossible de trouver le semestre spécifié dans la table semestre
+    :raises ParamètreTypeInvalideException: Le type de le numéro de semestre est invalide, un string est attendue
+
+    :return: le semestre qui correspond au numéro entré en paramètre
+    :rtype: json
+    """
+
+    query = f"select * from edt.semestre where numero='{numeroSemestre}'"
+
+    conn = connect_pg.connect()
+    rows = connect_pg.get_query(conn, query)
+    returnStatement = {}
+    if not numeroSemestre.isdigit() or type(numeroSemestre) is not str:
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("numeroSemestre", "string"))}), 400
+    try:
+        if len(rows) > 0:
+            returnStatement = get_semestre_statement(rows[0])
+    except TypeError as e:
+        return jsonify({'error': str(apiException.DonneeIntrouvableException("semestre", numeroSemestre))}), 404
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)
