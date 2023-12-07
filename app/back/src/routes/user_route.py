@@ -114,7 +114,7 @@ def add_utilisateur():
             query = f"Insert into edt.Eleve (idgroupe , Idutilisateur) values ({json_datas['info']['idgroupe'] , idUser})returning IdUtilisateur"
         elif json_datas['role'] == "manager":
             userId = returnStatement
-            query = f"Insert into edt.professeur (idgroupe  Idutilisateur) values ('{json_datas['info']['initiale']}' , '{json_datas['info']['idsalle']}' ,'{idUser}')returning idprof"
+            query = f"Insert into edt.professeur (initiale, idsalle  Idutilisateur) values ('{json_datas['info']['initiale']}' , '{json_datas['info']['idsalle']}' ,'{idUser}')returning idprof"
             returnStatement = connect_pg.execute_commands(conn, query)
             query = f"Insert into edt.manager (IdProf) values ({returnStatement}) returning IdUtilisateur"
             returnStatement = userId
