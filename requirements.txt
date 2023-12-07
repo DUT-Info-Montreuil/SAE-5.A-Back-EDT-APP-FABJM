@@ -12,4 +12,6 @@ flask_cors
 psycopg2
 requests
 config
+
 pytest-html
+

@@ -144,8 +144,8 @@ def auth_utilisateur():
     
     json_datas = request.get_json()
     username = json_datas['Username']
-    password = json_datas['PassWord']
-    query = f"select PassWord, FirstLogin from edt.utilisateur where Username='{username}'"
+    password = json_datas['Password']
+    query = f"select Password, FirstLogin from edt.utilisateur where Username='{username}'"
     conn = connect_pg.connect()
     
     rows = connect_pg.get_query(conn, query)
@@ -169,7 +169,7 @@ def auth_utilisateur():
 def firstLogin_utilisateur():
     username = get_jwt_identity()
     json_datas = request.get_json()
-    password = json_datas['PassWord']
+    password = json_datas['Password']
     if(password == ""):
         return jsonify({'error': str(apiException.ParamètreTypeInvalideException("password", "string"))}), 400    
     query = f"update edt.utilisateur set PassWord='{password}', FirstLogin=false where Username='{username}'"
@@ -184,7 +184,91 @@ def firstLogin_utilisateur():
     
         
     
+@user.route('/utilisateurs/update/<id>', methods=['POST','GET'])
+@jwt_required()
+def update_utilisateur(id):
+    """Permet de modifier un utilisateur via la route /utilisateurs/update
     
+    :param Username: login de l'utilisateur spécifié dans le body
+    :type Username: String
+    :raises InsertionImpossibleException: Impossible de modifier l'utilisateur spécifié dans la table utilisateur
+    
+    :return: l'id de l'utilisateur modifié
+    :rtype: json
+    """
+    json_datas = request.get_json()
+    if not json_datas:
+        return jsonify({'error ': 'missing json body'}), 400
+    if 'role' in json_datas.keys():
+        return jsonify({'error ': 'le role ne peut pas etre modifié pour l\'instant'}), 400
+
+        if (json_datas['role'] != "admin" and json_datas['role'] != "professeur" and json_datas['role'] != "eleve" and json_datas['role'] != "manager"):
+            return jsonify({'error ': 'le role doit etre admin ,professeur, eleve ou manager'}), 400
+    
+        if "info" not in json_datas.keys():
+            return jsonify({'error': 'missing "info" part of the body'}), 400
+    
+    #req = "Insert into edt.utilisateur (FirstName, LastName, Username, PassWord) values ('{json_datas['FirstName']}', '{json_datas['LastName']}', '{json_datas['Username']}', '{json_datas['Password']}') returning IdUtilisateur" 
+
+    req = "update edt.utilisateur set "
+    if 'FirstName' in json_datas.keys():
+        req += f"firstname = '{json_datas['FirstName']}' , "
+    if 'LastName' in json_datas.keys():
+        req += f"lastname = '{json_datas['LastName']}' , "
+    if 'Username' in json_datas.keys():
+        req += f"username = '{json_datas['Username']}' , "
+    if 'Password' in json_datas.keys():
+        req += f"password = '{json_datas['Password']}'"
+    
+    #remove "and" if there is no update
+    if req[-2:] == ", ":
+        req = req[:-2]
+
+    req += f" where idutilisateur={id}"
+    #update edt.utilisateur set firstname = 'bastien2' where idutilisateur = 8
+    print(req)
+    conn = connect_pg.connect()
+    try:
+        returnStatement = connect_pg.execute_commands(conn, req)
+    except psycopg2.IntegrityError as e:
+        if e.pgcode == errorcodes.UNIQUE_VIOLATION:
+           
+            return jsonify({'error': str(apiException.DonneeExistanteException(json_datas['Username'], "Username", "utilisateur"))}), 400
+        else:
+            
+            return jsonify({'error': str(apiException.InsertionImpossibleException("utilisateur"))}), 500
+    
+    return jsonify({'success': 'utilisateur modifié'}), 200
+
+
+@user.route('/utilisateurs/delete/<id>', methods=['GET','POST'])
+@jwt_required()
+def delete_utilisateur(id):
+    """Permet de supprimer un utilisateur via la route /utilisateurs/delete
+    
+    :param Username: login de l'utilisateur spécifié dans le body
+    :type Username: String
+    :raises InsertionImpossibleException: Impossible de supprimer l'utilisateur spécifié dans la table utilisateur
+    
+    :return: l'id de l'utilisateur supprimé
+    :rtype: json
+    """
+    json_datas = request.get_json()
+    query = f"delete from edt.utilisateur where idutilisateur={id}"
+    conn = connect_pg.connect()
+    try:
+        returnStatement = connect_pg.execute_commands(conn, query)
+    except psycopg2.IntegrityError as e:
+        
+       
+        return jsonify({'error': str(apiException.InsertionImpossibleException("utilisateur"))}), 500
+    
+    return jsonify({'success': 'utilisateur supprimé'}), 200
+
+        
+
+
+        
 
 
 
