@@ -14,7 +14,7 @@ py-make = "*"
 configparser = "*"
 requests = "*"
 config = "*"
-
+flask-jwt-extended = "*"
 
 [dev-packages]
 pytest = "*"
@@ -22,7 +22,3 @@ pytest-html = "*"
 sphinx = "*"
 sphinx-autoapi = "*"
 pytest-flask = "*"
-
-
-
-
