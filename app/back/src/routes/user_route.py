@@ -109,16 +109,13 @@ def add_utilisateur():
         if json_datas['role'] == "admin":
             query = f"Insert into edt.admin (IdUtilisateur) values ({idUser}) returning IdUtilisateur"
         elif json_datas['role'] == "professeur":
-            query = f"Insert into edt.professeur (initiale , idsalle , Idutilisateur) values ('{json_datas['info']['initiale']}' , '{json_datas['info']['idsalle']}' ,'{idUser}') returning IdUtilisateur"
+            query = f"Insert into edt.professeur (initiale , idsalle , Idutilisateur) values ('{json_datas['info']['initiale']}' , '{json_datas['info']['idsalle']}' ,'{idUser}') returning idProf" 
         elif json_datas['role'] == "eleve":
             query = f"Insert into edt.Eleve (idgroupe , Idutilisateur) values ({json_datas['info']['idgroupe'] , idUser})returning IdUtilisateur"
-        elif json_datas['role'] == "manager":
-            userId = returnStatement
-            query = f"Insert into edt.professeur (idgroupe  Idutilisateur) values ('{json_datas['info']['initiale']}' , '{json_datas['info']['idsalle']}' ,'{idUser}')returning idprof"
-            returnStatement = connect_pg.execute_commands(conn, query)
+        returnStatement = connect_pg.execute_commands(conn, query)
+
+        if(json_datas['info']['isManager']):
             query = f"Insert into edt.manager (IdProf) values ({returnStatement}) returning IdUtilisateur"
-            returnStatement = userId
-        
         returnStatement = connect_pg.execute_commands(conn, query)
         
     except :
