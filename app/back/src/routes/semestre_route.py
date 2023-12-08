@@ -17,7 +17,7 @@ semestre = Blueprint('semestre', __name__)
 
 
 @semestre.route('/semestre/getAll')
-@jwt_required()
+#@jwt_required()
 def get_semestre():
     query = "select * from edt.semestre order by idsemestre asc"
     conn = connect_pg.connect()
@@ -85,3 +85,5 @@ def get_one_semestre(numeroSemestre):
         return jsonify({'error': str(apiException.DonneeIntrouvableException("semestre", numeroSemestre))}), 404
     connect_pg.disconnect(conn)
     return jsonify("success"), 200
+
+
