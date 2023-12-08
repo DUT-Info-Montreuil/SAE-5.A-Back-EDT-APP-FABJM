@@ -46,6 +46,28 @@ def after_request(response):
     response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE')
     return response
 
+def init_db(db_conn):
+    sql_file_path = os.path.dirname(os.path.dirname(os.getcwd())) + "/database/SQL_script/commandsTest.sql"
+    with open(sql_file_path, 'r') as sql_file:
+        sql_script = sql_file.read()
+        db_cursor = db_conn.cursor()
+        try:
+            db_cursor.executescript(sql_script)
+        except Exception as error:
+            pass
+            print("Exception : ", error)
+        db_conn.commit()
+    
+    sql_file_insert_path = os.path.dirname(os.path.dirname(os.getcwd())) + "/database/SQL_script/insert.sql"
+    with open(sql_file_insert_path, 'r') as sql_file:
+        sql_script = sql_file.read()
+        db_cursor = db_conn.cursor()
+        try:
+            db_cursor.executescript(sql_script)
+        except Exception as error:
+            pass
+            print("Exception : ", error)
+        db_conn.commit()
 
 def create_app(config):
     """Cette fonction crée l'application
@@ -57,7 +79,7 @@ def create_app(config):
     :rtype: flask.app.Flask
     """
     
-    app.config.from_object(config)
+    app.config.update(config)
     return app
     
 @app.route('/index')

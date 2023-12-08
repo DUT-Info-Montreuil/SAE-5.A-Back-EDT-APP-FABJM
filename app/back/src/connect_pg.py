@@ -3,8 +3,7 @@
 import psycopg2
 from src.config import config
 
-
-def connect(filename='./app/back/src/config.ini', section='postgresql'):
+def connect(filename='./app/back/src/config.ini', section='postgresql', app = None):
     """Établit la connection à la base de donnée
 
     :param filename: chemin vers le fichier de configuration, par défaut config.ini
@@ -26,20 +25,26 @@ def connect(filename='./app/back/src/config.ini', section='postgresql'):
 
         # connect to the PostgreSQL server
         print('Connecting to the PostgreSQL database...')
-        conn = psycopg2.connect(**params)
+        
 
-        conn.set_client_encoding('UTF8')
+    # Reste du code d'initialisation de l'application...
+        if app.config['TESTING']:
+            conn = app.config['DATABASE']
+        else:
+            conn = psycopg2.connect(**params)
+
+        #conn.set_client_encoding('UTF8')
 
         # create a cursor
         cur = conn.cursor()
 
         # execute a statement   
         print('PostgreSQL database version:')
-        cur.execute('SELECT version()')
+        #cur.execute('SELECT version()')
 
         # display the PostgreSQL database server version
-        db_version = cur.fetchone()
-        print(db_version)
+        #db_version = cur.fetchone()
+        #print(db_version)
 
         # close the communication with the PostgreSQL
         cur.close()

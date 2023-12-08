@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from flask_cors import CORS
+import flask
 
 import src.connect_pg as connect_pg
 import src.apiException as apiException
@@ -16,15 +17,19 @@ user = Blueprint('user', __name__)
 
 
 @user.route('/utilisateurs/getAll', methods=['GET','POST'])
-@jwt_required()
 def get_utilisateur():
     """Renvoit tous les utilisateurs via la route /utilisateurs/get
     
     :return:  tous les utilisateurs
     :rtype: json
     """
-    query = "select * from edt.utilisateur order by IdUtilisateur asc"
-    conn = connect_pg.connect()
+    app = flask.current_app
+    
+    conn =  connect_pg.connect(app = app)
+    if app.config['TESTING']:
+        query = "select * from utilisateur order by IdUtilisateur asc"
+    else:
+        query = "select * from edt.utilisateur order by IdUtilisateur asc"
     rows = connect_pg.get_query(conn, query)
     returnStatement = []
     try:

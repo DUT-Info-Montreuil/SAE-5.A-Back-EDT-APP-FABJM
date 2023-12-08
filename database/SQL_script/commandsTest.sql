@@ -1,26 +1,23 @@
 -- Drop tables if they exist
-DROP TABLE IF EXISTS Accuellir cascade;
-DROP TABLE IF EXISTS Enseigner cascade;
-DROP TABLE IF EXISTS Equiper cascade;
-DROP TABLE IF EXISTS Etudier cascade;
-DROP TABLE IF EXISTS Responsable cascade;
-DROP TABLE IF EXISTS Cours cascade;
-DROP TABLE IF EXISTS Eleve cascade;
-DROP TABLE IF EXISTS Professeur cascade;
-DROP TABLE IF EXISTS Admin cascade;
-DROP TABLE IF EXISTS Token cascade;
-DROP TABLE IF EXISTS Action cascade;
-DROP TABLE IF EXISTS Manager cascade;
-DROP TABLE IF EXISTS Utilisateur cascade;
-DROP TABLE IF EXISTS Ressource cascade;
-DROP TABLE IF EXISTS Semestre cascade;
-DROP TABLE IF EXISTS Equipement cascade;
-DROP TABLE IF EXISTS Salle cascade;
-DROP TABLE IF EXISTS Groupe cascade;
-DROP SCHEMA IF EXISTS EDT;
+DROP TABLE IF EXISTS Accuellir ;
+DROP TABLE IF EXISTS Enseigner ;
+DROP TABLE IF EXISTS Equiper ;
+DROP TABLE IF EXISTS Etudier ;
+DROP TABLE IF EXISTS Responsable ;
+DROP TABLE IF EXISTS Cours ;
+DROP TABLE IF EXISTS Eleve ;
+DROP TABLE IF EXISTS Professeur ;
+DROP TABLE IF EXISTS Admin ;
+DROP TABLE IF EXISTS Token ;
+DROP TABLE IF EXISTS Action ;
+DROP TABLE IF EXISTS Manager ;
+DROP TABLE IF EXISTS Utilisateur ;
+DROP TABLE IF EXISTS Ressource ;
+DROP TABLE IF EXISTS Semestre ;
+DROP TABLE IF EXISTS Equipement ;
+DROP TABLE IF EXISTS Salle ;
+DROP TABLE IF EXISTS Groupe ;
 
-CREATE SCHEMA EDT;
-SET SEARCH_PATH TO EDT;
 -- CREATE SEQUENCE code_sequence_idUtilisateur;
 
 -- Create tables

@@ -9,13 +9,14 @@ import pytest
 import os
 import json
 
-token = ""
+
+
 
 
 def test_should_status_code_ok(client):
     response = client.get('/index')
     assert response.status_code == 200
-    
+
 def test_should_return_hello_world(client):
     response = client.get('/index')
     data = response.data.decode() 
@@ -26,11 +27,14 @@ def test_chemin(client):
     #print("try : ", client.get('/utilisateurs/auth').data)
     assert os.path.exists(path)
 
-
 def test_empty_db(client):
-    """Start with a blank database."""
-    resp = client.get('/utilisateurs/getAll')
-    data = json.loads(resp.data)
+    response = client.get('/utilisateurs/getAll')
+    print("utilisateurs = ", response.data)
+    data = json.loads(response.data)
     #pytest.info(data)
-    assert len(data) > 2
+    assert 'Gilgamesh' == data[1]['FirstName']
+
+
+
+
 
