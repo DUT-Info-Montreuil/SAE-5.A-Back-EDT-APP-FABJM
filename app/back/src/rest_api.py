@@ -18,6 +18,8 @@ import src.apiException as apiException
 from datetime import timedelta
 from src.routes.user_route import user
 
+from src.routes.groupe_route import groupe
+
 app = Flask(__name__)
 """JWT CONFIGURATION"""
 
@@ -30,6 +32,7 @@ jwt = JWTManager(app)
 
 """Register blueprints"""
 app.register_blueprint(user)
+app.register_blueprint(groupe)
 
 """Variable représentant l'application web"""
 
