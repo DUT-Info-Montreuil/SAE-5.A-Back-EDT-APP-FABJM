@@ -1,69 +1,57 @@
-import os
-import tempfile
+
 import pytest
-import json
-from flask import Flask
-from flask import jsonify
-from src.rest_api import create_app, init_db
-from flask_jwt_extended import JWTManager, create_access_token
-from datetime import timedelta
+from src.rest_api import create_app, init_bdd
 import sqlite3
-from src.routes.user_route import user
-import requests
+import json
 
 
-
-#["accessToken"]
-@pytest.fixture
+@pytest.fixture()
 def client():
-    
-    db_fd, db_path = tempfile.mkstemp()
-    app = Flask(__name__)
-    app.register_blueprint(user)
-    print("app b", app)
+    """Créer une instance permet de simuler des requêtes HTTP vers une application Flask et de tester son comportement
+    et intégrant une base de donnée virtuelle
+
+    :return: l'instance de test
+    :rtype: FlaskClient
+    """
     db_conn = sqlite3.connect(':memory:')
     app = create_app({'TESTING': True, 'DATABASE': db_conn})
-    init_db(db_conn)#{'TESTING': True, 'DATABASE': db_conn}
-    print("Config after create_app:", app.config['TESTING'])
-    #set_app(app)
     with app.test_client() as client:
-        with app.app_context():
-            # Spécifiez le chemin de votre fichier SQL
-            
-            # Exécutez le fichier SQL
-           #execute_sql_file(app.db, sql_file_path)
-            
-            secret_key = os.urandom(32)
-            app.config['SECRET_KEY'] = secret_key
-            app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(minutes=15)
-            #token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTcwMTk5MDk2OSwianRpIjoiNjIyYTQ1N2QtNjQzOS00ZTI3LWI5NjctMmM1ODY1ODBlOTFiIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6Im1vbm9rdW1hIiwibmJmIjoxNzAxOTkwOTY5LCJleHAiOjE3MDE5OTE4Njl9.oP1LKpN8pWgmxpmds0nARL7j5jObDsdE5hBzTp2tQyA"
-            """
-            data = {'Username': 'monokuma', 'PassWord': 'despair'}
-            headers = {'Content-Type': 'application/json'}
-            resp = client.get('/utilisateurs/auth', data=json.dumps(data), headers=headers)
-            data = resp.data
-            print(resp.status_code)
-            print(resp.headers['Content-Type'])# == 'application/json'
-            token = json.loads(resp.data)['accessToken']
-            print(token)
-            app.headers = {'Authorization': f'Bearer {token}'}
-            """
-
-        
-        #tab = (client.get('/utilisateurs/auth').data.decode())[0]
-        print("app :", app.config['TESTING'])
+        init_bdd(db_conn, "/database/SQL_script/commands.sql")
+        insert_bdd(db_conn)
         yield client
-    #print("try : ", client.get('/utilisateurs/auth').data)
-    
-    os.close(db_fd)
-    os.unlink(db_path)
+        fermer_bdd(db_conn)
+
+def insert_bdd(db_conn):
+    """Insert des données nécessaire au tests dans la base de donnée 
+
+    :param db_conn: une connection à une base de donnée
+    :type db_conn: connection
+    """
+    db_cursor = db_conn.cursor()
+    db_cursor.execute("INSERT INTO Utilisateur (FirstName, LastName, Username, Password) VALUES ('John', 'Doe', 'johndoe', 'password123')")
+    db_conn.commit()
 
 
-# Ajoutez cette fonction pour lire et exécuter le fichier SQL
-def execute_sql_file(db, sql_file_path):
-    with open(sql_file_path, 'r') as sql_file:
-        sql_script = sql_file.read()
-        with db.cursor() as cursor:
-            cursor.execute(sql_script)
-        db.commit()
+def login(client):
+    """Permet de s'authentifier au près de JWT
+
+    :param client: une instance de test
+    :type client: FlaskClient
+    """
+    login_data = {'Username': 'johndoe', 'PassWord': 'password123'}
+    response = client.get('/utilisateurs/auth', data=json.dumps(login_data), content_type='application/json', follow_redirects=True)
+    token = response.json['accessToken']
+    client.environ_base['HTTP_AUTHORIZATION'] = f'Bearer {token}'
+
+def fermer_bdd(db_conn):
+    """Ferme la connection à la base de donnée
+
+    :param db_conn: une connection à une base de donnée
+    :type db_conn: Connexion
+    """
+    db_conn.close()
+
+
+
+
 

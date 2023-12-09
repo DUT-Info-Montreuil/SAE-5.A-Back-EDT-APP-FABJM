@@ -4,35 +4,52 @@
 # In[8]:
 
 
-from conftest import client
+from conftest import client, login
 import pytest
-import os
 import json
 
+headers = {'Content-Type': 'application/json'} # Indispensable pour les requêtes envoyant du Json dans le body
+user_data = {
+    "role": "admin",
+    "FirstName": "BDD",
+    "LastName": "Virtuel",
+    "Username": "pytest",
+    "Password": "sqlite3",
+    "info" : {}
+    }
 
-
-
-
-def test_should_status_code_ok(client):
+def test_index(client):
     response = client.get('/index')
     assert response.status_code == 200
 
-def test_should_return_hello_world(client):
-    response = client.get('/index')
     data = response.data.decode() 
     assert data == 'Hello, World!'
 
-def test_chemin(client):
-    path = os.path.dirname(os.path.dirname(os.getcwd())) + "/database"
-    #print("try : ", client.get('/utilisateurs/auth').data)
-    assert os.path.exists(path)
-
-def test_empty_db(client):
+def test_jwt(client):
     response = client.get('/utilisateurs/getAll')
-    print("utilisateurs = ", response.data)
+    assert response.status_code == 401 # == Unauthorized
+
+def test_getAll_utilisateur(client):
+    login(client)
+    response = client.get('/utilisateurs/getAll')
+    assert response.status_code == 200
+
     data = json.loads(response.data)
-    #pytest.info(data)
-    assert 'Gilgamesh' == data[1]['FirstName']
+    assert 'John' == data[0]['FirstName']
+
+def test_add_utilisateur(client):
+    login(client)
+    response = client.post('/utilisateurs/add', data = json.dumps(user_data), headers = headers)
+    assert response.status_code == 200
+
+    cursor = client.application.config['DATABASE'].cursor()
+    cursor.execute("SELECT * FROM Utilisateur WHERE FirstName = ? AND LastName = ? AND Username = ? AND Password = ?",
+                   (user_data["FirstName"], user_data["LastName"], user_data["Username"], user_data["Password"]))
+    result = cursor.fetchone()
+    assert result is not None
+
+
+
 
 
 

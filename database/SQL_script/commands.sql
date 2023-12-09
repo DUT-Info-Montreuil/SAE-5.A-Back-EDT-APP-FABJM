@@ -21,7 +21,6 @@ DROP SCHEMA IF EXISTS EDT;
 
 CREATE SCHEMA EDT;
 SET SEARCH_PATH TO EDT;
--- CREATE SEQUENCE code_sequence_idUtilisateur;
 
 -- Create tables
 CREATE TABLE Groupe(

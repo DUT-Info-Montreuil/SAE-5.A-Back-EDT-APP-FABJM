@@ -17,19 +17,16 @@ user = Blueprint('user', __name__)
 
 
 @user.route('/utilisateurs/getAll', methods=['GET','POST'])
+@jwt_required()
 def get_utilisateur():
     """Renvoit tous les utilisateurs via la route /utilisateurs/get
     
     :return:  tous les utilisateurs
     :rtype: json
     """
-    app = flask.current_app
     
-    conn =  connect_pg.connect(app = app)
-    if app.config['TESTING']:
-        query = "select * from utilisateur order by IdUtilisateur asc"
-    else:
-        query = "select * from edt.utilisateur order by IdUtilisateur asc"
+    conn =  connect_pg.connect()
+    query = "select * from edt.utilisateur order by IdUtilisateur asc"
     rows = connect_pg.get_query(conn, query)
     returnStatement = []
     try:
@@ -134,7 +131,6 @@ def add_utilisateur():
         return jsonify({"error" : "info part is wrong "}) , 400
     finally : 
         connect_pg.disconnect(conn)
-
     return jsonify(returnStatement)
 
 @user.route('/utilisateurs/auth', methods=['GET'])
@@ -146,34 +142,29 @@ def auth_utilisateur():
     
     :return: jwt token
     """
-    print('6')
     try:
         json_datas = request.get_json()
     except (Exception) as error:
         print(error)
     json_datas = request.get_json()
-    print('7')
     username = json_datas['Username']
     password = json_datas['PassWord']
-    print('user : ', username)
     query = f"select PassWord, FirstLogin from edt.utilisateur where Username='{username}'"
     
     conn = connect_pg.connect()
     rows = connect_pg.get_query(conn, query)
-    print("3")
     if (username.isdigit() or type(username) != str):
-        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("username", "string"))}), 400,{'Content-Type': 'application/json'}
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("username", "string"))}), 400
     if (not rows):
         
-        return jsonify({'error': str(apiException.DonneeIntrouvableException("utilisateur", username))}), 404,{'Content-Type': 'application/json'}
+        return jsonify({'error': str(apiException.DonneeIntrouvableException("utilisateur", username))}), 404
     
     
     if (rows[0][0] == password):
-        print("4")
         accessToken =  create_access_token(identity=username)
         return jsonify(accessToken=accessToken, firstLogin=rows[0][1]), 200
     
-    return jsonify({'error': str(apiException.LoginOuMotDePasseInvalideException())}), {'Content-Type': 'application/json'},400
+    return jsonify({'error': str(apiException.LoginOuMotDePasseInvalideException())}),400
 
 
 #firstLogin route wich update the password and the firstLogin column
