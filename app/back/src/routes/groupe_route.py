@@ -58,8 +58,6 @@ def get_one_groupe(idGroupe):
     conn = connect_pg.connect()
     rows = connect_pg.get_query(conn, query)
     returnStatement = {}
-    if not idGroupe.isdigit() or type(idGroupe) is str:
-        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idGroupe", "int"))}), 400
     try:
         if len(rows) > 0:
             returnStatement = get_groupe_statement(rows[0])
@@ -84,13 +82,11 @@ def get_parent_groupe(idGroupe):
     :rtype: json
     """
 
-    query = f"select * from edt.groupe where idGroupe_1='{idGroupe}'"
+    query = f"select * from edt.groupe where idGroupe=(select idGroupe_1 from edt.groupe where idGroupe = '{idGroupe}')"
 
     conn = connect_pg.connect()
     rows = connect_pg.get_query(conn, query)
     returnStatement = {}
-    if not idGroupe.isdigit() or type(idGroupe) is str:
-        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idGroupe", "int"))}), 400
     try:
         if len(rows) > 0:
             returnStatement = get_groupe_statement(rows[0])
@@ -103,13 +99,11 @@ def get_parent_groupe(idGroupe):
 @groupe.route('/groupe/add', methods=['POST'])
 @jwt_required()
 def add_groupe():
-    """Permet d'ajouter un utilisateur via la route /utilisateurs/add
+    """Permet d'ajouter un utilisateur via la route /groupe/add
 
-    :param Username: login de l'utilisateur spécifié dans le body
-    :type Username: String
-    :raises InsertionImpossibleException: Impossible d'ajouter l'utilisateur spécifié dans la table utilisateur
+    :raises InsertionImpossibleException: Impossible d'ajouter le groupe spécifié dans la table groupe
 
-    :return: l'id de l'utilisateur crée
+    :return: l'id du groupe créé
     :rtype: json
     """
     json_datas = request.get_json()
@@ -121,11 +115,36 @@ def add_groupe():
         queryStart += ", idGroupe_1"
         queryValues += f", {json_datas['idGroupe_1']}"
     queryStart += ") "
-    queryValues += ") returning IdUtilisateur"
+    queryValues += ") returning idGroupe"
     query = queryStart + queryValues
     print("addGroupe request : " + query)
     conn = connect_pg.connect()
-    returnStatement = connect_pg.execute_commands(conn, query)
+    try:
+        returnStatement = connect_pg.execute_commands(conn, query)
+        idGroupe = returnStatement
+    except psycopg2.IntegrityError as e:
+        if e.pgcode == errorcodes.UNIQUE_VIOLATION:
+            # Erreur violation de contrainte unique
+            return jsonify({'error': str(
+                apiException.DonneeExistanteException(json_datas['Nom'], "Nom", "groupe"))}), 400
+        else:
+            print("ERROR : " + e.pgcode)
+            # Erreur inconnue
+            return jsonify({'error': str(apiException.InsertionImpossibleException("groupe"))}), 500
 
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
+
+
+@groupe.route('/groupe/delete/<idGroupe>', methods=['DELETE'])
+@jwt_required()
+def delete_groupe(idGroupe):
+    conn = connect_pg.connect()
+    query = f"DELETE from edt.groupe WHERE idgroupe={idGroupe} RETURNING *"
+    try:
+        returnStatement = connect_pg.execute_commands(conn, query)
+    except(TypeError) as e:
+        return jsonify({'error': str(apiException.DonneeIntrouvableException("groupe", idGroupe))}), 404
+    connect_pg.disconnect(conn)
+    return jsonify({"success": f"The group with id {idGroupe} and all subgroups from this group were successfully "
+                               f"removed"})
