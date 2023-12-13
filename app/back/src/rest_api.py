@@ -20,6 +20,8 @@ from src.routes.user_route import user
 from src.routes.semestre_route import semestre
 from src.routes.ressource_route import ressource
 
+from src.routes.groupe_route import groupe
+
 app = Flask(__name__)
 """JWT CONFIGURATION"""
 
@@ -32,8 +34,12 @@ jwt = JWTManager(app)
 
 """Register blueprints"""
 app.register_blueprint(user)
+
 app.register_blueprint(semestre)
 app.register_blueprint(ressource)
+
+app.register_blueprint(groupe)
+
 
 """Variable représentant l'application web"""
 
