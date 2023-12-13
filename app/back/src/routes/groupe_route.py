@@ -108,14 +108,14 @@ def add_groupe():
     json_datas = request.get_json()
     if not json_datas:
         return jsonify({'error ': 'missing json body'}), 400
-    queryStart = "Insert into edt.groupe (Nom, AnneeScolaire, Annee"
-    queryValues = f"values ('{json_datas['Nom']}', '{json_datas['AnneeScolaire']}', '{json_datas['Annee']}'"
+    query_start = "Insert into edt.groupe (Nom, AnneeScolaire, Annee"
+    query_values = f"values ('{json_datas['Nom']}', '{json_datas['AnneeScolaire']}', '{json_datas['Annee']}'"
     if "idGroupe_1" in json_datas.keys():
-        queryStart += ", idGroupe_1"
-        queryValues += f", {json_datas['idGroupe_1']}"
-    queryStart += ") "
-    queryValues += ") returning idGroupe"
-    query = queryStart + queryValues
+        query_start += ", idGroupe_1"
+        query_values += f", {json_datas['idGroupe_1']}"
+    query_start += ") "
+    query_values += ") returning idGroupe"
+    query = query_start + query_values
     print("addGroupe request : " + query)
     conn = connect_pg.connect()
     try:
