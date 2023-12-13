@@ -33,15 +33,14 @@ app.register_blueprint(user)
 
 """Variable représentant l'application web"""
 
-#CORS(app)
+CORS(app, resources={r"/api/*": {"origins": "http://localhost:4200"}})
 
 
 api = Api(app)
 
 
-@app.before_request
-def before_request(response):
-    response.headers.add('Access-Control-Allow-Origin', '*')
+@app.after_request
+def after_request(response):
     response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
     response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
     return response
@@ -73,8 +72,7 @@ def index():
 
 if __name__ == "__main__":
     # read server parameters
-    #params = config('./app/back/src/config.ini', 'server')
+    params = config('./app/back/src/config.ini', 'server')
     #context = (params['cert'], params['key']) #certificate and key files
     # Launch Flask server
-    app.run(debug=True, host="0.0.0.0", port="5050")#debug=True, host="0.0.0.0", port="5050"
-
+    app.run(debug=params['debug'], host=params['host'], port=params['port'])
