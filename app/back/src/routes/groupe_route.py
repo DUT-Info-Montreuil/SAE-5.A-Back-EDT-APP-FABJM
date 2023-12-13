@@ -18,7 +18,7 @@ groupe = Blueprint('groupe', __name__)
 
 
 @groupe.route('/groupe/getAll', methods=['GET', 'POST'])
-@jwt_required()-
+@jwt_required()
 def get_groupe():
     """Renvoit tous les groupes via la route /groupe/getAll
 
