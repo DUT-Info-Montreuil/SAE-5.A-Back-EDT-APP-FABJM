@@ -6,7 +6,7 @@ import src.apiException as apiException
 
 from src.config import config
 from src.services.user_service import get_utilisateur_statement
-
+import src.services.permision as perm
 import psycopg2
 from psycopg2 import errorcodes
 from psycopg2 import OperationalError, Error
@@ -23,6 +23,12 @@ def get_utilisateur():
     :return:  tous les utilisateurs
     :rtype: json
     """
+    
+    #check if the user is admin
+    conn = connect_pg.connect()
+    if not perm.permissionCheck(get_jwt_identity() , 0 , conn):
+        return jsonify({'error': 'not enough permission'}), 403
+    
     query = "select * from edt.utilisateur order by IdUtilisateur asc"
     conn = connect_pg.connect()
     rows = connect_pg.get_query(conn, query)
@@ -68,7 +74,7 @@ def get_one_utilisateur(userName):
 
 
 @user.route('/utilisateurs/add', methods=['POST'])
-@jwt_required()
+#@jwt_required()
 def add_utilisateur():
     """Permet d'ajouter un utilisateur via la route /utilisateurs/add
     
@@ -110,13 +116,18 @@ def add_utilisateur():
             query = f"Insert into edt.admin (IdUtilisateur) values ({idUser}) returning IdUtilisateur"
         elif json_datas['role'] == "professeur":
             query = f"Insert into edt.professeur (initiale , idsalle , Idutilisateur) values ('{json_datas['info']['initiale']}' , '{json_datas['info']['idsalle']}' ,'{idUser}') returning idProf" 
+            
         elif json_datas['role'] == "eleve":
             query = f"Insert into edt.Eleve (idgroupe , Idutilisateur) values ({json_datas['info']['idgroupe'] , idUser})returning IdUtilisateur"
         returnStatement = connect_pg.execute_commands(conn, query)
-
-        if(json_datas['info']['isManager']):
+        
+        if(json_datas['info']['isManager'] and json_datas['role'] == "professeur"):
             query = f"Insert into edt.manager (IdProf) values ({returnStatement}) returning IdUtilisateur"
-        returnStatement = connect_pg.execute_commands(conn, query)
+            returnStatement = connect_pg.execute_commands(conn, query)
+            
+            
+
+        
         
     except :
         connect_pg.disconnect(conn)
@@ -142,7 +153,7 @@ def auth_utilisateur():
     json_datas = request.get_json()
     username = json_datas['Username']
     password = json_datas['Password']
-    query = f"select Password, FirstLogin from edt.utilisateur where Username='{username}'"
+    query = f"select Password, FirstLogin , idutilisateur from edt.utilisateur where Username='{username}'"
     conn = connect_pg.connect()
     
     rows = connect_pg.get_query(conn, query)
@@ -154,7 +165,7 @@ def auth_utilisateur():
     
     
     if (rows[0][0] == password):
-       accessToken =  create_access_token(identity=username)
+       accessToken =  create_access_token(identity=rows[0][2])
        return jsonify(accessToken=accessToken, firstLogin=rows[0][1])
    
     return jsonify({'error': str(apiException.LoginOuMotDePasseInvalideException())}), 400
@@ -164,12 +175,12 @@ def auth_utilisateur():
 @user.route('/utilisateurs/firstLogin', methods=['POST'])
 @jwt_required()
 def firstLogin_utilisateur():
-    username = get_jwt_identity()
+    id = get_jwt_identity()
     json_datas = request.get_json()
     password = json_datas['Password']
     if(password == ""):
         return jsonify({'error': str(apiException.ParamètreTypeInvalideException("password", "string"))}), 400    
-    query = f"update edt.utilisateur set PassWord='{password}', FirstLogin=false where Username='{username}'"
+    query = f"update edt.utilisateur set PassWord='{password}', FirstLogin=false where idutilisateur='{id}'"
     conn = connect_pg.connect()
     try:
         
@@ -264,8 +275,22 @@ def delete_utilisateur(id):
 
         
 
+@user.route('/utilisateurs/getPermission', methods=['GET','POST'])
+@jwt_required()
+def getPermission():
+    """Permet de récupérer la permission d'un utilisateur via la route /utilisateurs/getPermission
+    
+    :param Username: login de l'utilisateur spécifié dans le body
+    :type Username: String
+    :raises InsertionImpossibleException: Impossible de récupérer la permission de l'utilisateur spécifié dans la table utilisateur
+    
+    :return: la permission de l'utilisateur
+    :rtype: json
+    """
+    user_id = get_jwt_identity()
+    conn = connect_pg.connect()
+    return jsonify(perm.getUserPermission(user_id , conn))
 
-        
 
 
 
