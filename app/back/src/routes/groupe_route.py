@@ -17,7 +17,7 @@ from src.services.groupe_service import get_groupe_statement
 groupe = Blueprint('groupe', __name__)
 
 
-@groupe.route('/groupe/getAll', methods=['GET', 'POST'])
+@groupe.route('/groupe/getAll', methods=['GET'])
 @jwt_required()
 def get_groupe():
     """Renvoit tous les groupes via la route /groupe/getAll
@@ -38,7 +38,7 @@ def get_groupe():
     return jsonify(returnStatement)
 
 
-@groupe.route('/groupe/get/<idGroupe>', methods=['GET', 'POST'])
+@groupe.route('/groupe/get/<idGroupe>', methods=['GET'])
 @jwt_required()
 def get_one_groupe(idGroupe):
     """
@@ -67,7 +67,7 @@ def get_one_groupe(idGroupe):
     return jsonify(returnStatement)
 
 
-@groupe.route('/groupe/parent/get/<idGroupe>', methods=['GET', 'POST'])
+@groupe.route('/groupe/parent/get/<idGroupe>', methods=['GET'])
 @jwt_required()
 def get_parent_groupe(idGroupe):
     """Renvoit le parent du groupe spécifié par son idGroupe via la route /groupe/parent/get/<idGroupe>
@@ -132,7 +132,7 @@ def add_groupe():
             return jsonify({'error': str(apiException.InsertionImpossibleException("groupe"))}), 500
 
     connect_pg.disconnect(conn)
-    return jsonify(returnStatement)
+    return jsonify({"success": f"The group with id {idGroupe} was successfully created"}), 200
 
 
 @groupe.route('/groupe/delete/<idGroupe>', methods=['DELETE'])
@@ -157,5 +157,43 @@ def delete_groupe(idGroupe):
         return jsonify({'error': str(apiException.DonneeIntrouvableException("groupe", idGroupe))}), 404
     connect_pg.disconnect(conn)
     return jsonify({"success": f"The group with id {idGroupe} and all subgroups from this group were successfully "
-                               f"removed"})
+                               f"removed"}), 200
 
+
+@groupe.route('/groupe/update/<idGroupe>', methods=['PUT'])
+@jwt_required()
+def update_groupe(idGroupe):
+    """
+    Permet de mettre à jour un groupe via la route /groupe/update/<idGroupe>
+
+    :param idGroupe: l'id d'un groupe présent dans la base de donnée
+    :type idGroupe: str
+
+    :raises DonneeIntrouvableException: Impossible de trouver le groupe spécifié dans la table groupe
+
+    :return: success
+    :rtype: json
+    """
+    json_datas = request.get_json()
+    if not json_datas:
+        return jsonify({'error ': 'missing json body'}), 400
+    key = ["Nom", "AnneeScolaire", "Annee", "idGroupe_1"]
+    for k in json_datas.keys():
+        if k not in key:
+            return jsonify({'error': "missing or invalid key"}), 400
+    req = "UPDATE edt.groupe SET "
+    for k in json_datas.keys():
+        req += f"{k}='{json_datas[k]}', "
+
+    if req[-2:] == ", ":
+        req = req[:-2]
+    req += f" WHERE idGroupe={idGroupe} RETURNING *"
+
+    print("updateGroupe request : " + req)
+    conn = connect_pg.connect()
+    try:
+        connect_pg.execute_commands(conn, req)
+    except TypeError as e:
+        return jsonify({'error': str(apiException.DonneeIntrouvableException("groupe", idGroupe))}), 404
+    connect_pg.disconnect(conn)
+    return jsonify({"success": f"the group with id {idGroupe} was successfully updated"}), 200
