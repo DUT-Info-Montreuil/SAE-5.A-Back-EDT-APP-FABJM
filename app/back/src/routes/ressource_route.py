@@ -33,7 +33,7 @@ def getAll_ressource():
 
 
 @ressource.route('/ressource/add', methods=['POST'])
-#@jwt_required()
+@jwt_required()
 def addRessource() : 
     
     """Ajoute une ressource via la route /ressource/add
@@ -68,7 +68,7 @@ def addRessource() :
     return jsonify({'success': 'ressource added'}), 200
 
 
-@ressource.route('/ressource/get/<id>', methods=['GET', 'POST'])
+@ressource.route('/ressource/get/<id>', methods=['GET'])
 @jwt_required()
 def getRessource(id):
     query = f"select * from edt.ressource where idressource = {id}"
@@ -84,16 +84,17 @@ def getRessource(id):
     return jsonify(returnStatement)
 
 @ressource.route('/ressource/update/<id>', methods=['PUT','GET'])
-#@jwt_required()
+@jwt_required()
 def UpdateRessource(id) :
-    print("test")
-    return jsonify({"success": "ressource updated"}), 200
+    
     datas = request.get_json()
+    print(datas.keys())
     if not datas:
         return jsonify({'error ': 'missing json body'}), 400
     key = ["Titre", "NbrHeureSemestre", "CodeCouleur", "IdSemestre", "Numero"]
-    if datas.keys() not in key:
-        return jsonify({'error': 'missing or invalid key'}), 400
+    for k in datas.keys():
+        if k not in key:
+            return jsonify({'error': 'missing or invalid key'}), 400
     req = "UPDATE edt.ressource SET "
     for key in datas.keys():
         req += f"{key} = '{datas[key]}', "    
