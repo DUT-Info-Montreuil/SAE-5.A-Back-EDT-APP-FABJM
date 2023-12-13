@@ -1,4 +1,4 @@
-FROM python:3.10
+FROM python:3.10-slim-buster
 
 WORKDIR /usr/app/back
 
@@ -9,11 +9,12 @@ COPY . /usr/app/back
 
 #CMD [ "python", "./your-daemon-or-script.py" ]
 RUN pip install pipenv
-COPY Pipfile Pipfile.lock ./
-RUN python -m pip install --upgrade pip
-RUN pip install pipenv --upgrade
-RUN pipenv lock
-RUN pipenv install --dev --deploy --system
-RUN make setup
+#COPY Pipfile Pipfile.lock ./
+COPY requirements.txt ./
+#RUN python -m pip install --upgrade pip
+#RUN pip install pipenv --upgrade
+#RUN pipenv lock
+#RUN pipenv install --dev --deploy --system
+#RUN make setup
 
-EXPOSE 5000
+EXPOSE 5050

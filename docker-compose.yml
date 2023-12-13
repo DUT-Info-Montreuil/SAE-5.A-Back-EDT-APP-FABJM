@@ -2,8 +2,17 @@ version: "3.8"
 services:
   app :
     build: ./app/back
+    restart: always
     ports:
-      - "5000:5000"
-
+      - "5050:5050"
+    depends_on:
+      - db
   db:
     build: ./database/
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=database

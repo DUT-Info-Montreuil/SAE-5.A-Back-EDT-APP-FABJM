@@ -1,4 +1,7 @@
-FROM postgres:latest
-ENV POSTGRES_PASSWORD=secret
-ENV POSTGRES_USER=username
-ENV POSTGRES_DB=database
+FROM postgres:15.5-alpine3.18
+
+
+COPY . /var/lib/postgresql/commands
+
+
+EXPOSE 5432
