@@ -82,7 +82,9 @@ setup_config_ini() {
     draw_progress_bar 46
     # default file
     rm config.ini
+
     echo $'[postgresql]\nhost='"$hostBDD" > bddHostFileTemp
+
     echo $'user='"$user"$'\npassword='"$password" > bddUserFileTemp
     echo $'[server]\nhost='"$hostServer"$'\nport='"$portServer"$'\ndebug='"$debug" > serverFileTemp
     draw_progress_bar 50
@@ -93,7 +95,9 @@ setup_config_ini() {
     fi
     rm bddHostFileTemp
     draw_progress_bar 60
+
     chose_to_do setup_bdd_user "Voulez-vous modifiez la partie BDD par défaut database=$database user=$user password=$password"
+
     if [ $? -eq 1 ]; then
         cat bddUserFileTemp >> config.ini
     fi
@@ -110,6 +114,7 @@ setup_config_ini() {
 }
 alias_python() {
     alias python=python3
+
     python --version
     return 0
 }
@@ -127,6 +132,7 @@ download_setup_and_test() {
 
 setup_scroll_area
 chose_to_do download_setup_and_test "Veux-tu refaire tes requirement, setup and pytest ?"
+
 draw_progress_bar 45
 chose_to_do setup_config_ini "Veux-tu changer ton config.ini ?"
 draw_progress_bar 81
