@@ -51,14 +51,24 @@ class DonneeExistanteException(Exception): # post(...)
 class ParamètreTypeInvalideException(Exception): 
     """Lever si un type d'un paramètre ne correspond pas à celui attendue
     
-    :param table: le nom du paramètre spécifié
-    :type table: String
+    :param paramètre: le nom du paramètre spécifié
+    :type paramètre: String
     
-    :param id: le type valide
-    :type id: String
+    :param type_valide: le type valide
+    :type type_valide: String
 	"""
     def __init__(self, paramètre, type_valide):
         self.message = f" Le paramètre {paramètre} doit être de type {type_valide} "
+        super().__init__(self.message)
+
+class ParamètreInvalideException(Exception): 
+    """Lever si un paramètre est invalide
+    
+    :param paramètre: le nom du paramètre spécifié
+    :type paramètre: String
+	"""
+    def __init__(self, paramètre):
+        self.message = f" La valeur spécifié pour le paramètre {paramètre} est invalide"
         super().__init__(self.message)
         
 class LoginOuMotDePasseInvalideException(Exception): 
