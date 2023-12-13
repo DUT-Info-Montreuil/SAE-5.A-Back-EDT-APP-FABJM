@@ -31,7 +31,7 @@ CREATE TABLE Groupe(
    Annee INTEGER,
    idGroupe_1 INTEGER,
    PRIMARY KEY(idGroupe),
-   FOREIGN KEY(idGroupe_1) REFERENCES Groupe(idGroupe)
+   FOREIGN KEY(idGroupe_1) REFERENCES Groupe(idGroupe) ON DELETE CASCADE
 );
 
 CREATE TABLE Salle(

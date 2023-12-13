@@ -18,11 +18,11 @@ groupe = Blueprint('groupe', __name__)
 
 
 @groupe.route('/groupe/getAll', methods=['GET', 'POST'])
-@jwt_required()
+@jwt_required()-
 def get_groupe():
-    """Renvoit tous les utilisateurs via la route /utilisateurs/get
+    """Renvoit tous les groupes via la route /groupe/getAll
 
-    :return:  tous les utilisateurs
+    :return:  tous les groupes
     :rtype: json
     """
     query = "select * from edt.groupe order by IdGroupe asc"
@@ -41,15 +41,15 @@ def get_groupe():
 @groupe.route('/groupe/get/<idGroupe>', methods=['GET', 'POST'])
 @jwt_required()
 def get_one_groupe(idGroupe):
-    """Renvoit un utilisateur spécifié par son userName via la route /utilisateurs/get<userName>
+    """
+    Renvoit un groupe spécifié par son idGroupe via la route /groupe/get/<idGroupe>
 
-    :param userName: nom d'un utilisateur présent dans la base de donnée
-    :type userName: str
+    :param idGroupe: l'id d'un groupe présent dans la base de donnée
+    :type idGroupe: str
 
-    :raises DonneeIntrouvableException: Impossible de trouver l'userName spécifié dans la table utilisateur
-    :raises ParamètreTypeInvalideException: Le type de l’userName est invalide, un string est attendue
+    :raises DonneeIntrouvableException: Impossible de trouver l'idGroupe spécifié dans la table groupe
 
-    :return:  l'utilisateur a qui appartient cette userName
+    :return:  le groupe a qui appartient cet id
     :rtype: json
     """
 
@@ -70,15 +70,14 @@ def get_one_groupe(idGroupe):
 @groupe.route('/groupe/parent/get/<idGroupe>', methods=['GET', 'POST'])
 @jwt_required()
 def get_parent_groupe(idGroupe):
-    """Renvoit un utilisateur spécifié par son userName via la route /utilisateurs/get<userName>
+    """Renvoit le parent du groupe spécifié par son idGroupe via la route /groupe/parent/get/<idGroupe>
 
-    :param userName: nom d'un utilisateur présent dans la base de donnée
-    :type userName: str
+    :param idGroupe: l'id d'un groupe présent dans la base de donnée
+    :type idGroupe: str
 
-    :raises DonneeIntrouvableException: Impossible de trouver l'userName spécifié dans la table utilisateur
-    :raises ParamètreTypeInvalideException: Le type de l’userName est invalide, un string est attendue
+    :raises DonneeIntrouvableException: Impossible de trouver le groupe spécifié dans la table groupe
 
-    :return:  l'utilisateur a qui appartient cette userName
+    :return:  le parent du groupe a qui appartient cet id
     :rtype: json
     """
 
@@ -90,7 +89,7 @@ def get_parent_groupe(idGroupe):
     try:
         if len(rows) > 0:
             returnStatement = get_groupe_statement(rows[0])
-    except(TypeError) as e:
+    except TypeError as e:
         return jsonify({'error': str(apiException.DonneeIntrouvableException("groupe", idGroupe))}), 404
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
@@ -99,7 +98,7 @@ def get_parent_groupe(idGroupe):
 @groupe.route('/groupe/add', methods=['POST'])
 @jwt_required()
 def add_groupe():
-    """Permet d'ajouter un utilisateur via la route /groupe/add
+    """Permet d'ajouter un groupe via la route /groupe/add
 
     :raises InsertionImpossibleException: Impossible d'ajouter le groupe spécifié dans la table groupe
 
@@ -139,6 +138,17 @@ def add_groupe():
 @groupe.route('/groupe/delete/<idGroupe>', methods=['DELETE'])
 @jwt_required()
 def delete_groupe(idGroupe):
+    """
+    Permet de supprimer un groupe via la route /groupe/delete/<idGroupe>
+
+    :param idGroupe: l'id d'un groupe présent dans la base de donnée
+    :type idGroupe: str
+
+    :raises DonneeIntrouvableException: Impossible de trouver le groupe spécifié dans la table groupe
+
+    :return:  le parent du groupe a qui appartient cet id
+    :rtype: json
+    """
     conn = connect_pg.connect()
     query = f"DELETE from edt.groupe WHERE idgroupe={idGroupe} RETURNING *"
     try:
@@ -148,3 +158,4 @@ def delete_groupe(idGroupe):
     connect_pg.disconnect(conn)
     return jsonify({"success": f"The group with id {idGroupe} and all subgroups from this group were successfully "
                                f"removed"})
+
