@@ -19,7 +19,7 @@ from datetime import timedelta
 from src.routes.user_route import user
 from src.routes.semestre_route import semestre
 from src.routes.ressource_route import ressource
-
+from src.routes.salle_route import salle
 from src.routes.groupe_route import groupe
 from src.routes.cours_route import cours
 
@@ -37,6 +37,7 @@ jwt = JWTManager(app)
 app.register_blueprint(user)
 app.register_blueprint(cours)
 
+app.register_blueprint(salle)
 app.register_blueprint(semestre)
 app.register_blueprint(ressource)
 
