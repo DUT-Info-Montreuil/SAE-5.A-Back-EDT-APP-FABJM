@@ -16,6 +16,7 @@ cours = Blueprint('cours', __name__)
 
 
 @cours.route('/cours/get/<filtre>', methods=['GET','POST'])
+@jwt_required()
 def get_cours(filtre):
     """Renvoit les cours remplisant les critères d'un filtre spécifié par son via la route /cours/get/<filtre>
     
@@ -52,6 +53,7 @@ def get_cours(filtre):
     return jsonify(returnStatement)
 
 @cours.route('/cours/deplacer/<idCours>', methods=['PUT'])
+@jwt_required()
 def deplacer_cours(idCours):
     """Permet de supprimer un cours via la route /cours/delete
     
@@ -86,7 +88,50 @@ def deplacer_cours(idCours):
         connect_pg.disconnect(conn)
         return jsonify(idCours)
 
+
+@cours.route('/cours/attribuerSalle/<idCours>', methods=['POST'])
+def attribuerSalle(idCours):
+    """Permet d'attribuer une salle à un cours via la route /cours/attribuerSalle/<idCours>
+    
+    :param idCours: id du cours qui doit recevoir une salle
+    :type idCours: int
+
+    :param idSalle: id de la salle à attribuer
+    :type idSalle: int
+
+    :raises ParamètreBodyManquantException: Si aucun paramètre d'entrée attendu n'est spécifié dans le body
+    :raises ParamètreTypeInvalideException: Le type de idCours est invalide, une valeur numérique est attendue
+
+    :return: id du cours supprimer si présent
+    :rtype: json
+    """
+    json_datas = request.get_json()
+    if (not idCours.isdigit() or type(json_datas['idSalle']) != int   ):
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idCours", "numérique"))}), 400
+    
+    
+    if 'idSalle' not in json_datas :
+        return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
+    returnStatement = {}
+    query = f"Insert into edt.accuellir (idSalle, idCours) values ('{json_datas['idSalle']}', '{idCours}') returning idCours"
+    conn = connect_pg.connect()
+    try:
+        returnStatement = connect_pg.execute_commands(conn, query)
+    except Exception as e:
+        if e.pgcode == "23503":# violation contrainte clée étrangère
+            if "salle" in str(e):
+                return jsonify({'error': str(apiException.DonneeIntrouvableException("Salle ", json_datas['idSalle']))}), 400
+            else:
+                return jsonify({'error': str(apiException.DonneeIntrouvableException("Cours ", idCours))}), 400
+        else:
+            # Erreur inconnue
+            return jsonify({'error': str(apiException.InsertionImpossibleException("accuellir"))}), 500
+
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)
+
 @cours.route('/cours/delete/<idCours>', methods=['DELETE'])
+@jwt_required()
 def delete_cours(idCours):
     """Permet de supprimer un cours via la route /cours/delete
     
@@ -109,6 +154,7 @@ def delete_cours(idCours):
     
 
 @cours.route('/cours/add', methods=['POST'])
+@jwt_required()
 def add_cours():
     """Permet d'ajouter un cours via la route /cours/add
     
