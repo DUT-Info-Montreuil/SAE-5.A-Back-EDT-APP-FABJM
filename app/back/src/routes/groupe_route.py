@@ -130,7 +130,7 @@ def add_groupe():
             print("ERROR : " + e.pgcode)
             # Erreur inconnue
             return jsonify({'error': str(apiException.InsertionImpossibleException("groupe"))}), 500
-
+    
     connect_pg.disconnect(conn)
     return jsonify({"success": f"The group with id {idGroupe} was successfully created"}), 200
 

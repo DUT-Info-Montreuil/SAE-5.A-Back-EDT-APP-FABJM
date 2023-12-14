@@ -6,6 +6,8 @@ import src.apiException as apiException
 
 from src.config import config
 from src.services.semestre_service import get_semestre_statement
+import src.services.permision as perm
+
 
 import psycopg2
 from psycopg2 import errorcodes
@@ -17,8 +19,13 @@ semestre = Blueprint('semestre', __name__)
 
 
 @semestre.route('/semestre/getAll')
-#@jwt_required()
+@jwt_required()
 def get_semestre():
+
+    conn = connect_pg.connect()
+    if not perm.permissionCheck(get_jwt_identity() , 3 , conn):
+        return jsonify({'error': 'not enough permission'}), 403
+        
     query = "select * from edt.semestre order by idsemestre asc"
     conn = connect_pg.connect()
     rows = connect_pg.get_query(conn, query)
@@ -33,8 +40,17 @@ def get_semestre():
 
 
 @semestre.route('/semestre/add', methods=['POST'])
-#@jwt_required()
+@jwt_required()
 def add_semestre():
+
+    
+
+    
+    conn = connect_pg.connect()
+    if not perm.permissionCheck(get_jwt_identity() , 1 , conn):
+        return jsonify({'error': 'not enough permission'}), 403
+
+
     json_datas = request.get_json()
     if not json_datas:
         return jsonify({'error ': 'missing json body'}), 400
@@ -70,6 +86,12 @@ def get_one_semestre(numeroSemestre):
     :return: le semestre qui correspond au numéro entré en paramètre
     :rtype: json
     """
+
+
+    conn = connect_pg.connect()
+    if not perm.permissionCheck(get_jwt_identity() , 3 , conn):
+        return jsonify({'error': 'not enough permission'}), 403
+
 
     query = f"select * from edt.semestre where numero='{numeroSemestre}'"
 
