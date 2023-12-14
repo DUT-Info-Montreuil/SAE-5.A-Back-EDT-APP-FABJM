@@ -4,8 +4,10 @@ from flask_cors import CORS
 import src.connect_pg as connect_pg
 import src.apiException as apiException
 
+
 from src.config import config
 from src.services.ressource_service import get_ressource_statement
+import src.services.permision as perm
 
 import psycopg2
 from psycopg2 import errorcodes
@@ -17,8 +19,13 @@ ressource = Blueprint('ressource', __name__)
 
 
 @ressource.route('/ressource/getAll')
-#@jwt_required()
+@jwt_required()
 def getAll_ressource():
+    conn = connect_pg.connect()
+    if not perm.permissionCheck(get_jwt_identity() , 3 , conn):
+        return jsonify({'error': 'not enough permission'}), 403
+    
+
     query = "select * from edt.ressource order by idressource asc"
     conn = connect_pg.connect()
     rows = connect_pg.get_query(conn, query)
@@ -44,6 +51,9 @@ def addRessource() :
     :return:  ressource ajouté
     :rtype: json
     """
+    conn = connect_pg.connect()
+    if not perm.permissionCheck(get_jwt_identity() , 1 , conn):
+        return jsonify({'error': 'not enough permission'}), 403
 
     json_datas = request.get_json()
     if not json_datas:
@@ -71,6 +81,11 @@ def addRessource() :
 @ressource.route('/ressource/get/<id>', methods=['GET'])
 @jwt_required()
 def getRessource(id):
+
+    conn = connect_pg.connect()
+    if not perm.permissionCheck(get_jwt_identity() , 3 , conn):
+        return jsonify({'error': 'not enough permission'}), 403
+    
     query = f"select * from edt.ressource where idressource = {id}"
     conn = connect_pg.connect()
     rows = connect_pg.get_query(conn, query)
@@ -86,6 +101,10 @@ def getRessource(id):
 @ressource.route('/ressource/update/<id>', methods=['PUT','GET'])
 @jwt_required()
 def UpdateRessource(id) :
+
+    conn = connect_pg.connect()
+    if not perm.permissionCheck(get_jwt_identity() , 1 , conn):
+        return jsonify({'error': 'not enough permission'}), 403
     
     datas = request.get_json()
     print(datas.keys())

@@ -104,6 +104,7 @@ def get_query(conn, query):
     :return:  la valeur souhaité
     :rtype: tableau
     """
+    rows = []
     try:
         cur = conn.cursor()
         cur.execute(query)

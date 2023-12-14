@@ -6,7 +6,7 @@ import src.apiException as apiException
 
 from src.config import config
 from src.services.user_service import get_utilisateur_statement
-
+import src.services.permision as perm
 import psycopg2
 from psycopg2 import errorcodes
 from psycopg2 import OperationalError, Error
@@ -23,6 +23,12 @@ def get_utilisateur():
     :return:  tous les utilisateurs
     :rtype: json
     """
+    
+    #check if the user is admin
+    conn = connect_pg.connect()
+    if not perm.permissionCheck(get_jwt_identity() , 0 , conn):
+        return jsonify({'error': 'not enough permission'}), 403
+    
     query = "select * from edt.utilisateur order by IdUtilisateur asc"
     conn = connect_pg.connect()
     rows = connect_pg.get_query(conn, query)
@@ -50,7 +56,11 @@ def get_one_utilisateur(userName):
     :return:  l'utilisateur a qui appartient cette userName
     :rtype: json
     """
-
+    #check if the user is admin
+    conn = connect_pg.connect()
+    if not perm.permissionCheck(get_jwt_identity() , 3 , conn):
+        return jsonify({'error': 'not enough permission'}), 403
+    
     query = f"select * from edt.utilisateur where Username='{userName}'"
 
     conn = connect_pg.connect()
@@ -78,56 +88,81 @@ def add_utilisateur():
     
     :return: l'id de l'utilisateur crée
     :rtype: json
+
+    { "role": "eleve", "users": [ { "firstName": "Elève1", "lastName": "lastName", "info": { "idGroupe": "1", "idSalle": "", "isManager": "" } }, { "firstName": "Elève2", "lastName": "lastName", "info": { "idGroupe": "2", "idSalle": "", "isManager": "" } } ] } 
     """
+    #check if the user is admin
+    conn = connect_pg.connect()
     json_datas = request.get_json()
+    # if not perm.permissionCheck(get_jwt_identity() , 0 , conn):
+    #     return jsonify({'error': 'not enough permission'}), 403
+    
     if not json_datas:
-        return jsonify({'error ': 'missing json body'}), 400
-    if "info" not in json_datas.keys():
-        return jsonify({'error': 'missing "info" part of the body'}), 400
+            return jsonify({'error ': 'missing json body'}), 400
+    
     if (json_datas['role'] != "admin" and json_datas['role'] != "professeur" and json_datas['role'] != "eleve" and json_datas['role'] != "manager"):
         return jsonify({'error ': 'le role doit etre admin ,professeur, eleve ou manager'}), 400
     
-
-
-    query = f"Insert into edt.utilisateur (FirstName, LastName, Username, PassWord) values ('{json_datas['FirstName']}', '{json_datas['LastName']}', '{json_datas['Username']}', '{json_datas['Password']}') returning IdUtilisateur"
-    conn = connect_pg.connect()
-    try:
-        returnStatement = connect_pg.execute_commands(conn, query)
-        idUser = returnStatement
-    except psycopg2.IntegrityError as e:
-        if e.pgcode == errorcodes.UNIQUE_VIOLATION:
-            # Erreur violation de contrainte unique
-            return jsonify({'error': str(apiException.DonneeExistanteException(json_datas['Username'], "Username", "utilisateur"))}), 400
-        else:
-            # Erreur inconnue
-            return jsonify({'error': str(apiException.InsertionImpossibleException("utilisateur"))}), 500
-
-    
-    try : 
-        
-        #switch case pour le role
-        if json_datas['role'] == "admin":
-            query = f"Insert into edt.admin (IdUtilisateur) values ({idUser}) returning IdUtilisateur"
-        elif json_datas['role'] == "professeur":
-            query = f"Insert into edt.professeur (initiale , idsalle , Idutilisateur) values ('{json_datas['info']['initiale']}' , '{json_datas['info']['idsalle']}' ,'{idUser}') returning idProf" 
-        elif json_datas['role'] == "eleve":
-            query = f"Insert into edt.Eleve (idgroupe , Idutilisateur) values ({json_datas['info']['idgroupe'] , idUser})returning IdUtilisateur"
-        returnStatement = connect_pg.execute_commands(conn, query)
-
-        if(json_datas['info']['isManager']):
-            query = f"Insert into edt.manager (IdProf) values ({returnStatement}) returning IdUtilisateur"
-        returnStatement = connect_pg.execute_commands(conn, query)
-        
-    except :
-        connect_pg.disconnect(conn)
+    for user in json_datas['users']:
         conn = connect_pg.connect()
-        query =f'delete from edt.utilisateur where idutilisateur = {idUser}'
-        returnStatement = connect_pg.execute_commands(conn , query)
-        return jsonify({"error" : "info part is wrong "}) , 400
-    finally : 
-        connect_pg.disconnect(conn)
 
-    return jsonify(returnStatement)
+        if "info" not in user.keys():
+            return jsonify({'error': 'missing "info" part of the body'}), 400
+        
+        
+        key = ["FirstName", "LastName", "Username", "Password"]
+        for k in user.keys():
+            if k in key:
+                key.remove(k) 
+        if len(key) != 0:
+            return jsonify({'error ': 'missing ' + str(key)}), 400 
+
+        query = f"Insert into edt.utilisateur (FirstName, LastName, Username, PassWord) values ('{user['FirstName']}', '{user['LastName']}', '{user['Username']}', '{user['Password']}') returning IdUtilisateur"
+        conn = connect_pg.connect()
+        try:
+            returnStatement = connect_pg.execute_commands(conn, query)
+            idUser = returnStatement
+        except psycopg2.IntegrityError as e:
+            if e.pgcode == errorcodes.UNIQUE_VIOLATION:
+                # Erreur violation de contrainte unique
+                return jsonify({'error': str(apiException.DonneeExistanteException(user['Username'], "Username", "utilisateur"))}), 400
+            else:
+                # Erreur inconnue
+                return jsonify({'error': str(apiException.InsertionImpossibleException("utilisateur"))}), 500
+
+        
+        try : 
+            
+            #switch case pour le role
+            if json_datas['role'] == "admin":
+                query = f"Insert into edt.admin (IdUtilisateur) values ({idUser}) returning IdUtilisateur"
+            elif json_datas['role'] == "professeur":
+                query = f"Insert into edt.professeur (initiale , idsalle , Idutilisateur) values ('{user['info']['initiale']}' , '{user['info']['idsalle']}' ,'{idUser}') returning idProf" 
+                
+            elif json_datas['role'] == "eleve":
+                query = f"Insert into edt.Eleve (idgroupe , Idutilisateur) values ('{user['info']['idgroupe']}' , '{idUser}')returning IdUtilisateur"
+            returnStatement = connect_pg.execute_commands(conn, query)
+            
+            if json_datas['role'] == "professeur":
+                if(user['info']['isManager'] ):
+                    query = f"Insert into edt.manager (IdProf) values ({returnStatement}) returning IdUtilisateur"
+                    returnStatement = connect_pg.execute_commands(conn, query)
+                
+                
+
+            
+            
+        except Exception as e :
+            print(e)
+            connect_pg.disconnect(conn)
+            conn = connect_pg.connect()
+            query =f'delete from edt.utilisateur where idutilisateur = {idUser}'
+            returnStatement = connect_pg.execute_commands(conn , query)
+            return jsonify({"error" : "info part is wrong "}) , 400
+        finally : 
+            connect_pg.disconnect(conn)
+
+    return jsonify({"success" : "user was added"}), 200
 
 @user.route('/utilisateurs/auth', methods=['GET'])
 def auth_utilisateur():
@@ -142,7 +177,7 @@ def auth_utilisateur():
     json_datas = request.get_json()
     username = json_datas['Username']
     password = json_datas['Password']
-    query = f"select Password, FirstLogin from edt.utilisateur where Username='{username}'"
+    query = f"select Password, FirstLogin , idutilisateur from edt.utilisateur where Username='{username}'"
     conn = connect_pg.connect()
     
     rows = connect_pg.get_query(conn, query)
@@ -154,7 +189,7 @@ def auth_utilisateur():
     
     
     if (rows[0][0] == password):
-       accessToken =  create_access_token(identity=username)
+       accessToken =  create_access_token(identity=rows[0][2])
        return jsonify(accessToken=accessToken, firstLogin=rows[0][1])
    
     return jsonify({'error': str(apiException.LoginOuMotDePasseInvalideException())}), 400
@@ -164,12 +199,12 @@ def auth_utilisateur():
 @user.route('/utilisateurs/firstLogin', methods=['POST'])
 @jwt_required()
 def firstLogin_utilisateur():
-    username = get_jwt_identity()
+    id = get_jwt_identity()
     json_datas = request.get_json()
     password = json_datas['Password']
     if(password == ""):
         return jsonify({'error': str(apiException.ParamètreTypeInvalideException("password", "string"))}), 400    
-    query = f"update edt.utilisateur set PassWord='{password}', FirstLogin=false where Username='{username}'"
+    query = f"update edt.utilisateur set PassWord='{password}', FirstLogin=false where idutilisateur='{id}'"
     conn = connect_pg.connect()
     try:
         
@@ -181,7 +216,7 @@ def firstLogin_utilisateur():
     
         
     
-@user.route('/utilisateurs/update/<id>', methods=['POST','GET'])
+@user.route('/utilisateurs/update/<id>', methods=['PUT','GET'])
 @jwt_required()
 def update_utilisateur(id):
     """Permet de modifier un utilisateur via la route /utilisateurs/update
@@ -193,6 +228,12 @@ def update_utilisateur(id):
     :return: l'id de l'utilisateur modifié
     :rtype: json
     """
+    
+    #check if the user is admin
+    conn = connect_pg.connect()
+    if not perm.permissionCheck(get_jwt_identity() , 0 , conn):
+        return jsonify({'error': 'not enough permission'}), 403
+    
     json_datas = request.get_json()
     if not json_datas:
         return jsonify({'error ': 'missing json body'}), 400
@@ -223,7 +264,7 @@ def update_utilisateur(id):
 
     req += f" where idutilisateur={id}"
     #update edt.utilisateur set firstname = 'bastien2' where idutilisateur = 8
-    print(req)
+    
     conn = connect_pg.connect()
     try:
         returnStatement = connect_pg.execute_commands(conn, req)
@@ -250,6 +291,12 @@ def delete_utilisateur(id):
     :return: l'id de l'utilisateur supprimé
     :rtype: json
     """
+
+    #check if the user is admin
+    conn = connect_pg.connect()
+    if not perm.permissionCheck(get_jwt_identity() , 0 , conn):
+        return jsonify({'error': 'not enough permission'}), 403
+    
     json_datas = request.get_json()
     query = f"delete from edt.utilisateur where idutilisateur={id}"
     conn = connect_pg.connect()
@@ -263,9 +310,23 @@ def delete_utilisateur(id):
     return jsonify({'success': 'utilisateur supprimé'}), 200
 
         
+#TODO : DEBUG ROUTE TO DELETE 
+@user.route('/utilisateurs/getPermission', methods=['GET','POST'])
+@jwt_required()
+def getPermission():
+    """Permet de récupérer la permission d'un utilisateur via la route /utilisateurs/getPermission
+    
+    :param Username: login de l'utilisateur spécifié dans le body
+    :type Username: String
+    :raises InsertionImpossibleException: Impossible de récupérer la permission de l'utilisateur spécifié dans la table utilisateur
+    
+    :return: la permission de l'utilisateur
+    :rtype: json
+    """
+    user_id = get_jwt_identity()
+    conn = connect_pg.connect()
+    return jsonify(perm.getUserPermission(user_id , conn))
 
-
-        
 
 
 

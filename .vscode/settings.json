@@ -1,6 +1,7 @@
 {
     "python.analysis.extraPaths": [
         "./app/back",
+        "./app/back",
         "./app/back"
     ]
 }
