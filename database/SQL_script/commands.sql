@@ -201,3 +201,4 @@ INSERT INTO Cours (HeureDebut, NombreHeure, Jour, idRessource) values ('16:49:49
 
 -- Salle (idSalle, Numero ,Capacite);
 INSERT INTO Salle (Numero, Capacite) values ('A2-05', 35);
+INSERT INTO Salle (Numero, Capacite) values ('A1-01', 20);
