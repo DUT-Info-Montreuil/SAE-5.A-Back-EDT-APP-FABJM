@@ -44,7 +44,7 @@ initL:
 	make sphinx
 	
 env:
-	pipenv install
+	pipenv install --dev
 	pipenv shell python -m main  
 	
 run:

@@ -13,7 +13,7 @@ import requests
 from contextlib import closing
 
 from src.config import config
-import src.connect_pg as connect_pg
+from src.connect_pg import formatageSqlite3
 import src.apiException as apiException
 from datetime import timedelta
 from src.routes.user_route import user
@@ -52,6 +52,7 @@ CORS(app, origins=['http://localhost:4200'])
 api = Api(app)
 
 
+
 @app.after_request
 def after_request(response):
     response.headers.add('Access-Control-Allow-Origin', '*')
@@ -59,6 +60,27 @@ def after_request(response):
     response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE')
     return response
 
+def init_bdd(db_conn, chemin):
+    """Initialise les table d'une base de donnée à partir d'un script
+
+    :param db_conn: Connection à une base de donnée
+    :type db_conn: Connexion
+    
+    :param chemin: chemin vers le script sql
+    :type chemin: str
+    """
+    sql_file_path = os.path.dirname(os.path.dirname(os.getcwd())) + chemin
+    sql_script = ""
+    with open(sql_file_path, "r") as f:
+        lines = f.readlines()
+    for line in lines:
+        sql_script += formatageSqlite3(line)[0]
+    db_cursor = db_conn.cursor()
+    try:
+        db_cursor.executescript(sql_script)
+    except Exception as error:
+        print("Exception : ", error)
+    db_conn.commit()
 
 def create_app(config):
     """Cette fonction crée l'application
@@ -70,7 +92,7 @@ def create_app(config):
     :rtype: flask.app.Flask
     """
     
-    app.config.from_object(config)
+    app.config.update(config)
     return app
     
 @app.route('/index')

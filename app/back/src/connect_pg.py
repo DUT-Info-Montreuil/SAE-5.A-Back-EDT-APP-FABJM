@@ -2,7 +2,9 @@
 
 import psycopg2
 from src.config import config
+import flask
 
+app = flask.current_app
 
 def connect(filename='./app/back/src/config.ini', section='postgresql'):
     """Établit la connection à la base de donnée
@@ -20,28 +22,19 @@ def connect(filename='./app/back/src/config.ini', section='postgresql'):
     :rtype: psycopg2.extensions.connection
     """
     conn = None
+    
     try:
         # read connection parameters
-        params = config(filename, section)
+        print('Connecting to the database...')
+        
+        if app.config['TESTING']:
+            conn = app.config['DATABASE']
+        else:
+            params = config(filename, section)
+            conn = psycopg2.connect(**params)
 
-        # connect to the PostgreSQL server
-        print('Connecting to the PostgreSQL database...')
-        conn = psycopg2.connect(**params)
-
-        conn.set_client_encoding('UTF8')
-
-        # create a cursor
         cur = conn.cursor()
 
-        # execute a statement   
-        print('PostgreSQL database version:')
-        cur.execute('SELECT version()')
-
-        # display the PostgreSQL database server version
-        db_version = cur.fetchone()
-        print(db_version)
-
-        # close the communication with the PostgreSQL
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
         print(error)
@@ -57,8 +50,9 @@ def disconnect(conn):
     :param conn: objet représentant la connection à la base de donnée
     :type conn: psycopg2.extensions.connection
     """
-    conn.close()
-    print('Database connection closed.')
+    if not app.config['TESTING']:
+        conn.close()
+        print('Database connection closed.')
 
 
 def execute_commands(conn, commands):
@@ -70,23 +64,32 @@ def execute_commands(conn, commands):
     :param commands: commande sql
     :type commands: String
     
-    :return:  si il y a une valeur de retour de la commande
-    :rtype: Boolean
+    :return: Une valeur de retour de la requete
+    :rtype: int
     """
     cur = conn.cursor()
 
     returningValue = False
 
     # create table one by one
-    cur.execute(commands)
-    if " returning " in commands.lower():
+    if app.config['TESTING']:
+        query, returningValue = formatageSqlite3(commands)
+        cur.execute(query)
+        conn.commit()
+        cur.close()
+        if returningValue:
+            return cur.lastrowid
+
+    else:
+        cur.execute(commands)
+        if " returning " in commands.lower():
             returningValue = cur.fetchone()[0]
             # commit the changes
-    conn.commit()
-    # close communication with the PostgreSQL database server
-    cur.close()
-    if returningValue:
-        return returningValue
+        conn.commit()
+        # close communication with the PostgreSQL database server
+        cur.close()
+        if returningValue:
+            return returningValue
 
 
 def get_query(conn, query):
@@ -104,7 +107,9 @@ def get_query(conn, query):
     :return:  la valeur souhaité
     :rtype: tableau
     """
-    rows = []
+    if app.config['TESTING']:
+        query = formatageSqlite3(query)[0]
+
     try:
         cur = conn.cursor()
         cur.execute(query)
@@ -116,6 +121,34 @@ def get_query(conn, query):
     finally:
         if conn is not None:
             return rows
+
+def formatageSqlite3(phrase):
+    """Transforme une requête posgresql en sqlite3
+
+    :param phrase: requete posgresql
+    :type phrase: str
+
+    :return: une requete au format sqlite3
+    :rtype: str
+
+    :return: Si une valeur de retour est attendue
+    :rtype: bool
+    """
+    nouvelle_phrase = ''
+    if 'EDT' in phrase:
+        return nouvelle_phrase, False
+    for lettre in phrase.split(" "):
+        if lettre[:4] == 'edt.':
+            nouvelle_phrase += lettre[4:] + " "
+        elif lettre == "cascade;\n":
+            nouvelle_phrase += ";\n"
+        elif lettre == "SERIAL,\n":
+            nouvelle_phrase += "int AUTO_INCREMENT,\n"
+        elif lettre == 'returning':
+            return nouvelle_phrase, True
+        else:
+            nouvelle_phrase += lettre + " "
+    return nouvelle_phrase, False
 
 
 if __name__ == '__main__':

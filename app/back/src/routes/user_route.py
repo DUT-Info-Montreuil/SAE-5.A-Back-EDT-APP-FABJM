@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from flask_cors import CORS
+import flask
 
 import src.connect_pg as connect_pg
 import src.apiException as apiException
@@ -30,7 +31,6 @@ def get_utilisateur():
         return jsonify({'error': 'not enough permission'}), 403
     
     query = "select * from edt.utilisateur order by IdUtilisateur asc"
-    conn = connect_pg.connect()
     rows = connect_pg.get_query(conn, query)
     returnStatement = []
     try:
@@ -103,13 +103,11 @@ def add_utilisateur():
     
     if (json_datas['role'] != "admin" and json_datas['role'] != "professeur" and json_datas['role'] != "eleve" and json_datas['role'] != "manager"):
         return jsonify({'error ': 'le role doit etre admin ,professeur, eleve ou manager'}), 400
-    
     for user in json_datas['users']:
         conn = connect_pg.connect()
 
         if "info" not in user.keys():
             return jsonify({'error': 'missing "info" part of the body'}), 400
-        
         
         key = ["FirstName", "LastName", "Username", "Password"]
         for k in user.keys():
@@ -117,7 +115,7 @@ def add_utilisateur():
                 key.remove(k) 
         if len(key) != 0:
             return jsonify({'error ': 'missing ' + str(key)}), 400 
-
+        
         query = f"Insert into edt.utilisateur (FirstName, LastName, Username, PassWord) values ('{user['FirstName']}', '{user['LastName']}', '{user['Username']}', '{user['Password']}') returning IdUtilisateur"
         conn = connect_pg.connect()
         try:
@@ -181,18 +179,20 @@ def auth_utilisateur():
     :return: jwt token
     :rtype: str
     """
-    
+    try:
+        json_datas = request.get_json()
+    except (Exception) as error:
+        print(error)
     json_datas = request.get_json()
     username = json_datas['Username']
     password = json_datas['Password']
     query = f"select Password, FirstLogin , idutilisateur from edt.utilisateur where Username='{username}'"
     conn = connect_pg.connect()
-    
     rows = connect_pg.get_query(conn, query)
-    
     if (username.isdigit() or type(username) != str):
         return jsonify({'error': str(apiException.ParamètreTypeInvalideException("username", "string"))}), 400
     if (not rows):
+        
         return jsonify({'error': str(apiException.DonneeIntrouvableException("utilisateur", username))}), 404
     
     
