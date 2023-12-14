@@ -81,7 +81,7 @@ def get_parent_groupe(idGroupe):
     :rtype: json
     """
 
-    query = f"select * from edt.groupe where idGroupe=(select idGroupe_1 from edt.groupe where idGroupe = '{idGroupe}')"
+    query = f"select * from edt.groupe where idGroupe=(select idGroupe_parent from edt.groupe where idGroupe = '{idGroupe}')"
 
     conn = connect_pg.connect()
     rows = connect_pg.get_query(conn, query)
@@ -90,6 +90,37 @@ def get_parent_groupe(idGroupe):
         if len(rows) > 0:
             returnStatement = get_groupe_statement(rows[0])
     except TypeError as e:
+        return jsonify({'error': str(apiException.DonneeIntrouvableException("groupe", idGroupe))}), 404
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)
+
+
+@groupe.route('/groupe/children/get/<idGroupe>', methods=['GET'])
+@jwt_required()
+def get_all_children(idGroupe):
+    """Renvoit le parent du groupe spécifié par son idGroupe via la route /groupe/parent/get/<idGroupe>
+
+    :param idGroupe: l'id d'un groupe présent dans la base de donnée
+    :type idGroupe: str
+
+    :raises DonneeIntrouvableException: Impossible de trouver le groupe spécifié dans la table groupe
+
+    :return:  le parent du groupe a qui appartient cet id
+    :rtype: json
+    """
+
+    query = f"select * from edt.groupe where idGroupe_parent={idGroupe}"
+
+    conn = connect_pg.connect()
+    rows = connect_pg.get_query(conn, query)
+    returnStatement = {}
+    try:
+        if len(rows) > 0:
+            returnStatement = ""
+            for row in rows:
+                returnStatement += f"{get_groupe_statement(row)}"
+    except TypeError as e:
+        print(f"ERRRRRRRRRRRRRRRRRRRROR : {e}")
         return jsonify({'error': str(apiException.DonneeIntrouvableException("groupe", idGroupe))}), 404
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
@@ -110,9 +141,9 @@ def add_groupe():
         return jsonify({'error ': 'missing json body'}), 400
     query_start = "Insert into edt.groupe (Nom, AnneeScolaire, Annee"
     query_values = f"values ('{json_datas['Nom']}', '{json_datas['AnneeScolaire']}', '{json_datas['Annee']}'"
-    if "idGroupe_1" in json_datas.keys():
-        query_start += ", idGroupe_1"
-        query_values += f", {json_datas['idGroupe_1']}"
+    if "idGroupe_parent" in json_datas.keys():
+        query_start += ", idGroupe_parent"
+        query_values += f", {json_datas['idGroupe_parent']}"
     query_start += ") "
     query_values += ") returning idGroupe"
     query = query_start + query_values
@@ -177,7 +208,7 @@ def update_groupe(idGroupe):
     json_datas = request.get_json()
     if not json_datas:
         return jsonify({'error ': 'missing json body'}), 400
-    key = ["Nom", "AnneeScolaire", "Annee", "idGroupe_1"]
+    key = ["Nom", "AnneeScolaire", "Annee", "idGroupe_parent"]
     for k in json_datas.keys():
         if k not in key:
             return jsonify({'error': "missing or invalid key"}), 400

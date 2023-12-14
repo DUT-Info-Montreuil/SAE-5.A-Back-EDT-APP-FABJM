@@ -29,9 +29,9 @@ CREATE TABLE Groupe(
    Nom VARCHAR(50) ,
    AnneeScolaire INTEGER,
    Annee INTEGER,
-   idGroupe_1 INTEGER,
+   idGroupe_parent INTEGER,
    PRIMARY KEY(idGroupe),
-   FOREIGN KEY(idGroupe_1) REFERENCES Groupe(idGroupe) ON DELETE CASCADE
+   FOREIGN KEY(idGroupe_parent) REFERENCES Groupe(idGroupe) ON DELETE CASCADE
 );
 
 CREATE TABLE Salle(
