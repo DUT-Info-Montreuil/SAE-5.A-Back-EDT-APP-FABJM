@@ -29,8 +29,8 @@ class InsertionImpossibleException(Exception): # post(...)
     :param table: nom de la table spécifié
     :type table: String
 	"""
-    def __init__(self, table):
-        self.message = f" La donnée n'a pas pu être inséré dans la table {table}"
+    def __init__(self, table, action = "inséré"):
+        self.message = f" La donnée n'a pas pu être {action} dans la table {table}"
         super().__init__(self.message)
 
 class DonneeExistanteException(Exception): # post(...)

@@ -189,3 +189,6 @@ INSERT INTO Utilisateur (FirstName, LastName, Username, PassWord) values ('Gilga
 INSERT INTO Utilisateur (FirstName, LastName, Username, PassWord) values ('Aya', 'Rindo', 'detective', 'immortal');
 INSERT INTO Utilisateur (FirstName, LastName, Username, PassWord) values ('Tsugaru ', 'Shinuchi', 'assistant', 'OniKiller');
 
+-- Salle (idSalle, Numero ,Capacite);
+INSERT INTO Salle (Numero, Capacite) values ('A2-05', 35);
+INSERT INTO Salle (Numero, Capacite) values ('A1-01', 20);
