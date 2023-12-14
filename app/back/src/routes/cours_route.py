@@ -88,53 +88,8 @@ def deplacer_cours(idCours):
         connect_pg.disconnect(conn)
         return jsonify(idCours)
 
-@cours.route('/cours/changementSalle/<idCours>', methods=['PUT'])
-@jwt_required()
-def changement_salle(idCours):
-    """Permet de changer la salle d'un cours
-    
-    :param idCours: id du cours dont la salle doit être changer
-    :type idCours: int
 
-    :param idSalle: id de la nouvelle Salle spécifié dans le body
-    :type idSalle: int
-
-    :raises ParamètreBodyManquantException: Si aucun paramètre d'entrée attendu n'est spécifié dans le body
-    :raises ParamètreTypeInvalideException: Le type de idCours est invalide, une valeur numérique est attendue
-    :raises DonneeIntrouvableException: Une des clées n'a pas pu être trouvé
-    :raises InsertionImpossibleException: Impossible de réaliser l'insertion
-
-    :return: id du cours déplacé
-    :rtype: json
-    """
-    json_datas = request.get_json()
-    if (not idCours.isdigit() or type(json_datas['idSalle']) != int   ):
-        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idCours", "numérique"))}), 400
-    
-    
-    if 'idSalle' not in json_datas :
-        return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
-
-    json_datas = request.get_json()
-    query =  f"UPDATE edt.accuellir SET idSalle = {json_datas['idSalle']} WHERE idCours = {idCours}"
-
-    conn = connect_pg.connect()
-    try:
-        connect_pg.execute_commands(conn, query)
-    except Exception as e:
-        if e.pgcode == "23503":# violation contrainte clée étrangère
-            if "salle" in str(e):
-                return jsonify({'error': str(apiException.DonneeIntrouvableException("Salle ", json_datas['idSalle']))}), 400
-            else:
-                return jsonify({'error': str(apiException.DonneeIntrouvableException("Cours ", idCours))}), 400
-        else:
-            # Erreur inconnue
-            return jsonify({'error': str(apiException.InsertionImpossibleException("accuellir"))}), 500
-    connect_pg.disconnect(conn)
-    return jsonify(idCours)
-
-
-@cours.route('/cours/attribuerSalle/<idCours>', methods=['POST'])
+@cours.route('/cours/attribuerSalle/<idCours>', methods=['POST', 'PUT'])
 @jwt_required()
 def attribuerSalle(idCours):
     """Permet d'attribuer une salle à un cours via la route /cours/attribuerSalle/<idCours>
@@ -171,6 +126,12 @@ def attribuerSalle(idCours):
                 return jsonify({'error': str(apiException.DonneeIntrouvableException("Salle ", json_datas['idSalle']))}), 400
             else:
                 return jsonify({'error': str(apiException.DonneeIntrouvableException("Cours ", idCours))}), 400
+        
+        elif e.pgcode == "23505": # si existe déjà
+            messageId = f"idCours = {idCours} et idSalle = {json_datas['idSalle']}"
+            messageColonne = f"idCours et idSalle"
+            return jsonify({'error': str(apiException.DonneeExistanteException(messageId, messageColonne, "accuellir"))}), 400
+        
         else:
             # Erreur inconnue
             return jsonify({'error': str(apiException.InsertionImpossibleException("accuellir"))}), 500
@@ -178,10 +139,33 @@ def attribuerSalle(idCours):
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 
+@cours.route('/cours/removeSalle/<idCours>', methods=['DELETE'])
+@jwt_required()
+def remove_salle(idCours):
+    """Permet de supprimer une salle attribuer à un cours via la route /cours/deleteSalle/<idCours>
+    
+    :param idCours: id du cours à supprimer
+    :type idCours: int
+
+    :raises ParamètreTypeInvalideException: Le type de idCours est invalide, une valeur numérique est attendue
+
+    :return: id du cours supprimer si présent
+    :rtype: json
+    """
+    if (not idCours.isdigit()):
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idCours", "numérique"))}), 400
+    else:
+        query = "delete from edt.accuellir where idCours=%(idCours)s" % {'idCours':idCours}
+        conn = connect_pg.connect()
+        connect_pg.execute_commands(conn, query)
+        connect_pg.disconnect(conn)
+        return jsonify(idCours)
+
+
 @cours.route('/cours/delete/<idCours>', methods=['DELETE'])
 @jwt_required()
 def delete_cours(idCours):
-    """Permet de supprimer un cours via la route /cours/delete
+    """Permet de supprimer un cours via la route /cours/delete/<idCours>
     
     :param idCours: id du cours à supprimer
     :type idCours: int
@@ -232,5 +216,30 @@ def add_cours():
             # Erreur inconnue
             return jsonify({'error': str(apiException.InsertionImpossibleException("cours"))}), 500
 
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)
+
+
+@cours.route('/cours/getSalleCours/<idCours>', methods=['GET','POST'])
+@jwt_required()
+def get_salle_cours(idCours):
+    """Renvoit la salle dans lequel se déroule le cours via la route /cours/getSalle/<idCours>
+    
+    :param idCours: id du cours à rechercher
+    :type idCours: int
+    
+    :raises DonneeIntrouvableException: Aucune donnée n'a pas être trouvé correspondant aux critères
+    
+    :return: l'id de la salle dans lequel se déroule cours
+    :rtype: json
+    """
+    query = f"select idSalle from edt.accuellir where idCours={idCours} "
+    returnStatement = {}
+    conn = connect_pg.connect()
+    try:
+        returnStatement["idSalle"] = connect_pg.get_query(conn, query)[0][0]
+    except IndexError:
+        return jsonify({'error': str(apiException.DonneeIntrouvableException("Accuellir", idCours))}), 400
+        
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
