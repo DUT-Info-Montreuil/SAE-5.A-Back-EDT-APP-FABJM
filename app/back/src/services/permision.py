@@ -32,15 +32,14 @@ def getUserPermission(user_id , conn):
     if result != []:
         return 0
     else:
-        result = connect_pg.get_query(conn , f"SELECT * FROM edt.manager WHERE idutilisateur = {user_id}" )
+        result = connect_pg.get_query(conn , f"SELECT idprof FROM edt.teacher WHERE idutilisateur = {user_id}")
         if result != []:
-            return 1
-        else:
-            result = connect_pg.get_query(conn , f"SELECT * FROM edt.teacher WHERE idutilisateur = {user_id}")
+            result = connect_pg.get_query(conn , f"SELECT * FROM edt.manager WHERE idutilisateur = {result[0][0]}")
             if result != []:
-                return 2
-            else:
-                return 3
+                return 1
+            return 2
+        else:
+            return 3
                 
     
     
