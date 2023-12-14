@@ -58,7 +58,7 @@ def get_one_utilisateur(userName):
     """
     #check if the user is admin
     conn = connect_pg.connect()
-    if not perm.permissionCheck(get_jwt_identity() , 0 , conn):
+    if not perm.permissionCheck(get_jwt_identity() , 3 , conn):
         return jsonify({'error': 'not enough permission'}), 403
     
     query = f"select * from edt.utilisateur where Username='{userName}'"
@@ -94,8 +94,8 @@ def add_utilisateur():
     #check if the user is admin
     conn = connect_pg.connect()
     json_datas = request.get_json()
-    if not perm.permissionCheck(get_jwt_identity() , 0 , conn):
-        return jsonify({'error': 'not enough permission'}), 403
+    # if not perm.permissionCheck(get_jwt_identity() , 0 , conn):
+    #     return jsonify({'error': 'not enough permission'}), 403
     
     if not json_datas:
             return jsonify({'error ': 'missing json body'}), 400
@@ -110,12 +110,12 @@ def add_utilisateur():
             return jsonify({'error': 'missing "info" part of the body'}), 400
         
         
-        key = ["FirstName", "LastName", "Username", "PassWord"]
+        key = ["FirstName", "LastName", "Username", "Password"]
         for k in user.keys():
             if k in key:
                 key.remove(k) 
         if len(key) != 0:
-            return jsonify({'error ': 'missing ' + key}), 400 
+            return jsonify({'error ': 'missing ' + str(key)}), 400 
 
         query = f"Insert into edt.utilisateur (FirstName, LastName, Username, PassWord) values ('{user['FirstName']}', '{user['LastName']}', '{user['Username']}', '{user['Password']}') returning IdUtilisateur"
         conn = connect_pg.connect()
@@ -143,15 +143,17 @@ def add_utilisateur():
                 query = f"Insert into edt.Eleve (idgroupe , Idutilisateur) values ({user['info']['idgroupe'] , idUser})returning IdUtilisateur"
             returnStatement = connect_pg.execute_commands(conn, query)
             
-            if(user['info']['isManager'] and json_datas['role'] == "professeur"):
-                query = f"Insert into edt.manager (IdProf) values ({returnStatement}) returning IdUtilisateur"
-                returnStatement = connect_pg.execute_commands(conn, query)
+            if json_datas['role'] == "professeur":
+                if(user['info']['isManager'] ):
+                    query = f"Insert into edt.manager (IdProf) values ({returnStatement}) returning IdUtilisateur"
+                    returnStatement = connect_pg.execute_commands(conn, query)
                 
                 
 
             
             
-        except :
+        except Exception as e :
+            print(e)
             connect_pg.disconnect(conn)
             conn = connect_pg.connect()
             query =f'delete from edt.utilisateur where idutilisateur = {idUser}'
