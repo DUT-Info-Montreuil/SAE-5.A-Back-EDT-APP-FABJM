@@ -40,7 +40,7 @@ def login(client):
     :type client: FlaskClient
     """
     login_data = {'Username': 'johndoe', 'Password': 'password123'}
-    response = client.get('/utilisateurs/auth', data=json.dumps(login_data), content_type='application/json', follow_redirects=True)
+    response = client.post('/utilisateurs/auth', data=json.dumps(login_data), content_type='application/json', follow_redirects=True)
     token = response.json['accessToken']
     client.environ_base['HTTP_AUTHORIZATION'] = f'Bearer {token}'
 

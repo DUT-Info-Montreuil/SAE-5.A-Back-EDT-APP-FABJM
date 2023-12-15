@@ -1,3 +1,5 @@
+SET SEARCH_PATH TO EDT;
+
 -- Utilisateur (IdUtilisateur, FirstName, LastName, Username, PassWord, FirstLogin)
 INSERT INTO Utilisateur (FirstName, LastName, Username, PassWord) values ('Junko', 'Enoshima', 'monokuma', 'despair');
 INSERT INTO Utilisateur (FirstName, LastName, Username, PassWord) values ('Gilgamesh', 'Elish', 'Uruk', 'Enkidu');
