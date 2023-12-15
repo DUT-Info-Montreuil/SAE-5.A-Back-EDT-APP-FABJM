@@ -163,7 +163,7 @@ def add_utilisateur():
 
     return jsonify({"success" : "user was added"}), 200
 
-@user.route('/utilisateurs/auth', methods=['GET'])
+@user.route('/utilisateurs/auth', methods=['POST'])
 def auth_utilisateur():
     """ Permet d'authentifier un utilisateur via la route /utilisateurs/auth
     
