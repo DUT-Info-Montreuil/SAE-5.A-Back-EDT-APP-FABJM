@@ -83,7 +83,7 @@ def init_bdd(db_conn, chemin):
     db_conn.commit()
 
 def create_app(config):
-    """Cette fonction crée l'application
+    """Cette fonction crée et configure l'application
 
     :param config: définit les options souhaité
     :type config: Objet

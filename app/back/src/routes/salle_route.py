@@ -18,9 +18,11 @@ salle = Blueprint('salle', __name__)
 @salle.route('/salle/getAll')
 @jwt_required()
 def get_salle():
-    """Renvoit toutes les salles via la route /utilisateurs/get
+    """Renvoit toutes les salles via la route /salle/getAll
+
+    :raises AucuneDonneeTrouverException: Si aucune donnée n'a été trouvé dans la table salle
     
-    :return:  tous les utilisateurs
+    :return: toutes les salles
     :rtype: json
     """
     query = "select * from edt.salle order by idsalle asc"

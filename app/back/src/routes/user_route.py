@@ -20,6 +20,9 @@ user = Blueprint('user', __name__)
 @jwt_required()
 def get_utilisateur():
     """Renvoit tous les utilisateurs via la route /utilisateurs/get
+
+    :raises PermissionManquanteException: Si pas assez de droit pour effectuer un getAll dans la table utilisateur
+    :raises AucuneDonneeTrouverException: Une aucune donnée n'a été trouvé dans la table utilisateur
     
     :return:  tous les utilisateurs
     :rtype: json
@@ -28,7 +31,7 @@ def get_utilisateur():
     #check if the user is admin
     conn = connect_pg.connect()
     if not perm.permissionCheck(get_jwt_identity() , 0 , conn):
-        return jsonify({'error': 'not enough permission'}), 403
+        return jsonify({'erreur': str(apiException.PermissionManquanteException())}), 403
     
     query = "select * from edt.utilisateur order by IdUtilisateur asc"
     rows = connect_pg.get_query(conn, query)
@@ -37,7 +40,7 @@ def get_utilisateur():
         for row in rows:
             returnStatement.append(get_utilisateur_statement(row))
     except(TypeError) as e:
-        return jsonify({'error': str(apiException.AucuneDonneeTrouverException("utilisateur"))}), 404
+        return jsonify({'erreur': str(apiException.AucuneDonneeTrouverException("utilisateur"))}), 404
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 
@@ -90,8 +93,9 @@ def add_utilisateur():
     :return: l'id de l'utilisateur crée
     :rtype: json
 
-    { "role": "eleve", "users": [ { "firstName": "Elève1", "lastName": "lastName", "info": { "idGroupe": "1", "idSalle": "", "isManager": "" } }, { "firstName": "Elève2", "lastName": "lastName", "info": { "idGroupe": "2", "idSalle": "", "isManager": "" } } ] } 
     """
+    #{ "role": "eleve", "users": [ { "firstName": "Elève1", "lastName": "lastName", "info": { "idGroupe": "1", "idSalle": "", "isManager": "" } }, { "firstName": "Elève2", "lastName": "lastName", "info": { "idGroupe": "2", "idSalle": "", "isManager": "" } } ] } 
+    
     #check if the user is admin
     conn = connect_pg.connect()
     json_datas = request.get_json()

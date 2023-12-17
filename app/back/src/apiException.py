@@ -82,7 +82,20 @@ class LoginOuMotDePasseInvalideException(Exception):
 class ParamètreBodyManquantException(Exception): 
     """Lever si Au moins un paramètre d'entrée attendue dans le body est manquant
     
+    :param paramètre: le nom du paramètre manquant, None par défaut
+    :type paramètre: String
+	"""
+    def __init__(self, parametre = None):
+        if parametre != None:
+            self.message = f"Le paramètre d'entrée {parametre} attendue dans le body est manquant"
+        else:
+            self.message = f"Au moins un paramètre d'entrée attendue dans le body est manquant"
+        super().__init__(self.message)
+
+class PermissionManquanteException(Exception): 
+    """Lever si l'utilisateur n'a pas assez de droit pour effectuer une action
+    
 	"""
     def __init__(self):
-        self.message = f"Au moins un paramètre d'entrée attendue dans le body est manquant"
+        self.message = f"Vous ne possédez d'assez de permission pour effectuer cette action"
         super().__init__(self.message)

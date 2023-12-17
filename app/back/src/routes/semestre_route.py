@@ -21,10 +21,19 @@ semestre = Blueprint('semestre', __name__)
 @semestre.route('/semestre/getAll')
 @jwt_required()
 def get_semestre():
+    """Renvoit tous les semestre via la route /semestre/getAll
+    
+    :raises PermissionManquanteException: Si l'utilisateur n'a pas assez de droit pour récupérer les données présents dans la table semestre
+    :raises AucuneDonneeTrouverException: Si aucune donnée n'a été trouvé dans la table semestre
+    
+    :return: tous les semestres
+    :rtype: json
+
+    """
 
     conn = connect_pg.connect()
     if not perm.permissionCheck(get_jwt_identity() , 3 , conn):
-        return jsonify({'error': 'not enough permission'}), 403
+        return jsonify({'erreur': str(apiException.PermissionManquanteException())}), 403
         
     query = "select * from edt.semestre order by idsemestre asc"
     conn = connect_pg.connect()
@@ -42,18 +51,29 @@ def get_semestre():
 @semestre.route('/semestre/add', methods=['POST'])
 @jwt_required()
 def add_semestre():
-
+    """Permet d'ajouter un semestre via la route /semestre/add
     
+    :param Numero: numero du semestre
+    :type Numero: String
+    
+    :raises PermissionManquanteException: Si l'utilisateur n'a pas assez de droit pour ajouter des données dans la table semestre
+    :raises DonneeExistanteException: Les données entrée existe déjà dans la table semestre
+    :raises InsertionImpossibleException: Impossible d'ajouter le semestre spécifié dans la table semestre
+    :raises ParamètreBodyManquantException: Le body requis n'a pas pu être trouvé
+    
+    :return: l'id du semestre crée
+    :rtype: json
 
+    """
     
     conn = connect_pg.connect()
     if not perm.permissionCheck(get_jwt_identity() , 1 , conn):
-        return jsonify({'error': 'not enough permission'}), 403
+        return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
 
 
     json_datas = request.get_json()
     if not json_datas:
-        return jsonify({'error ': 'missing json body'}), 400
+        return jsonify({'error ': str(apiException.ParamètreBodyManquantException())}), 400
 
     query = f"Insert into edt.semestre (numero) values ('{json_datas['Numero']}') returning idsemestre"
     conn = connect_pg.connect()
@@ -80,6 +100,7 @@ def get_one_semestre(numeroSemestre):
     :param numeroSemestre: numéro d'un semestre présent dans la base de donnée
     :type numeroSemestre: int
 
+    :raises PermissionManquanteException: Si l'utilisateur n'a pas assez de droit pour récupérer un semestre présents dans la table semestre
     :raises DonneeIntrouvableException: Impossible de trouver le semestre spécifié dans la table semestre
     :raises ParamètreTypeInvalideException: Le type de le numéro de semestre est invalide, un string est attendue
 
@@ -90,7 +111,7 @@ def get_one_semestre(numeroSemestre):
 
     conn = connect_pg.connect()
     if not perm.permissionCheck(get_jwt_identity() , 3 , conn):
-        return jsonify({'error': 'not enough permission'}), 403
+        return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
 
 
     query = f"select * from edt.semestre where numero='{numeroSemestre}'"

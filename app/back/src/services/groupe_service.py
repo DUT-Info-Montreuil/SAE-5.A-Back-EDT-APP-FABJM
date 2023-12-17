@@ -1,11 +1,11 @@
 def get_groupe_statement(row):
     """
-    Fonction de mappage de la table utilisateur
+    Fonction de mappage de la table groupe
 
-    :param row: donnée représentant un utilisateur
+    :param row: donnée représentant un groupe
     :type row: tableau
 
-    :return: les données représentant un utilisateur
+    :return: les données représentant un groupe
     :rtype: dictionnaire
     """
     return {
