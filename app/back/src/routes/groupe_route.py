@@ -64,11 +64,8 @@ def getEnseignantGroupe(idUtilisateur , conn):
     :return: retourne les groupes
     :rtype: list
     """
-    # Get user permission check if the id user is in admin then if is the id is in manager then if is the id is in teacher
     idProf = connect_pg.get_query(conn , f"SELECT idProf FROM edt.professeur WHERE idutilisateur ={idUtilisateur}")[0][0]
-    if idProf == None:
-        return False
-    result = connect_pg.get_query(conn , f"Select IdGroupe,Nom, AnneeScolaire, Annee, idGroupe_parent from edt.groupe inner join edt.etudier as e1 using(idGroupe) inner join edt.enseigner as e2 using(idCours) where e2.idProf = {idProf} order by IdGroupe asc")
+    result = connect_pg.get_query(conn , f"Select IdGroupe,Nom, AnneeScolaire, Annee, idGroupe_parent from edt.groupe inner join edt.etudier using(idGroupe) inner join edt.enseigner as e2 using(idCours) where e2.idProf = {idProf} order by IdGroupe asc")
     
     return result
 
@@ -89,8 +86,16 @@ def get_one_groupe(idGroupe):
     """
 
     query = f"select * from edt.groupe where idGroupe='{idGroupe}'"
-
     conn = connect_pg.connect()
+    result = getEnseignantGroupe(get_jwt_identity() , conn)
+    verification = False
+    for row in result:
+        if str(row[0]) == idGroupe:
+            verification = True
+
+    if not verification:
+        return jsonify({'error': str(apiException.PermissionManquanteException())}), 404
+        
     rows = connect_pg.get_query(conn, query)
     returnStatement = {}
     try:
