@@ -21,5 +21,14 @@ INSERT INTO Cours (HeureDebut, NombreHeure, Jour, idRessource) values ('16:49:49
 INSERT INTO Salle (Numero, Capacite) values ('A2-05', 35);
 INSERT INTO Salle (Numero, Capacite) values ('A1-01', 20);
 
--- Professeur(idProf, Initiale, idSalle, idUtilisateur);
+-- Groupe(idGroupe ,Nom, AnneeScolaire,Annee ,idGroupe_parent)
+INSERT INTO Groupe(Nom, AnneeScolaire,Annee ) values ('Groupe A1', 2024, 2023);
+
+-- Professeur(idProf, Initiale, idSalle, idUtilisateur)
 INSERT INTO Professeur( Initiale, idSalle, idUtilisateur) values ('AR', 1, 3);
+
+-- Enseigner(idProf, idCours)
+INSERT INTO Enseigner(idProf, idCours) values (1,1);
+
+-- Etudier(idgroupe, idcours)
+INSERT INTO Etudier(idgroupe, idcours) values (1,1);

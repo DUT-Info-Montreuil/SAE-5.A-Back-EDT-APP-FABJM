@@ -13,5 +13,5 @@ def get_groupe_statement(row):
         'Nom': row[1],
         'AnneeScolaire': row[2],
         'Annee': row[3],
-        'idGroupe_1': row[4],
+        'idGroupe_parent': row[4],
     }

@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from flask_cors import CORS
+import flask
 
 import src.connect_pg as connect_pg
 import src.apiException as apiException
@@ -11,6 +12,8 @@ from psycopg2 import errorcodes
 from psycopg2 import OperationalError, Error
 
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity
+
+import src.services.permision as perm
 
 from src.services.groupe_service import get_groupe_statement
 
@@ -25,8 +28,20 @@ def get_groupe():
     :return:  tous les groupes
     :rtype: json
     """
-    query = "select * from edt.groupe order by IdGroupe asc"
     conn = connect_pg.connect()
+    if(perm.estProfesseur(get_jwt_identity() , conn)):
+        groupes = perm.getEnseignantGroupe(get_jwt_identity() , conn)
+        returnStatement = []
+        try:
+            for row in groupes:
+                returnStatement.append(get_groupe_statement(row))
+        except(TypeError) as e:
+            return jsonify({'error': str(apiException.AucuneDonneeTrouverException("groupe"))}), 404
+        connect_pg.disconnect(conn)
+        return jsonify(returnStatement)
+
+    query = "select * from edt.groupe order by IdGroupe asc"
+    
     rows = connect_pg.get_query(conn, query)
     returnStatement = []
     try:
@@ -36,6 +51,26 @@ def get_groupe():
         return jsonify({'error': str(apiException.AucuneDonneeTrouverException("groupe"))}), 404
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
+
+def getEnseignantGroupe(idUtilisateur , conn):
+    """ Renvoie les groupes au quelle enseigne un professeur
+    
+    :param idUtilisateur: idUtilisateur du professeur
+    :type idUtilisateur: int
+    
+    :param conn: la connection à une base de donnée
+    :type conn: une classe heritant de la classe mère Connexion
+
+    :return: retourne les groupes
+    :rtype: list
+    """
+    # Get user permission check if the id user is in admin then if is the id is in manager then if is the id is in teacher
+    idProf = connect_pg.get_query(conn , f"SELECT idProf FROM edt.professeur WHERE idutilisateur ={idUtilisateur}")[0][0]
+    if idProf == None:
+        return False
+    result = connect_pg.get_query(conn , f"Select IdGroupe,Nom, AnneeScolaire, Annee, idGroupe_parent from edt.groupe inner join edt.etudier as e1 using(idGroupe) inner join edt.enseigner as e2 using(idCours) where e2.idProf = {idProf} order by IdGroupe asc")
+    
+    return result
 
 
 @groupe.route('/groupe/get/<idGroupe>', methods=['GET'])

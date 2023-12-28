@@ -18,6 +18,9 @@ from flask_jwt_extended import JWTManager, jwt_required, create_access_token, ge
 ressource = Blueprint('ressource', __name__)
 
 
+
+
+
 @ressource.route('/ressource/attribuerResponsable/<idRessource>', methods=['POST', 'PUT'])
 @jwt_required()
 def attribuerResponsable(idRessource):
@@ -26,7 +29,7 @@ def attribuerResponsable(idRessource):
     :param idRessource: id du ressource qui doit recevoir une salle
     :type idRessource: int
 
-    :param idProf: id du professeur responsable de la ressource
+    :param idProf: id du professeur responsable de la ressource spécifié dans le body
     :type idProf: int
 
     :raises ParamètreBodyManquantException: Si aucun paramètre d'entrée attendu n'est spécifié dans le body
