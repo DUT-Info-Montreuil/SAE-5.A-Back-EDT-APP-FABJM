@@ -49,7 +49,7 @@ def getUserPermission(user_id , conn):
     else:
         result = connect_pg.get_query(conn , f"SELECT idprof FROM edt.professeur WHERE idutilisateur = {user_id}")
         if result != []:
-            result = connect_pg.get_query(conn , f"SELECT * FROM edt.manager WHERE idutilisateur = {result[0][0]}")
+            result = connect_pg.get_query(conn , f"SELECT idManager,idProf  FROM edt.manager inner join edt.professeur as e1 using(idProf) WHERE e1.idUtilisateur = {result[0][0]}")
             if result != []:
                 return 1
             return 2
