@@ -20,3 +20,6 @@ INSERT INTO Cours (HeureDebut, NombreHeure, Jour, idRessource) values ('16:49:49
 -- Salle (idSalle, Numero ,Capacite);
 INSERT INTO Salle (Numero, Capacite) values ('A2-05', 35);
 INSERT INTO Salle (Numero, Capacite) values ('A1-01', 20);
+
+-- Groupe(idGroupe ,Nom, AnneeScolaire,Annee ,idGroupe_parent)
+INSERT INTO Groupe(Nom, AnneeScolaire,Annee ) values ('Groupe A1', 2024, 2023);

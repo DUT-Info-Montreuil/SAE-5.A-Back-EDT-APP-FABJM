@@ -22,7 +22,7 @@ def client():
         fermer_bdd(db_conn)
 
 def insert_bdd(db_conn):
-    """Insert des données nécessaire au tests dans la base de donnée 
+    """Insert des données de base nécessaire au tests dans la base de donnée 
 
     :param db_conn: une connection à une base de donnée
     :type db_conn: connection
@@ -33,13 +33,13 @@ def insert_bdd(db_conn):
     db_conn.commit()
 
 
-def login(client):
+def login(client, username,password):
     """Permet de s'authentifier au près de JWT
 
     :param client: une instance de test
     :type client: FlaskClient
     """
-    login_data = {'Username': 'johndoe', 'Password': 'password123'}
+    login_data = {'Username': username, 'Password': password}
     response = client.post('/utilisateurs/auth', data=json.dumps(login_data), content_type='application/json', follow_redirects=True)
     token = response.json['accessToken']
     client.environ_base['HTTP_AUTHORIZATION'] = f'Bearer {token}'
