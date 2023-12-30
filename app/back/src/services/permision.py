@@ -80,22 +80,6 @@ def estResponsableRessource(idRessource, idUtilisateur , conn):
         return False
 
 
-def estProfesseur(idUtilisateur , conn):
-    """ Permet de récupérer les permissions d'un utilisateur 
-    
-    :param userId: id de l'utilisateur
-    :type userId: int
-    
-    :param conn: la connection à une base de donnée
-    :type conn: une classe heritant de la classe mère Connexion
-
-    :return: le niveau de permission de l'utilisateur (0 = admin , 1 = manager , 2 = teacher , 3 = student)
-    :rtype: int
-    """
-    # Get user permission check if the id user is in admin then if is the id is in manager then if is the id is in teacher
-    idProf = connect_pg.get_query(conn , f"SELECT idProf FROM edt.professeur WHERE idutilisateur ={idUtilisateur}")[0][0]
-    return idProf != None
-
 def estEnseignantCours(idCours, idUtilisateur , conn):
     """ Permet de récupérer les permissions d'un utilisateur 
     

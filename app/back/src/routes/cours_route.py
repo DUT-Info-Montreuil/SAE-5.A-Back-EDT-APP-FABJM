@@ -10,6 +10,7 @@ from src.services.cours_service import get_cours_statement
 import psycopg2
 from psycopg2 import errorcodes
 from psycopg2 import OperationalError, Error
+import src.services.permision as perm
 
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity  
 cours = Blueprint('cours', __name__)
@@ -29,6 +30,30 @@ def get_cours(filtre):
     :return: Les cours filtrés
     :rtype: json
     """
+
+    conn = connect_pg.connect()
+    if(perm.getUserPermission(get_jwt_identity() , conn) == 2):
+        cours = getEnseignantCours(get_jwt_identity() , conn)
+        returnStatement = []
+        try:
+            for row in cours:
+                returnStatement.append(get_cours_statement(row))
+        except(TypeError) as e:
+            return jsonify({'error': str(apiException.AucuneDonneeTrouverException("cours"))}), 404
+        connect_pg.disconnect(conn)
+        return jsonify(returnStatement)
+    
+    elif(perm.getUserPermission(get_jwt_identity() , conn) == 3):
+        cours = getEleveCoursCours(get_jwt_identity() , conn)
+        returnStatement = []
+        try:
+            for row in cours:
+                returnStatement.append(get_cours_statement(row))
+        except(TypeError) as e:
+            return jsonify({'error': str(apiException.AucuneDonneeTrouverException("cours"))}), 404
+        connect_pg.disconnect(conn)
+        return jsonify(returnStatement)
+
     if filtre.isdigit():
         query = f"select * from edt.cours where idCours='{filtre}'"
 
@@ -41,7 +66,7 @@ def get_cours(filtre):
     else:
         return jsonify({'error': str(apiException.ParamètreInvalideException("filtre"))}), 400
 
-    conn = connect_pg.connect()
+    
     rows = connect_pg.get_query(conn, query)
     returnStatement = []
     try:
@@ -51,6 +76,39 @@ def get_cours(filtre):
         return jsonify({'error': str(apiException.AucuneDonneeTrouverException("cours"))}), 404
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
+
+def getEnseignantCours(idUtilisateur , conn):
+    """ Renvoie les cours au quelle enseigne un professeur
+    
+    :param idUtilisateur: idUtilisateur du professeur
+    :type idUtilisateur: int
+    
+    :param conn: la connection à une base de donnée
+    :type conn: une classe heritant de la classe mère Connexion
+
+    :return: retourne les cours
+    :rtype: list
+    """
+    idProf = connect_pg.get_query(conn , f"SELECT idProf FROM edt.professeur WHERE idutilisateur ={idUtilisateur}")[0][0]
+    result = connect_pg.get_query(conn , f"Select edt.cours.* from edt.cours inner join edt.enseigner as e1 using(idCours)  where e1.idProf = {idProf} order by idCours asc")
+    
+    return result
+
+def getEleveCours(idUtilisateur , conn):
+    """ Renvoie les cours au quelle enseigne un professeur
+    
+    :param idUtilisateur: idUtilisateur du professeur
+    :type idUtilisateur: int
+    
+    :param conn: la connection à une base de donnée
+    :type conn: une classe heritant de la classe mère Connexion
+
+    :return: retourne les cours
+    :rtype: list
+    """
+    result = connect_pg.get_query(conn , f"Select edt.cours.* from edt.cours inner join edt.etudier  using(idCours)  inner join edt.eleve as e1 using (idGroupe) where e1.idUtilisateur = {idUtilisateur} order by idCours asc")
+    
+    return result
 
 @cours.route('/cours/deplacer/<idCours>', methods=['PUT'])
 @jwt_required()

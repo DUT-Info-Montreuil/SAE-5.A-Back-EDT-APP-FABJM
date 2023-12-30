@@ -120,7 +120,10 @@ def get_query(conn, query):
         return error
     finally:
         if conn is not None:
-            return rows
+            try:
+                return rows
+            except UnboundLocalError:
+                return []
 
 def formatageSqlite3(phrase):
     """Transforme une requête posgresql en sqlite3

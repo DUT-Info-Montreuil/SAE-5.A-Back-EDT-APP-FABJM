@@ -29,8 +29,8 @@ def get_groupe():
     :rtype: json
     """
     conn = connect_pg.connect()
-    if(perm.estProfesseur(get_jwt_identity() , conn)):
-        groupes = perm.getEnseignantGroupe(get_jwt_identity() , conn)
+    if(perm.getUserPermission(get_jwt_identity() , conn) == 2):
+        groupes = getEnseignantGroupe(get_jwt_identity() , conn)
         returnStatement = []
         try:
             for row in groupes:
@@ -65,7 +65,7 @@ def getEnseignantGroupe(idUtilisateur , conn):
     :rtype: list
     """
     idProf = connect_pg.get_query(conn , f"SELECT idProf FROM edt.professeur WHERE idutilisateur ={idUtilisateur}")[0][0]
-    result = connect_pg.get_query(conn , f"Select IdGroupe,Nom, AnneeScolaire, Annee, idGroupe_parent from edt.groupe inner join edt.etudier using(idGroupe) inner join edt.enseigner as e2 using(idCours) where e2.idProf = {idProf} order by IdGroupe asc")
+    result = connect_pg.get_query(conn , f"Select edt.groupe.* from edt.groupe inner join edt.etudier using(idGroupe) inner join edt.enseigner as e2 using(idCours) where e2.idProf = {idProf} order by IdGroupe asc")
     
     return result
 
