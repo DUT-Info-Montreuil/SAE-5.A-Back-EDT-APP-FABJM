@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from flask_cors import CORS
+import flask
 
 import src.connect_pg as connect_pg
 import src.apiException as apiException
@@ -11,6 +12,8 @@ from psycopg2 import errorcodes
 from psycopg2 import OperationalError, Error
 
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity
+
+import src.services.permision as perm
 
 from src.services.groupe_service import get_groupe_statement
 
@@ -25,8 +28,20 @@ def get_groupe():
     :return:  tous les groupes
     :rtype: json
     """
-    query = "select * from edt.groupe order by IdGroupe asc"
     conn = connect_pg.connect()
+    if(perm.getUserPermission(get_jwt_identity() , conn) == 2):
+        groupes = getEnseignantGroupe(get_jwt_identity() , conn)
+        returnStatement = []
+        try:
+            for row in groupes:
+                returnStatement.append(get_groupe_statement(row))
+        except(TypeError) as e:
+            return jsonify({'error': str(apiException.AucuneDonneeTrouverException("groupe"))}), 404
+        connect_pg.disconnect(conn)
+        return jsonify(returnStatement)
+
+    query = "select * from edt.groupe order by IdGroupe asc"
+    
     rows = connect_pg.get_query(conn, query)
     returnStatement = []
     try:
@@ -36,6 +51,23 @@ def get_groupe():
         return jsonify({'error': str(apiException.AucuneDonneeTrouverException("groupe"))}), 404
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
+
+def getEnseignantGroupe(idUtilisateur , conn):
+    """ Renvoie les groupes au quelle enseigne un professeur
+    
+    :param idUtilisateur: idUtilisateur du professeur
+    :type idUtilisateur: int
+    
+    :param conn: la connection à une base de donnée
+    :type conn: une classe heritant de la classe mère Connexion
+
+    :return: retourne les groupes
+    :rtype: list
+    """
+    idProf = connect_pg.get_query(conn , f"SELECT idProf FROM edt.professeur WHERE idutilisateur ={idUtilisateur}")[0][0]
+    result = connect_pg.get_query(conn , f"Select edt.groupe.* from edt.groupe inner join edt.etudier using(idGroupe) inner join edt.enseigner as e2 using(idCours) where e2.idProf = {idProf} order by IdGroupe asc")
+    
+    return result
 
 
 @groupe.route('/groupe/get/<idGroupe>', methods=['GET'])
@@ -54,8 +86,16 @@ def get_one_groupe(idGroupe):
     """
 
     query = f"select * from edt.groupe where idGroupe='{idGroupe}'"
-
     conn = connect_pg.connect()
+    result = getEnseignantGroupe(get_jwt_identity() , conn)
+    verification = False
+    for row in result:
+        if str(row[0]) == idGroupe:
+            verification = True
+
+    if not verification:
+        return jsonify({'error': str(apiException.PermissionManquanteException())}), 404
+        
     rows = connect_pg.get_query(conn, query)
     returnStatement = {}
     try:

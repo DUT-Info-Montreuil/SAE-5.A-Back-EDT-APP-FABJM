@@ -97,5 +97,5 @@ class PermissionManquanteException(Exception):
     
 	"""
     def __init__(self):
-        self.message = f"Vous ne possédez d'assez de permission pour effectuer cette action"
+        self.message = f"Vous ne possédez pas d'assez de permission pour effectuer cette action"
         super().__init__(self.message)
