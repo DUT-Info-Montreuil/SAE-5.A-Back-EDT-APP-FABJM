@@ -70,8 +70,11 @@ class ParamètreInvalideException(Exception):
     :param paramètre: le nom du paramètre spécifié
     :type paramètre: String
 	"""
-    def __init__(self, paramètre):
-        self.message = f" La valeur spécifié pour le paramètre {paramètre} est invalide"
+    def __init__(self, paramètre, message = None):
+        if message != None:
+            self.message = message
+        else:
+            self.message = f" La valeur spécifié pour le paramètre {paramètre} est invalide"
         super().__init__(self.message)
         
 class LoginOuMotDePasseInvalideException(Exception): 

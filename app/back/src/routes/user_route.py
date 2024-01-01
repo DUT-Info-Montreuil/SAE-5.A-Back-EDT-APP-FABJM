@@ -18,7 +18,7 @@ user = Blueprint('user', __name__)
 
 
 @user.route('/user/getProfDispo', methods=['GET', 'POST'])
-@jwt_required()
+#@jwt_required()
 def get_prof_dispo():
     """Renvoit toutes les professeurs disponible sur une période via la route /salle/getDispo
 

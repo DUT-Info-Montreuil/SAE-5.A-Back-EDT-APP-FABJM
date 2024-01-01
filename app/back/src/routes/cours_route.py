@@ -11,6 +11,7 @@ import psycopg2
 from psycopg2 import errorcodes
 from psycopg2 import OperationalError, Error
 import src.services.permision as perm
+import json
 
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity  
 cours = Blueprint('cours', __name__)
@@ -32,6 +33,7 @@ def get_cours(filtre):
     """
 
     conn = connect_pg.connect()
+    
     if(perm.getUserPermission(get_jwt_identity() , conn) == 2):
         cours = getEnseignantCours(get_jwt_identity() , conn)
         returnStatement = []
@@ -145,6 +147,67 @@ def deplacer_cours(idCours):
         connect_pg.execute_commands(conn, query)
         connect_pg.disconnect(conn)
         return jsonify(idCours)
+
+@cours.route('/cours/assignerProf/<idCours>', methods=['POST', 'PUT'])
+@jwt_required()
+def assignerProf(idCours):
+    """Permet d'assigner un profeseur à un cours via la route /cours/assignerProf/<idCours>
+    
+    :param idCours: id du cours qui doit être superviser par un professeur
+    :type idCours: int
+
+    :param idProf: id du professeur à assigner à la ressource spécifié dans le body
+    :type idProf: int
+
+    :raises ParamètreBodyManquantException: Si aucun paramètre d'entrée attendu n'est spécifié dans le body
+    :raises ParamètreTypeInvalideException: Le type de idCours est invalide, une valeur numérique est attendue
+    :raises DonneeIntrouvableException: Une des clées n'a pas pu être trouvé
+    :raises InsertionImpossibleException: Impossible de réaliser l'insertion
+
+    :return: id du cours
+    :rtype: int
+    """
+    json_datas = request.get_json()
+    if (not idCours.isdigit() or type(json_datas['idProf']) != int   ):
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idCours ou idProf", "numérique"))}), 400
+    
+    
+    if 'idProf' not in json_datas :
+        return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
+    returnStatement = {}
+    conn = connect_pg.connect()
+    cour = json.loads(get_cours(idCours).data) 
+    result = connect_pg.get_query(conn , f"""Select e1.* from edt.cours as e1 full join edt.enseigner 
+    as e2 using(idCours)  where e2.idProf = {json_datas['idProf']} 
+    and ( '{cour[0]['HeureDebut']}' <=  e1.HeureDebut 
+    and  '{cour[0]['HeureDeFin']}' >= e1.HeureDebut or '{cour[0]['HeureDebut']}' >=  e1.HeureFin) 
+    order by idCours asc""")
+    
+    if result != []:
+        return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "Ce professeur n'est pas disponible à l'horaire spécifié"))}), 400
+
+    query = f"Insert into edt.enseigner (idProf, idCours) values ('{json_datas['idProf']}', '{idCours}') returning idCours"
+    
+    try:
+        returnStatement = connect_pg.execute_commands(conn, query)
+    except Exception as e:
+        if e.pgcode == "23503":# violation contrainte clée étrangère
+            if "prof" in str(e):
+                return jsonify({'error': str(apiException.DonneeIntrouvableException("Professeur ", json_datas['idProf']))}), 400
+            else:
+                return jsonify({'error': str(apiException.DonneeIntrouvableException("Cours ", idCours))}), 400
+        
+        elif e.pgcode == "23505": # si existe déjà
+            messageId = f"idCours = {idCours} et idProf = {json_datas['idProf']}"
+            messageColonne = f"idCours et idProf"
+            return jsonify({'error': str(apiException.DonneeExistanteException(messageId, messageColonne, "enseigner"))}), 400
+        
+        else:
+            # Erreur inconnue
+            return jsonify({'error': str(apiException.InsertionImpossibleException("enseigner"))}), 500
+
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)
 
 
 @cours.route('/cours/attribuerSalle/<idCours>', methods=['POST', 'PUT'])
