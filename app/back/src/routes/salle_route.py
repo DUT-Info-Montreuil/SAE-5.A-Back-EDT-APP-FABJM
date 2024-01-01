@@ -17,6 +17,7 @@ salle = Blueprint('salle', __name__)
 
 
 @salle.route('/salle/getDispo', methods=['GET', 'POST'])
+@jwt_required()
 def get_salle_dispo():
     """Renvoit toutes les salles disponible sur une période via la route /salle/getDispo
 

@@ -19,8 +19,11 @@ class DonneeIntrouvableException(Exception): # get(id)
     :param id: l'id recherché
     :type id: String
     """
-    def __init__(self, table, id):
-        self.message = f" Aucune donnée avec l'ID {id} n'a pu être trouvé dans la table {table} "
+    def __init__(self, table, id = -1):
+        if id != -1:
+            self.message = f" Aucune donnée avec l'ID {id} n'a pu être trouvé dans la table {table} "
+        else:
+            self.message = f" Aucune donnée répondant aux critères n'a pu être trouvé dans la table {table} "
         super().__init__(self.message)
         
 class InsertionImpossibleException(Exception): # post(...)

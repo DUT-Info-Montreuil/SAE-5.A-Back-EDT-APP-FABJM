@@ -68,3 +68,5 @@ def estDeTypeTimeStamp(string):
                 return False
 
         return True
+    except IndexError:
+        return False

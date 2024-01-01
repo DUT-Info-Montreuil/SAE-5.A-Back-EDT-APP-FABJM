@@ -6,14 +6,57 @@ import src.connect_pg as connect_pg
 import src.apiException as apiException
 
 from src.config import config
-from src.services.user_service import get_utilisateur_statement
+from src.services.user_service import get_utilisateur_statement, get_professeur_statement
 import src.services.permision as perm
 import psycopg2
 from psycopg2 import errorcodes
 from psycopg2 import OperationalError, Error
+import src.services.verification as verif 
 
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity  
 user = Blueprint('user', __name__)
+
+
+@user.route('/user/getProfDispo', methods=['GET', 'POST'])
+@jwt_required()
+def get_prof_dispo():
+    """Renvoit toutes les professeurs disponible sur une période via la route /salle/getDispo
+
+    :raises AucuneDonneeTrouverException: Si aucune donnée n'a été trouvé dans la table salle
+
+    :param debut: date du début de la période au format time(sql)
+    :type debut: str 
+
+    :param fin: date de fin de la période au format time(sql)
+    :type fin: str
+    
+    :return: touts les professeurs disponibles
+    :rtype: json  professeur enseigner
+    """
+    json_datas = request.get_json()
+    if not json_datas:
+        return jsonify({'error ': 'missing json body'}), 400
+    
+    if 'debut' not in json_datas or 'fin' not in json_datas :
+        return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
+
+    if not verif.estDeTypeTime(json_datas['debut']) or not verif.estDeTypeTime(json_datas['fin']):
+        return jsonify({'error': str(apiException.ParamètreInvalideException("debut ou fin"))}), 404
+
+    query = f""" select edt.professeur.* from edt.professeur full join edt.enseigner using(idProf) full join edt.cours
+    using(idCours) where (idProf is not null) and ( '{json_datas['debut']}' <  HeureDebut 
+    and  '{json_datas['fin']}' <= HeureDebut or '{json_datas['debut']}' >=  HeureFin) or (HeureDebut is null) order by idProf asc
+    """
+    conn = connect_pg.connect()
+    rows = connect_pg.get_query(conn, query)
+    returnStatement = []
+    try:
+        for row in rows:
+            returnStatement.append(get_professeur_statement(row))
+    except TypeError as e:
+        return jsonify({'error': str(apiException.AucuneDonneeTrouverException("professeur"))}), 404
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)
 
 
 @user.route('/utilisateurs/getAll', methods=['GET','POST'])
