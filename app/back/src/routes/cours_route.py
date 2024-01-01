@@ -44,7 +44,7 @@ def get_cours(filtre):
         return jsonify(returnStatement)
     
     elif(perm.getUserPermission(get_jwt_identity() , conn) == 3):
-        cours = getEleveCoursCours(get_jwt_identity() , conn)
+        cours = getEleveCours(get_jwt_identity() , conn)
         returnStatement = []
         try:
             for row in cours:

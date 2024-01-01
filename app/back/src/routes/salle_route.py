@@ -15,6 +15,43 @@ from flask_jwt_extended import JWTManager, jwt_required, create_access_token, ge
 salle = Blueprint('salle', __name__)
 
 
+@salle.route('/salle/getDispo', methods=['GET', 'POST'])
+def get_salle_dispo():
+    """Renvoit toutes les salles disponible sur une période via la route /salle/getDispo
+
+    :raises AucuneDonneeTrouverException: Si aucune donnée n'a été trouvé dans la table salle
+
+    :param debut: date du début de la période au format time(sql)
+    :type debut: str 
+
+    :param fin: date de fin de la période au format time(sql)
+    :type fin: str
+    
+    :return: toutes les salles disponibles
+    :rtype: json
+    """
+    json_datas = request.get_json()
+    if not json_datas:
+        return jsonify({'error ': 'missing json body'}), 400
+    
+    if 'debut' not in json_datas or 'fin' not in json_datas :
+        return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
+
+    query = f""" select edt.salle.* from edt.salle full join edt.accuellir using(idSalle) full join edt.cours
+    using(idCours) where (idSalle is not null) and ( '{json_datas['debut']}' <  HeureDebut 
+    and  '{json_datas['fin']}' <= HeureDebut or '{json_datas['debut']}' >=  HeureFin) or (HeureDebut is null) order by idsalle asc
+    """
+    conn = connect_pg.connect()
+    rows = connect_pg.get_query(conn, query)
+    returnStatement = []
+    try:
+        for row in rows:
+            returnStatement.append(get_salle_statement(row))
+    except TypeError as e:
+        return jsonify({'error': str(apiException.AucuneDonneeTrouverException("salle"))}), 404
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)
+
 @salle.route('/salle/getAll')
 @jwt_required()
 def get_salle():

@@ -13,10 +13,10 @@ INSERT INTO Semestre (Numero) values (3);
 INSERT INTO Ressource (Titre, Numero, NbrHeureSemestre, idSemestre) values ('test ', 'R3-04', '10', '1');
 
 
--- Cours (idCours, HeureDebut, NombreHeure, Jour, idRessource)
+-- Cours (idCours, HeureDebut, HeureFin, Jour, idRessource)
 
-INSERT INTO Cours (HeureDebut, NombreHeure, Jour, idRessource) values ('20:18:06 ', '2', '2023-12-06', '1');
-INSERT INTO Cours (HeureDebut, NombreHeure, Jour, idRessource) values ('16:49:49 ', '2', '2023-10-06', '1');
+INSERT INTO Cours (HeureDebut, HeureFin, Jour, idRessource) values ('20:18:06 ', '22:18:06 ', '2023-12-06', '1');
+INSERT INTO Cours (HeureDebut, HeureFin, Jour, idRessource) values ('16:49:49 ', '18:49:49 ', '2023-10-06', '1');
 
 
 -- Salle (idSalle, Numero ,Capacite);
@@ -40,3 +40,6 @@ INSERT INTO Eleve(idGroupe,idUtilisateur) values (1,1);
 
 -- Responsable(idProf, idRessource)
 INSERT INTO Enseigner(idProf, idCours) values (1,2);
+
+-- Accuellir(idSalle, idCours)
+INSERT INTO Accuellir(idSalle, idCours) values (2,1);
