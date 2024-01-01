@@ -6,6 +6,7 @@ import src.apiException as apiException
 
 from src.config import config
 from src.services.salle_service import get_salle_statement
+import src.services.verification as verif 
 
 import psycopg2
 from psycopg2 import errorcodes
@@ -36,6 +37,9 @@ def get_salle_dispo():
     
     if 'debut' not in json_datas or 'fin' not in json_datas :
         return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
+
+    if not verif.estDeTypeTime(json_datas['debut']) or not verif.estDeTypeTime(json_datas['fin']):
+        return jsonify({'error': str(apiException.ParamètreInvalideException("debut ou fin"))}), 404
 
     query = f""" select edt.salle.* from edt.salle full join edt.accuellir using(idSalle) full join edt.cours
     using(idCours) where (idSalle is not null) and ( '{json_datas['debut']}' <  HeureDebut 
