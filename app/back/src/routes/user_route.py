@@ -193,7 +193,7 @@ def auth_utilisateur():
     query = f"select Password, FirstLogin , idutilisateur from edt.utilisateur where Username='{username}'"
     conn = connect_pg.connect()
     rows = connect_pg.get_query(conn, query)
-    if (username.isdigit() or type(username) != str):
+    if (type(username) != str):
         return jsonify({'error': str(apiException.ParamètreTypeInvalideException("username", "string"))}), 400
     if (not rows):
         
