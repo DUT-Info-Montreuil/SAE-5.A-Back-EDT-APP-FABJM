@@ -21,12 +21,14 @@ salle = Blueprint('salle', __name__)
 def get_salle_dispo():
     """Renvoit toutes les salles disponible sur une période via la route /salle/getDispo
 
-    :raises AucuneDonneeTrouverException: Si aucune donnée n'a été trouvé dans la table salle
+    :raises AucuneDonneeTrouverException: Si aucune salle disponible n'a été trouvé sur la période demandé
+    :raises ParamètreBodyManquantException: Si au moins un des paramètres est manquant dans le body
+    :raises ParamètreInvalideException: Si au un moins un des paramètres ne respecte pas le format hh:mm:ss
 
-    :param debut: date du début de la période au format time(sql)
+    :param debut: date du début de la période au format time(sql) spécifié dans le body
     :type debut: str 
 
-    :param fin: date de fin de la période au format time(sql)
+    :param fin: date de fin de la période au format time(sql) spécifié dans le body
     :type fin: str
     
     :return: toutes les salles disponibles
