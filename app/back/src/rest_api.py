@@ -69,7 +69,9 @@ def init_bdd(db_conn, chemin):
     :param chemin: chemin vers le script sql
     :type chemin: str
     """
-    sql_file_path = os.path.dirname(os.path.dirname(os.getcwd())) + chemin
+    
+    sql_file_path = chemin
+    
     sql_script = ""
     with open(sql_file_path, "r") as f:
         lines = f.readlines()
