@@ -58,7 +58,7 @@ def add_semestre():
     
     :raises PermissionManquanteException: Si l'utilisateur n'a pas assez de droit pour ajouter des données dans la table semestre
     :raises DonneeExistanteException: Les données entrée existe déjà dans la table semestre
-    :raises InsertionImpossibleException: Impossible d'ajouter le semestre spécifié dans la table semestre
+    :raises ActionImpossibleException: Impossible d'ajouter le semestre spécifié dans la table semestre
     :raises ParamètreBodyManquantException: Le body requis n'a pas pu être trouvé
     
     :return: l'id du semestre crée
@@ -87,7 +87,7 @@ def add_semestre():
                 apiException.DonneeExistanteException(json_datas['Numero'], "Numero", "semestre"))}), 400
         else:
             # Erreur inconnue
-            return jsonify({'error': str(apiException.InsertionImpossibleException("semestre"))}), 500
+            return jsonify({'error': str(apiException.ActionImpossibleException("semestre"))}), 500
 
     return jsonify({"success" : "semestre was added"}), 200
 

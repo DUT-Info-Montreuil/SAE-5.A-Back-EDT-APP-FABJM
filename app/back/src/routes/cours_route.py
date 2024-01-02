@@ -54,19 +54,6 @@ def get_cours(filtre):
         connect_pg.disconnect(conn)
         return jsonify(returnStatement)
 
-    if filtre.isdigit():
-        query = f"select * from edt.cours where idCours='{filtre}'"
-
-    elif len(filtre) == 10 and len(filtre.split("-")) == 3 : 
-        query = f"select * from edt.cours where jour='{filtre}'"
-
-    elif filtre == "null":
-        query = f"select * from edt.cours"
-
-    else:
-        return jsonify({'error': str(apiException.ParamètreInvalideException("filtre"))}), 400
-
-    
     rows = connect_pg.get_query(conn, query)
     returnStatement = []
     try:
@@ -161,7 +148,7 @@ def attribuerSalle(idCours):
     :raises ParamètreBodyManquantException: Si aucun paramètre d'entrée attendu n'est spécifié dans le body
     :raises ParamètreTypeInvalideException: Le type de idCours est invalide, une valeur numérique est attendue
     :raises DonneeIntrouvableException: Une des clées n'a pas pu être trouvé
-    :raises InsertionImpossibleException: Impossible de réaliser l'insertion
+    :raises ActionImpossibleException: Impossible de réaliser l'insertion
 
     :return: id du cours supprimer si présent
     :rtype: json
@@ -192,7 +179,7 @@ def attribuerSalle(idCours):
         
         else:
             # Erreur inconnue
-            return jsonify({'error': str(apiException.InsertionImpossibleException("accuellir"))}), 500
+            return jsonify({'error': str(apiException.ActionImpossibleException("accuellir"))}), 500
 
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
@@ -251,7 +238,7 @@ def add_cours():
     :param cours: donnée représentant un cours spécifié dans le body
     :type cours: json
     
-    :raises InsertionImpossibleException: Impossible d'ajouter le cours spécifié dans la table cours
+    :raises ActionImpossibleException: Impossible d'ajouter le cours spécifié dans la table cours
     :raises DonneeIntrouvableException: La valeur de la clée étrangère idRessource n'a pas pu être trouvé
     :raises ParamètreBodyManquantException: Si ou plusieurs paramètres sont manquant dans le body
     
@@ -272,15 +259,16 @@ def add_cours():
             return jsonify({'error': str(apiException.DonneeIntrouvableException("Ressources", json_datas['idRessource']))}), 400
         else:
             # Erreur inconnue
-            return jsonify({'error': str(apiException.InsertionImpossibleException("cours"))}), 500
+            return jsonify({'error': str(apiException.ActionImpossibleException("cours"))}), 500
 
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 
 
-@cours.route('/cours/getSalleCours/<idCours>', methods=['GET','POST'])
+
+@cours.route('/cours/getCoursSalle/<idSalle>', methods=['GET','POST'])
 @jwt_required()
-def get_salle_cours(idCours):
+def get_cours_salle(idSalle):
     """Renvoit la salle dans lequel se déroule le cours via la route /cours/getSalle/<idCours>
     
     :param idCours: id du cours à rechercher
@@ -291,13 +279,17 @@ def get_salle_cours(idCours):
     :return: l'id de la salle dans lequel se déroule cours
     :rtype: json
     """
-    query = f"select idSalle from edt.accuellir where idCours={idCours} "
-    returnStatement = {}
+    query = f"Select edt.cours.* from edt.cours inner join edt.accuellir  using(idCours)  inner join edt.salle as e1 using (idSalle) where e1.idSalle = {idSalle} order by idCours asc"
+    returnStatement = []
     conn = connect_pg.connect()
+    rows = connect_pg.get_query(conn, query)
+    if rows == []:
+        return jsonify({'error': str(apiException.DonneeIntrouvableException("Accuellir"))}), 400
     try:
-        returnStatement["idSalle"] = connect_pg.get_query(conn, query)[0][0]
-    except IndexError:
-        return jsonify({'error': str(apiException.DonneeIntrouvableException("Accuellir", idCours))}), 400
+        for row in rows:
+            returnStatement.append(get_cours_statement(row))
+    except Exception as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("Accuellir", "récupérer"))}), 500
         
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)

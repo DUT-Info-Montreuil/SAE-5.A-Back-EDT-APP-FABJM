@@ -78,7 +78,7 @@ def delete_salle(idSalle):
     :param idSalle: id de la salle à supprimer
     :type idSalle: int
 
-    :raises InsertionImpossibleException: Impossible de supprimer la salle spécifié dans la table salle
+    :raises ActionImpossibleException: Impossible de supprimer la salle spécifié dans la table salle
     
     :return: message de succès
     :rtype: str
@@ -88,7 +88,7 @@ def delete_salle(idSalle):
     try:
         returnStatement = connect_pg.execute_commands(conn, query)
     except psycopg2.IntegrityError as e:
-        return jsonify({'error': str(apiException.InsertionImpossibleException("salle","supprimé"))}), 500
+        return jsonify({'error': str(apiException.ActionImpossibleException("salle","supprimé"))}), 500
     
     return jsonify({'success': 'salle supprimé'}), 200
 
@@ -100,7 +100,7 @@ def add_salle():
     :param salle: salle à ajouter, spécifié dans le body
     :type salle: json
 
-    :raises InsertionImpossibleException: Impossible d'ajouter la salle spécifié dans la table salle
+    :raises ActionImpossibleException: Impossible d'ajouter la salle spécifié dans la table salle
     :raises DonneeExistanteException: Cette salle existe déjà
     
     :return: l'id de l'utilisateur crée
@@ -122,6 +122,30 @@ def add_salle():
                 apiException.DonneeExistanteException(json_datas['Numero'], "Numero", "salle"))}), 400
         else:
             # Erreur inconnue
-            return jsonify({'error': str(apiException.InsertionImpossibleException("salle"))}), 500
+            return jsonify({'error': str(apiException.ActionImpossibleException("salle"))}), 500
 
     return jsonify({"success" : "la salle a été ajouté"}), 200
+
+@salle.route('/salle/getSalleCours/<idCours>', methods=['GET','POST'])
+@jwt_required()
+def get_salle_cours(idCours):
+    """Renvoit la salle dans lequel se déroule le cours via la route /salle/getSalleCours/<idCours>
+    
+    :param idCours: id du cours à rechercher
+    :type idCours: int
+    
+    :raises DonneeIntrouvableException: Aucune donnée n'a pas être trouvé correspondant aux critères
+    
+    :return: l'id de la salle dans lequel se déroule cours
+    :rtype: json
+    """
+    query = f"select idSalle from edt.accuellir where idCours={idCours} "
+    returnStatement = {}
+    conn = connect_pg.connect()
+    try:
+        returnStatement["idSalle"] = connect_pg.get_query(conn, query)[0][0]
+    except IndexError:
+        return jsonify({'error': str(apiException.DonneeIntrouvableException("Accuellir", idCours))}), 400
+        
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)

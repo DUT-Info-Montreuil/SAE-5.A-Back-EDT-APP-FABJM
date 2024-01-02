@@ -171,7 +171,7 @@ def get_all_children(idGroupe):
 def add_groupe():
     """Permet d'ajouter un groupe via la route /groupe/add
 
-    :raises InsertionImpossibleException: Impossible d'ajouter le groupe spécifié dans la table groupe
+    :raises ActionImpossibleException: Impossible d'ajouter le groupe spécifié dans la table groupe
 
     :return: l'id du groupe créé
     :rtype: json
@@ -200,7 +200,7 @@ def add_groupe():
         else:
             print("ERROR : " + e.pgcode)
             # Erreur inconnue
-            return jsonify({'error': str(apiException.InsertionImpossibleException("groupe"))}), 500
+            return jsonify({'error': str(apiException.ActionImpossibleException("groupe"))}), 500
     
     connect_pg.disconnect(conn)
     return jsonify({"success": f"The group with id {idGroupe} was successfully created"}), 200
