@@ -72,6 +72,41 @@ def attribuerResponsable(idRessource):
     return jsonify(returnStatement)
 
 
+@ressource.route('/ressource/getResponsable/<idRessource>', methods=['GET','POST'])
+@jwt_required()
+def get_responsable(idRessource):
+    """Renvoit le responsable de la ressource via la route /ressource/getResponsable/<idRessource>
+    
+    :param idRessource: id de la ressouce 
+    :type idRessource: int
+    
+    :raises ParamètreTypeInvalideException: Le type de idRessource est invalide, une valeur numérique est attendue
+    :raises DonneeIntrouvableException: Si Aucune donnée n'a pas être trouvé correspondant aux critères
+    :raises ActionImpossibleException: Si une erreur est survenue lors de la récupération des données
+    
+    :return: l'id de la salle dans lequel se déroule cours
+    :rtype: json
+    """
+
+    if (not idRessource.isdigit()):
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idRessource", "numérique"))}), 400
+    
+
+    query = f"Select edt.professeur.* from edt.professeur inner join edt.responsable  using(idProf)  inner join edt.ressource as e1 using (idRessource) where e1.idRessource = {idRessource} order by idProf asc"
+    returnStatement = []
+    conn = connect_pg.connect()
+    rows = connect_pg.get_query(conn, query)
+    if rows == []:
+        return jsonify({'error': str(apiException.DonneeIntrouvableException("Responsable"))}), 400
+    try:
+        for row in rows:
+            returnStatement.append(get_ressource_statement(row))
+    except Exception as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("Responsable", "récupérer"))}), 500
+        
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)
+
 def getRessourceProf(idUtilisateur , conn):
     """ Renvoie les ressources au quelle enseigne un professeur
     
