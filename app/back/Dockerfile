@@ -17,3 +17,4 @@ RUN pipenv install --dev --deploy --system
 RUN make setup
 
 EXPOSE 5000
+EXPOSE 9000
