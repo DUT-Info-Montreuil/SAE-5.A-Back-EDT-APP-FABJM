@@ -151,7 +151,7 @@ def attribuerSalle(idCours):
     """
     json_datas = request.get_json()
     if (not idCours.isdigit() or type(json_datas['idSalle']) != int   ):
-        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idCours", "numérique"))}), 400
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idCours ou idSalle", "numérique"))}), 400
     
     
     if 'idSalle' not in json_datas :
@@ -180,10 +180,57 @@ def attribuerSalle(idCours):
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 
-@cours.route('/cours/removeSalle/<idCours>', methods=['DELETE'])
+
+@cours.route('/cours/changerSalle/<idCours>', methods=['PUT'])
 @jwt_required()
-def remove_salle(idCours):
-    """Permet de supprimer une salle attribuer à un cours via la route /cours/deleteSalle/<idCours>
+def changer_salle(idCours):
+    """Permet de changer la salle attribuer à un cours via la route /cours/changerSalle/<idCours>
+    
+    :param idCours: id du cours dont la salle doit être changer
+    :type idCours: int
+
+    :param idSalle: id de la salle de la nouvelle salle
+    :type idSalle: int
+
+    :raises ParamètreTypeInvalideException: Le type de idCours est invalide, une valeur numérique est attendue
+    :raises ParamètreBodyManquantException: Si aucun paramètre d'entrée attendu n'est spécifié dans le body
+    :raises DonneeIntrouvableException: Une des clées n'a pas pu être trouvé
+    :raises ActionImpossibleException: Impossible de réaliser la mise à jour
+
+    :return: id du cours dont la salle à changer
+    :rtype: json
+    """
+    json_datas = request.get_json()
+    if (not idCours.isdigit() or type(json_datas['idSalle']) != int   ):
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idCours ou idSalle", "numérique"))}), 400
+    else:
+        query = f"update edt.accuellir set idSalle = {json_datas['idSalle']}  where idCours={idCours}"
+        conn = connect_pg.connect()
+        
+        try:
+            connect_pg.execute_commands(conn, query)
+        except Exception as e:
+            if e.pgcode == "23503":# violation contrainte clée étrangère
+                if "salle" in str(e):
+                    return jsonify({'error': str(apiException.DonneeIntrouvableException("Salle ", json_datas['idSalle']))}), 400
+                else:
+                    return jsonify({'error': str(apiException.DonneeIntrouvableException("Cours ", idCours))}), 400
+            elif e.pgcode == "23505": # si existe déjà
+                messageId = f"idCours = {idCours} et idSalle = {json_datas['idSalle']}"
+                messageColonne = f"idCours et idSalle"
+                return jsonify({'error': str(apiException.DonneeExistanteException(messageId, messageColonne, "accuellir"))}), 400
+            
+            else:
+                # Erreur inconnue
+                return jsonify({'error': str(apiException.ActionImpossibleException("accuellir", "mise à jour"))}), 500
+        
+        connect_pg.disconnect(conn)
+        return jsonify(idCours)
+
+@cours.route('/cours/supprimerSalle/<idCours>', methods=['DELETE'])
+@jwt_required()
+def supprimer_salle(idCours):
+    """Permet de supprimer une salle attribuer à un cours via la route /cours/supprimerSalle/<idCours>
     
     :param idCours: id du cours à supprimer
     :type idCours: int
@@ -263,7 +310,7 @@ def add_cours():
 
 
 @cours.route('/cours/getCoursSalle/<idSalle>', methods=['GET','POST'])
-#@jwt_required()
+@jwt_required()
 def get_cours_salle(idSalle):
     """Renvoit la salle dans lequel se déroule le cours via la route /cours/getSalle/<idCours>
     
