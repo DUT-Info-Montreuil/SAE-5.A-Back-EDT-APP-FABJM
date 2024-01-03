@@ -1,4 +1,5 @@
 FROM python:3.10
+FROM sonarsource/sonar-scanner-cli:latest
 
 WORKDIR /usr/app/back
 
@@ -15,6 +16,8 @@ RUN pip install pipenv --upgrade
 RUN pipenv lock
 RUN pipenv install --dev --deploy --system
 RUN make setup
+
+ENTRYPOINT ["sonar-scanner"]
 
 EXPOSE 5000
 EXPOSE 9000
