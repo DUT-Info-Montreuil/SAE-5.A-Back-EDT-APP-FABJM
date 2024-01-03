@@ -15,7 +15,7 @@ from flask_jwt_extended import JWTManager, jwt_required, create_access_token, ge
 
 import src.services.permision as perm
 
-from src.services.groupe_service import get_groupe_statement
+from src.services.groupe_service import get_groupe_statement, getGroupeProf
 
 groupe = Blueprint('groupe', __name__)
 
@@ -30,7 +30,7 @@ def get_groupe():
     """
     conn = connect_pg.connect()
     if(perm.getUserPermission(get_jwt_identity() , conn) == 2):
-        groupes = getEnseignantGroupe(get_jwt_identity() , conn)
+        groupes = getGroupeProf(get_jwt_identity() , conn)
         returnStatement = []
         try:
             for row in groupes:
@@ -51,23 +51,6 @@ def get_groupe():
         return jsonify({'error': str(apiException.AucuneDonneeTrouverException("groupe"))}), 404
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
-
-def getEnseignantGroupe(idUtilisateur , conn):
-    """ Renvoie les groupes au quelle enseigne un professeur
-    
-    :param idUtilisateur: idUtilisateur du professeur
-    :type idUtilisateur: int
-    
-    :param conn: la connection à une base de donnée
-    :type conn: une classe heritant de la classe mère Connexion
-
-    :return: retourne les groupes
-    :rtype: list
-    """
-    idProf = connect_pg.get_query(conn , f"SELECT idProf FROM edt.professeur WHERE idutilisateur ={idUtilisateur}")[0][0]
-    result = connect_pg.get_query(conn , f"Select edt.groupe.* from edt.groupe inner join edt.etudier using(idGroupe) inner join edt.enseigner as e2 using(idCours) where e2.idProf = {idProf} order by IdGroupe asc")
-    
-    return result
 
 
 @groupe.route('/groupe/get/<idGroupe>', methods=['GET'])
@@ -227,8 +210,7 @@ def delete_groupe(idGroupe):
     except(TypeError) as e:
         return jsonify({'error': str(apiException.DonneeIntrouvableException("groupe", idGroupe))}), 404
     connect_pg.disconnect(conn)
-    return jsonify({"success": f"The group with id {idGroupe} and all subgroups from this group were successfully "
-                               f"removed"}), 200
+    return jsonify({"success": f"The group with id {idGroupe} and all subgroups from this group were successfully removed"}), 200
 
 
 @groupe.route('/groupe/update/<idGroupe>', methods=['PUT'])
