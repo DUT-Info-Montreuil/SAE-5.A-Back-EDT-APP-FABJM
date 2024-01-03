@@ -72,7 +72,7 @@ def attribuerResponsable(idRessource):
     return jsonify(returnStatement)
 
 
-def getEnseignantRessource(idUtilisateur , conn):
+def getRessourceProf(idUtilisateur , conn):
     """ Renvoie les ressources au quelle enseigne un professeur
     
     :param idUtilisateur: idUtilisateur du professeur
@@ -89,7 +89,7 @@ def getEnseignantRessource(idUtilisateur , conn):
     
     return result
 
-def getEleveRessource(idUtilisateur , conn):
+def getRessourceEleve(idUtilisateur , conn):
     """ Renvoie les ressources qu'un élève étudie
     
     :param idUtilisateur: idUtilisateur du professeur
@@ -119,6 +119,28 @@ def getAll_ressource():
     conn = connect_pg.connect()
     if not perm.permissionCheck(get_jwt_identity() , 3 , conn):
         return jsonify({'erreur': str(apiException.PermissionManquanteException())}), 403
+
+    if(perm.getUserPermission(get_jwt_identity() , conn) == 2):
+        cours = getRessourceProf(get_jwt_identity() , conn)
+        returnStatement = []
+        try:
+            for row in cours:
+                returnStatement.append(get_ressource_statement(row))
+        except(TypeError) as e:
+            return jsonify({'error': str(apiException.AucuneDonneeTrouverException("ressource"))}), 404
+        connect_pg.disconnect(conn)
+        return jsonify(returnStatement)
+    
+    elif(perm.getUserPermission(get_jwt_identity() , conn) == 3):
+        cours = getRessourceEleve(get_jwt_identity() , conn)
+        returnStatement = []
+        try:
+            for row in cours:
+                returnStatement.append(get_ressource_statement(row))
+        except(TypeError) as e:
+            return jsonify({'error': str(apiException.AucuneDonneeTrouverException("ressource"))}), 404
+        connect_pg.disconnect(conn)
+        return jsonify(returnStatement)
     
 
     query = "select * from edt.ressource order by idressource asc"
