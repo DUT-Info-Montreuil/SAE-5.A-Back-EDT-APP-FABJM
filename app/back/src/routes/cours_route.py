@@ -16,18 +16,14 @@ from flask_jwt_extended import JWTManager, jwt_required, create_access_token, ge
 cours = Blueprint('cours', __name__)
 
 
-@cours.route('/cours/get/<filtre>', methods=['GET','POST'])
+@cours.route('/cours/get', methods=['GET','POST'])
 @jwt_required()
-def get_cours(filtre):
-    """Renvoit les cours remplisant les critères d'un filtre spécifié par son via la route /cours/get/<filtre>
+def get_cours():
+    """Renvoit les cours via la route /cours/get
     
-    :param filtre: peut-être l'id du cours ou un jour au format aaaa-mm-jj, si le filtre == "null" aucun filtre est appliqué
-    :type filtre: str, int
-    
-    :raises ParamètreInvalideException: Le paramètre filtre est invalide
     :raises AucuneDonneeTrouverException: Aucune donnée n'a pas être trouvé correspont aux critère
     
-    :return: Les cours filtrés
+    :return: Les cours 
     :rtype: json
     """
 
@@ -267,7 +263,7 @@ def add_cours():
 
 
 @cours.route('/cours/getCoursSalle/<idSalle>', methods=['GET','POST'])
-@jwt_required()
+#@jwt_required()
 def get_cours_salle(idSalle):
     """Renvoit la salle dans lequel se déroule le cours via la route /cours/getSalle/<idCours>
     
