@@ -312,12 +312,13 @@ def add_cours():
 @cours.route('/cours/getCoursSalle/<idSalle>', methods=['GET','POST'])
 @jwt_required()
 def get_cours_salle(idSalle):
-    """Renvoit la salle dans lequel se déroule le cours via la route /cours/getSalle/<idCours>
+    """Renvoit les se déroulant dans une salle via la route /cours/getCoursSalle/<idSalle>
     
-    :param idCours: id du cours à rechercher
-    :type idCours: int
+    :param idSalle: id du cours à rechercher
+    :type idSalle: int
     
     :raises DonneeIntrouvableException: Aucune donnée n'a pas être trouvé correspondant aux critères
+    :raises ActionImpossibleException: Si une erreur survient durant la récupération des données
     
     :return: l'id de la salle dans lequel se déroule cours
     :rtype: json
