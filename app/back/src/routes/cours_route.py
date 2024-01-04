@@ -400,3 +400,35 @@ def get_prof_cours(idCours):
         
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
+
+@cours.route('/cours/enleverProf/<idCours>', methods=['DELETE'])
+@jwt_required()
+def enlever_Prof(idCours):
+    """Permet d'enlever un enseignant assigner à un cours via la route /cours/enleverProf/<idCours>
+    
+    :param idCours: id du cours
+    :type idCours: int
+
+    :raises ParamètreTypeInvalideException: Le type de idCours est invalide, une valeur numérique est attendue
+    :raises DonneeIntrouvableException: Si la clée spécifié pour la colonne idCours n'a pas pu être trouvé
+    :raises ActionImpossibleException: Si une erreur inconnue est survenue lors de la suppression
+
+    :return: id du cours supprimer
+    :rtype: flask.wrappers.Response(String)
+    """
+    if (not idCours.isdigit()):
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idCours", "numérique"))}), 400
+    query = f"delete from edt.enseigner where idCours={idCours}"
+    conn = connect_pg.connect()
+    try:
+        connect_pg.execute_commands(conn, query)
+    except Exception as e:
+        if e.pgcode == "23503":# violation contrainte clée étrangère
+            return jsonify({'error': str(apiException.DonneeIntrouvableException("Enseigner ", idCours))}), 400
+        
+        else:
+            # Erreur inconnue
+            return jsonify({'error': str(apiException.ActionImpossibleException("Enseigner","supprimer"))}), 500
+
+    connect_pg.disconnect(conn)
+    return jsonify(idCours)

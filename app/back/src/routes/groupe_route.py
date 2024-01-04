@@ -165,7 +165,7 @@ def enlever_Cours(idCours):
     :raises ActionImpossibleException: Si une erreur inconnue est survenue lors de la suppression
 
     :return: id du cours supprimer si présent
-    :rtype: flask.wrappers.Response(int)
+    :rtype: flask.wrappers.Response(String)
     """
     if (not idCours.isdigit()):
         return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idCours", "numérique"))}), 400
