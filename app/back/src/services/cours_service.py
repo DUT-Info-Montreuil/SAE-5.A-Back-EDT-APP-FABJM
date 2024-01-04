@@ -47,6 +47,8 @@ def getCoursGroupeService(idGroupe , conn):
     :return: les cours
     :rtype: list
     """
-    result = connect_pg.get_query(conn , f" Select edt.cours.* from edt.cours inner join edt.etudier  using(idCours)  inner join edt.groupe as e1 using (idGroupe) where e1.idGroupe = {idGroupe} order by idCours asc;")
+    result = connect_pg.get_query(conn , f"Select edt.cours.* from edt.cours inner join edt.etudier  using(idCours)  inner join edt.groupe as e1 using (idGroupe) where e1.idGroupe = {idGroupe} order by idCours asc")
     
     return result
+
+    

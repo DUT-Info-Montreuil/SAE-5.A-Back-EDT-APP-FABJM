@@ -70,6 +70,36 @@ def getEnseignantGroupe(idUtilisateur , conn):
     return result
 
 
+@groupe.route('/cours/getGroupeCours/<idCours>', methods=['GET','POST'])
+@jwt_required()
+def get_groupe_cours(idCours):
+    """Renvoit le groupe d'un cours via la route /cours/getGroupeCours/<idCours>
+    
+    :param idCours: id du groupe à rechercher
+    :type idCours: int
+    
+    :raises DonneeIntrouvableException: Aucune donnée n'a pas être trouvé correspondant aux critères
+    :raises InsertionImpossibleException: Si une erreur inconnue survient durant la récupération des données
+    
+    :return: le groupe
+    :rtype: flask.wrappers.Response
+    """
+    returnStatement = []
+    conn = connect_pg.connect()
+    query = f"Select edt.groupe.* from edt.groupe inner join edt.etudier using(idGroupe)  inner join edt.cours as e1 using (idCours) where e1.idCours = {idCours} order by idGroupe asc"
+    try:
+        rows = connect_pg.get_query(conn, query)
+        if rows == []:
+            return jsonify({'erreur': str(apiException.DonneeIntrouvableException("Etudier"))}), 400
+        for row in rows:
+            returnStatement.append(get_groupe_statement(row))
+    except Exception as e:
+        return jsonify({'error': str(apiException.InsertionImpossibleException("Etudier", "récupérer"))}), 500
+    
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)
+
+
 @groupe.route('/groupe/get/<idGroupe>', methods=['GET'])
 @jwt_required()
 def get_one_groupe(idGroupe):
