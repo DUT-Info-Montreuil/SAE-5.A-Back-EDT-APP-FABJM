@@ -5,7 +5,7 @@ import src.connect_pg as connect_pg
 import src.apiException as apiException
 
 from src.config import config
-from src.services.cours_service import get_cours_statement
+from src.services.cours_service import get_cours_statement, getCoursProf, getCoursGroupeService
 
 import psycopg2
 from psycopg2 import errorcodes
@@ -27,6 +27,7 @@ def get_cours(filtre):
     
     :raises ParamètreInvalideException: Le paramètre filtre est invalide
     :raises AucuneDonneeTrouverException: Aucune donnée n'a pas être trouvé correspont aux critère
+    :raises ActionImpossibleException: Si une erreur est survenue de la récupération des données
     
     :return: Les cours filtrés
     :rtype: json
@@ -35,10 +36,10 @@ def get_cours(filtre):
     conn = connect_pg.connect()
     
     if(perm.getUserPermission(get_jwt_identity() , conn) == 2):
-        cours = getEnseignantCours(get_jwt_identity() , conn)
+        rows = getCoursProf(get_jwt_identity() , conn)
         returnStatement = []
         try:
-            for row in cours:
+            for row in rows:
                 returnStatement.append(get_cours_statement(row))
         except(TypeError) as e:
             return jsonify({'error': str(apiException.AucuneDonneeTrouverException("cours"))}), 404
@@ -46,10 +47,11 @@ def get_cours(filtre):
         return jsonify(returnStatement)
     
     elif(perm.getUserPermission(get_jwt_identity() , conn) == 3):
-        cours = getEleveCours(get_jwt_identity() , conn)
+        idGroupe = connect_pg.get_query(conn , f"select idGroupe from edt.eleve where WHERE idUtilisateur ={get_jwt_identity()}")[0][0]
+        rows = getCoursGroupeService(idGroupe , conn)
         returnStatement = []
         try:
-            for row in cours:
+            for row in rows:
                 returnStatement.append(get_cours_statement(row))
         except(TypeError) as e:
             return jsonify({'error': str(apiException.AucuneDonneeTrouverException("cours"))}), 404
@@ -71,46 +73,45 @@ def get_cours(filtre):
     
     rows = connect_pg.get_query(conn, query)
     returnStatement = []
+    if rows == []:
+        return jsonify({'error': str(apiException.AucuneDonneeTrouverException("Cours"))}), 400
     try:
         for row in rows:
             returnStatement.append(get_cours_statement(row))
-    except(TypeError) as e:
-        return jsonify({'error': str(apiException.AucuneDonneeTrouverException("cours"))}), 404
+    except Exception as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("Cours", "récupérer"))}), 500
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 
-def getEnseignantCours(idUtilisateur , conn):
-    """ Renvoie les cours au quelle enseigne un professeur
-    
-    :param idUtilisateur: idUtilisateur du professeur
-    :type idUtilisateur: int
-    
-    :param conn: la connection à une base de donnée
-    :type conn: une classe heritant de la classe mère Connexion
 
-    :return: retourne les cours
-    :rtype: list
+@cours.route('/cours/getCoursGroupe/<idGroupe>', methods=['GET','POST'])
+@jwt_required()
+def get_cours_groupe(idGroupe):
+    """Renvoit les cours d'un groupe via la route /cours/getSalle/<idCours>
+    
+    :param idGroupe: id du groupe à rechercher
+    :type idGroupe: int
+    
+    :raises DonneeIntrouvableException: Aucune donnée n'a pas être trouvé correspondant aux critères
+    :raises InsertionImpossibleException: Si une erreur inconnue survient durant la récupération des données
+    
+    :return: l'id de la salle dans lequel se déroule cours
+    :rtype: json
     """
-    idProf = connect_pg.get_query(conn , f"SELECT idProf FROM edt.professeur WHERE idutilisateur ={idUtilisateur}")[0][0]
-    result = connect_pg.get_query(conn , f"Select edt.cours.* from edt.cours inner join edt.enseigner as e1 using(idCours)  where e1.idProf = {idProf} order by idCours asc")
-    
-    return result
+    returnStatement = []
+    conn = connect_pg.connect()
+    try:
+        rows = getCoursGroupeService(idGroupe , conn)
+        if rows == []:
+            return jsonify({'erreur': str(apiException.DonneeIntrouvableException("Etudier"))}), 400
+        for row in rows:
+            returnStatement.append(get_cours_statement(row))
+    except Exception as e:
+        return jsonify({'error': str(apiException.InsertionImpossibleException("Etudier", "récupérer"))}), 500
+        
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)
 
-def getEleveCours(idUtilisateur , conn):
-    """ Renvoie les cours au quelle enseigne un professeur
-    
-    :param idUtilisateur: idUtilisateur du professeur
-    :type idUtilisateur: int
-    
-    :param conn: la connection à une base de donnée
-    :type conn: une classe heritant de la classe mère Connexion
-
-    :return: retourne les cours
-    :rtype: list
-    """
-    result = connect_pg.get_query(conn , f"Select edt.cours.* from edt.cours inner join edt.etudier  using(idCours)  inner join edt.eleve as e1 using (idGroupe) where e1.idUtilisateur = {idUtilisateur} order by idCours asc")
-    
-    return result
 
 @cours.route('/cours/deplacer/<idCours>', methods=['PUT'])
 @jwt_required()
