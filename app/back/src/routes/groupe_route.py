@@ -15,7 +15,11 @@ from flask_jwt_extended import JWTManager, jwt_required, create_access_token, ge
 
 import src.services.permision as perm
 
-from src.services.groupe_service import get_groupe_statement
+from src.services.groupe_service import get_groupe_statement, getProfGroupe
+import src.services.verification as verif 
+from src.routes.cours_route import get_cours_groupe
+
+import json
 
 groupe = Blueprint('groupe', __name__)
 
@@ -30,7 +34,7 @@ def get_groupe():
     """
     conn = connect_pg.connect()
     if(perm.getUserPermission(get_jwt_identity() , conn) == 2):
-        groupes = getEnseignantGroupe(get_jwt_identity() , conn)
+        groupes = getProfGroupe(get_jwt_identity() , conn)
         returnStatement = []
         try:
             for row in groupes:
@@ -52,22 +56,6 @@ def get_groupe():
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 
-def getEnseignantGroupe(idUtilisateur , conn):
-    """ Renvoie les groupes au quelle enseigne un professeur
-    
-    :param idUtilisateur: idUtilisateur du professeur
-    :type idUtilisateur: int
-    
-    :param conn: la connection à une base de donnée
-    :type conn: une classe heritant de la classe mère Connexion
-
-    :return: retourne les groupes
-    :rtype: list
-    """
-    idProf = connect_pg.get_query(conn , f"SELECT idProf FROM edt.professeur WHERE idutilisateur ={idUtilisateur}")[0][0]
-    result = connect_pg.get_query(conn , f"Select edt.groupe.* from edt.groupe inner join edt.etudier using(idGroupe) inner join edt.enseigner as e2 using(idCours) where e2.idProf = {idProf} order by IdGroupe asc")
-    
-    return result
 
 
 @groupe.route('/cours/getGroupeCours/<idCours>', methods=['GET','POST'])
@@ -102,7 +90,7 @@ def get_groupe_cours(idCours):
 
 @groupe.route('/groupe/ajouterCours/<idGroupe>', methods=['POST', 'PUT'])
 @jwt_required()
-def ajouterCours(idGroupe):
+def ajouter_cours(idGroupe):
     """Permet d'ajouter un cours à un groupe via la route /groupe/ajouterCours/<idGroupe>
     
     :param idCours: id du cours à ajouter spécifié dans le body
@@ -115,10 +103,12 @@ def ajouterCours(idGroupe):
     :raises ParamètreTypeInvalideException: Le type de idCours ou idGroupe est invalide, une valeur numérique est attendue
     :raises DonneeIntrouvableException: Si une des clées n'a pas pu être trouvé
     :raises InsertionImpossibleException: Impossible de réaliser l'insertion
+    :raises ParamètreInvalideException: Si le groupe n'est pas disponible à l'horaire spécifié
 
     :return: id du groupe
     :rtype: flask.wrappers.Response(json)
     """
+    conn = connect_pg.connect()
     json_datas = request.get_json()
     if (not idGroupe.isdigit() or type(json_datas['idCours']) != int   ):
         return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idCours ou idGroupe", "numérique"))}), 400
@@ -126,9 +116,21 @@ def ajouterCours(idGroupe):
     
     if 'idCours' not in json_datas :
         return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
+
+    coursGroupe = get_cours_groupe(idGroupe)
+    if type(coursGroupe) != tuple and coursGroupe[1] != 400:
+        courGroupe = json.loads(get_cours_groupe(idGroupe).data) 
+        result = connect_pg.get_query(conn , f"""Select e1.* from edt.cours as e1 full join edt.etudier 
+        as e2 using(idCours) where (idGroupe is not null) and ( '{courGroupe[0]['HeureDebut']}' <=  e1.HeureDebut 
+        and  '{courGroupe[0]['HeureDeFin']}' >= e1.HeureDebut or '{courGroupe[0]['HeureDebut']}' >=  e1.HeureFin) 
+        order by idCours asc""")
+        
+        if result != []:
+            return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "Ce groupe n'est pas disponible à l'horaire spécifié"))}), 400
+    
     returnStatement = {}
     query = f"Insert into edt.etudier (idGroupe, idCours) values ('{idGroupe}', '{json_datas['idCours']}') returning idGroupe"
-    conn = connect_pg.connect()
+    
     try:
         returnStatement = connect_pg.execute_commands(conn, query)
     except Exception as e:
@@ -150,6 +152,49 @@ def ajouterCours(idGroupe):
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 
+@groupe.route('/groupe/getGroupeDispo', methods=['GET', 'POST'])
+@jwt_required()
+def get_groupe_dispo():
+    """Renvoit tous les groupes disponible sur une période via la route /groupe/getGroupeDispo
+
+    :raises AucuneDonneeTrouverException: Si aucune donnée n'a été trouvé dans la table groupe, etudier ou cours
+
+    :param debut: date du début de la période au format time(sql)
+    :type debut: str 
+
+    :param fin: date de fin de la période au format time(sql)
+    :type fin: str
+    
+    :return: touts les groupes disponibles
+    :rtype: flask.wrappers.Response(json)
+    """
+    json_datas = request.get_json()
+    if not json_datas:
+        return jsonify({'error ': 'missing json body'}), 400
+    
+    if 'debut' not in json_datas or 'fin' not in json_datas :
+        return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
+
+    if not verif.estDeTypeTime(json_datas['debut']) or not verif.estDeTypeTime(json_datas['fin']):
+        return jsonify({'error': str(apiException.ParamètreInvalideException("debut ou fin"))}), 404
+
+    query = f""" select edt.groupe.* from edt.groupe full join edt.etudier using(idGroupe) full join edt.cours
+    using(idCours) where (idGroupe is not null) and ( '{json_datas['debut']}' <  HeureDebut 
+    and  '{json_datas['fin']}' <= HeureDebut or '{json_datas['debut']}' >=  HeureFin) or (HeureDebut is null) order by idGroupe asc
+    """
+    conn = connect_pg.connect()
+    returnStatement = []
+    try:
+        rows = connect_pg.get_query(conn, query)
+        if rows == []:
+            return jsonify({'erreur': str(apiException.DonneeIntrouvableException("Etudier"))}), 400
+        for row in rows:
+            returnStatement.append(get_groupe_statement(row))
+    except Exception as e:
+        return jsonify({'error': str(apiException.InsertionImpossibleException("Etudier", "récupérer"))}), 500
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)
+
 
 @groupe.route('/groupe/get/<idGroupe>', methods=['GET'])
 @jwt_required()
@@ -168,7 +213,7 @@ def get_one_groupe(idGroupe):
 
     query = f"select * from edt.groupe where idGroupe='{idGroupe}'"
     conn = connect_pg.connect()
-    result = getEnseignantGroupe(get_jwt_identity() , conn)
+    result = getProfGroupe(get_jwt_identity() , conn)
     verification = False
     for row in result:
         if str(row[0]) == idGroupe:

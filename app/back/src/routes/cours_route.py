@@ -103,14 +103,14 @@ def get_cours_groupe(idGroupe):
     try:
         rows = getCoursGroupeService(idGroupe , conn)
         if rows == []:
-            return jsonify({'erreur': str(apiException.DonneeIntrouvableException("Etudier"))}), 400
+            return jsonify({'erreur': str(apiException.DonneeIntrouvableException("Etudier",idGroupe))}), 400
         for row in rows:
             returnStatement.append(get_cours_statement(row))
     except Exception as e:
-        return jsonify({'error': str(apiException.InsertionImpossibleException("Etudier", "récupérer"))}), 500
+        return jsonify({'error': str(apiException.InsertionImpossibleException("Cours, Etudier et Groupe", "récupérer"))}), 500
         
     connect_pg.disconnect(conn)
-    return jsonify(returnStatement)
+    return jsonify(returnStatement),200
 
 
 @cours.route('/cours/deplacer/<idCours>', methods=['PUT'])
