@@ -100,6 +100,57 @@ def get_groupe_cours(idCours):
     return jsonify(returnStatement)
 
 
+@groupe.route('/groupe/ajouterCours/<idGroupe>', methods=['POST', 'PUT'])
+@jwt_required()
+def ajouterCours(idGroupe):
+    """Permet d'ajouter un cours à un groupe via la route /groupe/ajouterCours/<idGroupe>
+    
+    :param idCours: id du cours à ajouter spécifié dans le body
+    :type idCours: int
+
+    :param idGroupe: id du groupe qui doit recevoir un cours
+    :type idGroupe: int
+
+    :raises ParamètreBodyManquantException: Si aucun paramètre d'entrée attendu n'est spécifié dans le body
+    :raises ParamètreTypeInvalideException: Le type de idCours ou idGroupe est invalide, une valeur numérique est attendue
+    :raises DonneeIntrouvableException: Si une des clées n'a pas pu être trouvé
+    :raises InsertionImpossibleException: Impossible de réaliser l'insertion
+
+    :return: id du groupe
+    :rtype: flask.wrappers.Response(json)
+    """
+    json_datas = request.get_json()
+    if (not idGroupe.isdigit() or type(json_datas['idCours']) != int   ):
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idCours ou idGroupe", "numérique"))}), 400
+    
+    
+    if 'idCours' not in json_datas :
+        return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
+    returnStatement = {}
+    query = f"Insert into edt.etudier (idGroupe, idCours) values ('{idGroupe}', '{json_datas['idCours']}') returning idGroupe"
+    conn = connect_pg.connect()
+    try:
+        returnStatement = connect_pg.execute_commands(conn, query)
+    except Exception as e:
+        if e.pgcode == "23503":# violation contrainte clée étrangère
+            if "cours" in str(e):
+                return jsonify({'error': str(apiException.DonneeIntrouvableException("Cours ", json_datas['idCours']))}), 400
+            else:
+                return jsonify({'error': str(apiException.DonneeIntrouvableException("Groupe ", idGroupe))}), 400
+        
+        elif e.pgcode == "23505": # si existe déjà
+            messageId = f"idGroupe = {idGroupe} et idCours = {json_datas['idCours']}"
+            messageColonne = f"idGroupe et idCours"
+            return jsonify({'error': str(apiException.DonneeExistanteException(messageId, messageColonne, "Etudier"))}), 400
+        
+        else:
+            # Erreur inconnue
+            return jsonify({'error': str(apiException.InsertionImpossibleException("Etudier"))}), 500
+
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)
+
+
 @groupe.route('/groupe/get/<idGroupe>', methods=['GET'])
 @jwt_required()
 def get_one_groupe(idGroupe):
