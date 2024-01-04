@@ -39,7 +39,7 @@ INSERT INTO Etudier(idgroupe, idcours) values (1,1);
 INSERT INTO Eleve(idGroupe,idUtilisateur) values (1,1);
 
 -- Responsable(idProf, idRessource)
-INSERT INTO Enseigner(idProf, idCours) values (1,2);
+INSERT INTO Responsable(idProf, idRessource) values (1,1);
 
 -- Accuellir(idSalle, idCours)
 INSERT INTO Accuellir(idSalle, idCours) values (2,1);

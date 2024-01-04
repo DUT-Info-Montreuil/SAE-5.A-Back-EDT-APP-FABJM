@@ -6,6 +6,7 @@ import src.apiException as apiException
 
 from src.config import config
 from src.services.cours_service import get_cours_statement, getCoursProf, getCoursGroupeService
+from src.services.user_service import get_professeur_statement
 
 import psycopg2
 from psycopg2 import errorcodes
@@ -362,6 +363,40 @@ def get_salle_cours(idCours):
         returnStatement["idSalle"] = connect_pg.get_query(conn, query)[0][0]
     except IndexError:
         return jsonify({'error': str(apiException.DonneeIntrouvableException("Accuellir", idCours))}), 400
+        
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)
+
+@cours.route('/cours/getProfCours/<idCours>', methods=['GET','POST'])
+@jwt_required()
+def get_prof_cours(idCours):
+    """Renvoit l'enseignant d'un cours via la route /cours/getProfCours/<idCours>
+    
+    :param idCours: id du cours
+    :type idCours: int
+    
+    :raises DonneeIntrouvableException: Aucune donnée n'a pas être trouvé correspondant aux critères
+    :raises InsertionImpossibleException: Si une erreur inconnue survient durant la récupération des données
+    :raises ParamètreTypeInvalideException: Si le type du paramètre d'entrée idCours n'est pas valide
+    
+    :return: l'id du cours
+    :rtype: flask.wrappers.Response(json)
+    """
+    if (not idCours.isdigit()):
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idCours", "numérique"))}), 400
+    
+    query = f"select edt.professeur.* from edt.professeur inner join edt.enseigner using(idProf) inner join edt.cours as e1 using(idCours) where e1.idCours = {idCours}"
+    returnStatement = []
+    conn = connect_pg.connect()
+
+    try:
+        rows = connect_pg.get_query(conn, query)
+        if rows == []:
+            return jsonify({'erreur': str(apiException.DonneeIntrouvableException("Cours, Enseigner ou Professeur",idCours))}), 400
+        for row in rows:
+            returnStatement.append(get_professeur_statement(row))
+    except Exception as e:
+        return jsonify({'erreur': str(apiException.InsertionImpossibleException("Cours, Enseigner et Professeur", "récupérer"))}), 500
         
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
