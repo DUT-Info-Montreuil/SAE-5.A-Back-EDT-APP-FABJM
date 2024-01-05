@@ -13,6 +13,7 @@ from psycopg2 import errorcodes
 from psycopg2 import OperationalError, Error
 
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity  
+import datetime
 salle = Blueprint('salle', __name__)
 
 
@@ -25,11 +26,11 @@ def get_salle_dispo():
     :raises ParamètreBodyManquantException: Si au moins un des paramètres est manquant dans le body
     :raises ParamètreInvalideException: Si au un moins un des paramètres ne respecte pas le format hh:mm:ss
 
-    :param debut: date du début de la période au format time(sql) spécifié dans le body
-    :type debut: str 
+    :param HeureDebut: date du début de la période au format time(sql) spécifié dans le body
+    :type HeureDebut: str 
 
-    :param fin: date de fin de la période au format time(sql) spécifié dans le body
-    :type fin: str
+    :param NombreHeure: date de NombreHeure de la période au format time(sql) spécifié dans le body
+    :type NombreHeure: str
     
     :return: toutes les salles disponibles
     :rtype: json
@@ -38,24 +39,40 @@ def get_salle_dispo():
     if not json_datas:
         return jsonify({'error ': 'missing json body'}), 400
     
-    if 'debut' not in json_datas or 'fin' not in json_datas :
+    if 'HeureDebut' not in json_datas or 'NombreHeure' not in json_datas :
         return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
 
-    if not verif.estDeTypeTime(json_datas['debut']) or not verif.estDeTypeTime(json_datas['fin']):
-        return jsonify({'error': str(apiException.ParamètreInvalideException("debut ou fin"))}), 404
+    if not verif.estDeTypeTime(json_datas['HeureDebut']) or not type(json_datas['NombreHeure']) == int:
+        return jsonify({'error': str(apiException.ParamètreInvalideException("HeureDebut ou NombreHeure"))}), 404
+
+    HeureDebut = json_datas['HeureDebut']
+    NombreHeure = json_datas['NombreHeure']
+    HeureDebut = datetime.timedelta(hours = int(HeureDebut[:2]),minutes = int(HeureDebut[3:5]), seconds = int(HeureDebut[6:8]))
+    NombreHeure = datetime.timedelta(hours = NombreHeure)
+    HeureFin = HeureDebut + NombreHeure
+
+    heure_ouverture_iut = datetime.timedelta(hours = 8)
+    heure_fermeture_iut = datetime.timedelta(hours = 19)
+
+    if HeureDebut < heure_ouverture_iut or HeureFin > heure_fermeture_iut:
+        return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "L'iut est fermé durant la période spécifié"))}), 404
 
     query = f""" select edt.salle.* from edt.salle full join edt.accuellir using(idSalle) full join edt.cours
-    using(idCours) where (idSalle is not null) and ( '{json_datas['debut']}' <  HeureDebut 
-    and  '{json_datas['fin']}' <= HeureDebut or '{json_datas['debut']}' >=  HeureFin) or (HeureDebut is null) order by idsalle asc
+    using(idCours) where (idSalle is not null) and ( '{json_datas['HeureDebut']}' <  HeureDebut 
+    and  '{str(HeureFin)}' <= HeureDebut or '{json_datas['HeureDebut']}' >=  (HeureDebut + NombreHeure * interval '1 hours')) or (HeureDebut is null) order by idsalle asc
     """
     conn = connect_pg.connect()
-    rows = connect_pg.get_query(conn, query)
     returnStatement = []
     try:
+        rows = connect_pg.get_query(conn, query)
+        if rows == []:
+            return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "Aucune salle disponible n'a été trouvé l'horaire spécifié"))}), 400
+        
         for row in rows:
             returnStatement.append(get_salle_statement(row))
-    except TypeError as e:
-        return jsonify({'error': str(apiException.AucuneDonneeTrouverException("salle"))}), 404
+    except Exception as e:
+        print(e)
+        return jsonify({'error': str(apiException.InsertionImpossibleException("Salle, Etudier ou Cours", "récupérer"))}), 500
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 
@@ -111,7 +128,31 @@ def get_one_salle(idSalle):
     connect_pg.disconnect(conn)
     return jsonify(returnStatement), 200
 
-
+@salle.route('/salle/getSalleCours/<idCours>', methods=['GET','POST'])
+@jwt_required()
+def get_salle_cours(idCours):
+    """Renvoit la salle dans lequel se déroule le cours via la route /cours/getSalle/<idCours>
+    
+    :param idCours: id du cours à rechercher
+    :type idCours: int
+    
+    :raises DonneeIntrouvableException: Aucune donnée n'a pas être trouvé correspondant aux critères
+    
+    :return: l'id de la salle dans lequel se déroule cours
+    :rtype: json
+    """
+    query = f"select edt.salle.* from edt.salle inner join edt.accuellir  using(idSalle) inner join edt.cours using(idCours) where idCours={idCours} "
+    returnStatement = []
+    conn = connect_pg.connect()
+    try:
+        rows = connect_pg.get_query(conn, query)
+        for row in rows:
+            returnStatement.append(get_salle_statement(row))
+    except IndexError:
+        return jsonify({'error': str(apiException.DonneeIntrouvableException("Accuellir", idCours))}), 400
+        
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)
 
 
 @salle.route('/salle/delete/<idSalle>', methods=['DELETE'])

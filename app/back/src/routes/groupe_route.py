@@ -18,6 +18,7 @@ import src.services.permision as perm
 from src.services.groupe_service import get_groupe_statement, getProfGroupe
 import src.services.verification as verif 
 from src.routes.cours_route import get_cours_groupe
+import datetime
 
 import json
 
@@ -117,12 +118,20 @@ def ajouter_cours(idGroupe):
     if 'idCours' not in json_datas :
         return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
 
-    coursGroupe = get_cours_groupe(idGroupe)
-    if type(coursGroupe) != tuple and coursGroupe[1] != 400:
+
+    
+    courGroupe = get_cours_groupe(idGroupe)
+    if type(courGroupe) != tuple :
         courGroupe = json.loads(get_cours_groupe(idGroupe).data) 
+        HeureDebut = courGroupe[0]['HeureDebut']
+        NombreHeure = courGroupe[0]['NombreHeure']
+        HeureDebut = datetime.timedelta(hours = int(HeureDebut[:2]),minutes = int(HeureDebut[3:5]), seconds = int(HeureDebut[6:8]))
+        NombreHeure = datetime.timedelta(hours = NombreHeure)
+        HeureFin = str(HeureDebut + NombreHeure)
+
         result = connect_pg.get_query(conn , f"""Select e1.* from edt.cours as e1 full join edt.etudier 
-        as e2 using(idCours) where (idGroupe is not null) and ( '{courGroupe[0]['HeureDebut']}' <=  e1.HeureDebut 
-        and  '{courGroupe[0]['HeureDeFin']}' >= e1.HeureDebut or '{courGroupe[0]['HeureDebut']}' >=  e1.HeureFin) 
+        as e2 using(idCours) where (idGroupe is not null) and ( '{courGroupe[0]['HeureDebut']}' <=  HeureDebut 
+        and  '{HeureFin}' >= HeureDebut or '{courGroupe[0]['HeureDebut']}' >=  (HeureDebut + NombreHeure * interval '1 hours')) 
         order by idCours asc""")
         
         if result != []:
@@ -191,11 +200,11 @@ def get_groupe_dispo():
 
     :raises AucuneDonneeTrouverException: Si aucune donnée n'a été trouvé dans la table groupe, etudier ou cours
 
-    :param debut: date du début de la période au format time(sql)
-    :type debut: str 
+    :param HeureDebut: date du début de la période au format time(sql)
+    :type HeureDebut: str 
 
-    :param fin: date de fin de la période au format time(sql)
-    :type fin: str
+    :param NombreHeure: date de NombreHeure de la période au format time(sql)
+    :type NombreHeure: str
     
     :return: touts les groupes disponibles
     :rtype: flask.wrappers.Response(json)
@@ -204,25 +213,40 @@ def get_groupe_dispo():
     if not json_datas:
         return jsonify({'error ': 'missing json body'}), 400
     
-    if 'debut' not in json_datas or 'fin' not in json_datas :
+    if 'HeureDebut' not in json_datas or 'NombreHeure' not in json_datas :
         return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
 
-    if not verif.estDeTypeTime(json_datas['debut']) or not verif.estDeTypeTime(json_datas['fin']):
-        return jsonify({'error': str(apiException.ParamètreInvalideException("debut ou fin"))}), 404
+    if not verif.estDeTypeTime(json_datas['HeureDebut']) or not type(json_datas['NombreHeure']) == int:
+        return jsonify({'error': str(apiException.ParamètreInvalideException("HeureDebut ou NombreHeure"))}), 404
 
-    query = f""" select edt.groupe.* from edt.groupe full join edt.etudier using(idGroupe) full join edt.cours
-    using(idCours) where (idGroupe is not null) and ( '{json_datas['debut']}' <  HeureDebut 
-    and  '{json_datas['fin']}' <= HeureDebut or '{json_datas['debut']}' >=  HeureFin) or (HeureDebut is null) order by idGroupe asc
+    HeureDebut = json_datas['HeureDebut']
+    NombreHeure = json_datas['NombreHeure']
+    HeureDebut = datetime.timedelta(hours = int(HeureDebut[:2]),minutes = int(HeureDebut[3:5]), seconds = int(HeureDebut[6:8]))
+    NombreHeure = datetime.timedelta(hours = NombreHeure)
+    HeureFin = HeureDebut + NombreHeure
+
+    heure_ouverture_iut = datetime.timedelta(hours = 8)
+    heure_fermeture_iut = datetime.timedelta(hours = 19)
+
+    if HeureDebut < heure_ouverture_iut or HeureFin > heure_fermeture_iut:
+        return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "L'iut est fermé durant la période spécifié"))}), 404
+
+
+    query = f""" select distinct edt.groupe.*  from edt.groupe full join edt.etudier using(idGroupe) full join edt.cours
+    using(idCours) where (idGroupe is not null) and ( '{json_datas['HeureDebut']}' <  HeureDebut 
+    and  '{str(HeureFin)}' <= HeureDebut or '{json_datas['HeureDebut']}' >=  (HeureDebut + NombreHeure * interval '1 hours')) or (HeureDebut is null) order by idGroupe asc
     """
     conn = connect_pg.connect()
     returnStatement = []
     try:
         rows = connect_pg.get_query(conn, query)
         if rows == []:
-            return jsonify({'erreur': str(apiException.DonneeIntrouvableException("Etudier"))}), 400
+            return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "Aucun groupe disponible n'a été trouvé l'horaire spécifié"))}), 400
+        
         for row in rows:
             returnStatement.append(get_groupe_statement(row))
     except Exception as e:
+        print(e)
         return jsonify({'error': str(apiException.InsertionImpossibleException("Etudier", "récupérer"))}), 500
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)

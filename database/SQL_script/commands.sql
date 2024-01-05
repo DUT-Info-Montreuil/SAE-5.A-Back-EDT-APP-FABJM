@@ -127,7 +127,7 @@ CREATE TABLE Eleve(
 CREATE TABLE Cours(
    idCours SERIAL,
    HeureDebut TIME,
-   HeureFin TIME,
+   NombreHeure INTEGER,
    Jour TIMESTAMP,
    idRessource INTEGER NOT NULL,
    PRIMARY KEY(idCours),

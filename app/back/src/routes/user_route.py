@@ -14,6 +14,7 @@ from psycopg2 import OperationalError, Error
 import src.services.verification as verif 
 
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity  
+import datetime
 user = Blueprint('user', __name__)
 
 
@@ -24,11 +25,11 @@ def get_prof_dispo():
 
     :raises AucuneDonneeTrouverException: Si aucune donnée n'a été trouvé dans la table salle
 
-    :param debut: date du début de la période au format time(sql)
-    :type debut: str 
+    :param HeureDebut: date du début de la période au format time(sql)
+    :type HeureDebut: str 
 
-    :param fin: date de fin de la période au format time(sql)
-    :type fin: str
+    :param NombreHeure: date de NombreHeure de la période au format time(sql)
+    :type NombreHeure: str
     
     :return: touts les professeurs disponibles
     :rtype: json  professeur enseigner
@@ -37,15 +38,27 @@ def get_prof_dispo():
     if not json_datas:
         return jsonify({'error ': 'missing json body'}), 400
     
-    if 'debut' not in json_datas or 'fin' not in json_datas :
+    if 'HeureDebut' not in json_datas or 'NombreHeure' not in json_datas :
         return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
 
-    if not verif.estDeTypeTime(json_datas['debut']) or not verif.estDeTypeTime(json_datas['fin']):
-        return jsonify({'error': str(apiException.ParamètreInvalideException("debut ou fin"))}), 404
+    if not verif.estDeTypeTime(json_datas['HeureDebut']) or not type(json_datas['NombreHeure'] == int) :
+        return jsonify({'error': str(apiException.ParamètreInvalideException("HeureDebut ou NombreHeure"))}), 404
 
-    query = f""" select edt.professeur.* from edt.professeur full join edt.enseigner using(idProf) full join edt.cours
-    using(idCours) where (idProf is not null) and ( '{json_datas['debut']}' <  HeureDebut 
-    and  '{json_datas['fin']}' <= HeureDebut or '{json_datas['debut']}' >=  HeureFin) or (HeureDebut is null) order by idProf asc
+    HeureDebut = json_datas['HeureDebut']
+    NombreHeure = json_datas['NombreHeure']
+    HeureDebut = datetime.timedelta(hours = int(HeureDebut[:2]),minutes = int(HeureDebut[3:5]), seconds = int(HeureDebut[6:8]))
+    NombreHeure = datetime.timedelta(hours = NombreHeure)
+    HeureFin = HeureDebut + NombreHeure
+
+    heure_ouverture_iut = datetime.timedelta(hours = 8)
+    heure_fermeture_iut = datetime.timedelta(hours = 19)
+
+    if HeureDebut < heure_ouverture_iut or HeureFin > heure_fermeture_iut:
+        return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "L'iut est fermé durant la période spécifié"))}), 404
+
+    query = f""" select distinct edt.professeur.* from edt.professeur full join edt.enseigner using(idProf) full join edt.cours
+    using(idCours) where (idProf is not null) and ( '{json_datas['HeureDebut']}' <  HeureDebut 
+    and  '{str(HeureFin)}' <= HeureDebut or '{json_datas['HeureDebut']}' >=  (HeureDebut + NombreHeure * interval '1 hours')) or (HeureDebut is null) order by idProf asc
     """
     conn = connect_pg.connect()
     rows = connect_pg.get_query(conn, query)

@@ -16,7 +16,7 @@ import json
 
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity  
 cours = Blueprint('cours', __name__)
-
+import datetime
 
 @cours.route('/cours/get/<filtre>', methods=['GET','POST'])
 @jwt_required()
@@ -35,7 +35,7 @@ def get_cours(filtre):
     """
 
     conn = connect_pg.connect()
-    
+    """
     if(perm.getUserPermission(get_jwt_identity() , conn) == 2):
         rows = getCoursProf(get_jwt_identity() , conn)
         returnStatement = []
@@ -58,7 +58,7 @@ def get_cours(filtre):
             return jsonify({'error': str(apiException.AucuneDonneeTrouverException("cours"))}), 404
         connect_pg.disconnect(conn)
         return jsonify(returnStatement)
-
+    """
     if filtre.isdigit():
         query = f"select * from edt.cours where idCours='{filtre}'"
 
@@ -111,7 +111,7 @@ def get_cours_groupe(idGroupe):
         return jsonify({'error': str(apiException.InsertionImpossibleException("Cours, Etudier et Groupe", "récupérer"))}), 500
         
     connect_pg.disconnect(conn)
-    return jsonify(returnStatement),200
+    return jsonify(returnStatement)
 
 
 @cours.route('/cours/deplacer/<idCours>', methods=['PUT'])
@@ -179,10 +179,17 @@ def assignerProf(idCours):
     returnStatement = {}
     conn = connect_pg.connect()
     cour = json.loads(get_cours(idCours).data) 
+
+    HeureDebut = cour[0]['HeureDebut']
+    NombreHeure = cour[0]['NombreHeure']
+    HeureDebut = datetime.timedelta(hours = int(HeureDebut[:2]),minutes = int(HeureDebut[3:5]), seconds = int(HeureDebut[6:8]))
+    NombreHeure = datetime.timedelta(hours = NombreHeure)
+    HeureFin = str(HeureDebut + NombreHeure)
+
     result = connect_pg.get_query(conn , f"""Select e1.* from edt.cours as e1 full join edt.enseigner 
     as e2 using(idCours)  where e2.idProf = {json_datas['idProf']} 
     and ( '{cour[0]['HeureDebut']}' <=  e1.HeureDebut 
-    and  '{cour[0]['HeureDeFin']}' >= e1.HeureDebut or '{cour[0]['HeureDebut']}' >=  e1.HeureFin) 
+    and  '{HeureFin}' >= e1.HeureDebut or '{cour[0]['HeureDebut']}' >=  (HeureDebut + NombreHeure * interval '1 hours')) 
     order by idCours asc""")
     
     if result != []:
@@ -206,8 +213,38 @@ def assignerProf(idCours):
         
         else:
             # Erreur inconnue
+            print(e)
             return jsonify({'error': str(apiException.InsertionImpossibleException("enseigner"))}), 500
 
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)
+
+@cours.route('/cours/getCoursSalle/<idSalle>', methods=['GET','POST'])
+@jwt_required()
+def get_cours_salle(idSalle):
+    """Renvoit les cours se déroulant dans une salle via la route /cours/getCoursSalle/<idSalle>
+    
+    :param idSalle: id du cours à rechercher
+    :type idSalle: int
+    
+    :raises DonneeIntrouvableException: Aucune donnée n'a pas être trouvé correspondant aux critères
+    :raises ActionImpossibleException: Si une erreur survient durant la récupération des données
+    
+    :return: l'id de la salle dans lequel se déroule cours
+    :rtype: json
+    """
+    query = f"Select edt.cours.* from edt.cours inner join edt.accuellir  using(idCours)  inner join edt.salle as e1 using (idSalle) where e1.idSalle = {idSalle} order by idCours asc"
+    returnStatement = []
+    conn = connect_pg.connect()
+    rows = connect_pg.get_query(conn, query)
+    if rows == []:
+        return jsonify({'error': str(apiException.DonneeIntrouvableException("Accuellir"))}), 400
+    try:
+        for row in rows:
+            returnStatement.append(get_cours_statement(row))
+    except Exception as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("Accuellir", "récupérer"))}), 500
+        
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 
@@ -238,6 +275,26 @@ def attribuerSalle(idCours):
     
     if 'idSalle' not in json_datas :
         return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
+    
+    conn = connect_pg.connect()
+    coursSalle = get_cours_salle(json_datas['idSalle'])
+    if type(coursSalle) != tuple:
+        coursSalle = json.loads(get_cours_salle(json_datas['idSalle']).data)
+
+        HeureDebut = coursSalle[0]['HeureDebut']
+        NombreHeure = coursSalle[0]['NombreHeure']
+        HeureDebut = datetime.timedelta(hours = int(HeureDebut[:2]),minutes = int(HeureDebut[3:5]), seconds = int(HeureDebut[6:8]))
+        NombreHeure = datetime.timedelta(hours = NombreHeure)
+        HeureFin = str(HeureDebut + NombreHeure)
+
+        result = connect_pg.get_query(conn , f"""Select e1.* from edt.cours as e1 full join edt.accuellir 
+        as e2 using(idCours) where (idSalle is not null) and ( '{coursSalle[0]['HeureDebut']}' <=  e1.HeureDebut 
+        and  '{HeureFin}' >= e1.HeureDebut or '{coursSalle[0]['HeureDebut']}' >=  e1.(HeureDebut + NombreHeure * interval '1 hours')) 
+        order by idCours asc""")
+        
+        if result != []:
+            return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "Cette salle n'est pas disponible à l'horaire spécifié"))}), 400
+    
     returnStatement = {}
     query = f"Insert into edt.accuellir (idSalle, idCours) values ('{json_datas['idSalle']}', '{idCours}') returning idCours"
     conn = connect_pg.connect()
@@ -327,6 +384,19 @@ def add_cours():
     if 'HeureDebut' not in json_datas or 'NombreHeure' not in json_datas or 'Jour' not in json_datas or 'idRessource' not in json_datas:
         return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
     returnStatement = {}
+
+    HeureDebut = json_datas['HeureDebut']
+    NombreHeure = json_datas['NombreHeure']
+    HeureDebut = datetime.timedelta(hours = int(HeureDebut[:2]),minutes = int(HeureDebut[3:5]), seconds = int(HeureDebut[6:8]))
+    NombreHeure = datetime.timedelta(hours = NombreHeure)
+    HeureFin = HeureDebut + NombreHeure
+
+    heure_ouverture_iut = datetime.timedelta(hours = 8)
+    heure_fermeture_iut = datetime.timedelta(hours = 19)
+
+    if HeureDebut < heure_ouverture_iut or HeureFin > heure_fermeture_iut:
+        return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "L'iut est fermé à l'horaire spécifié"))}), 404
+
     query = f"Insert into edt.cours (HeureDebut, NombreHeure, Jour, idRessource) values ('{json_datas['HeureDebut']}', '{json_datas['NombreHeure']}', '{json_datas['Jour']}', '{json_datas['idRessource']}') returning idCours"
     conn = connect_pg.connect()
     try:
@@ -343,29 +413,6 @@ def add_cours():
     return jsonify(returnStatement)
 
 
-@cours.route('/cours/getSalleCours/<idCours>', methods=['GET','POST'])
-@jwt_required()
-def get_salle_cours(idCours):
-    """Renvoit la salle dans lequel se déroule le cours via la route /cours/getSalle/<idCours>
-    
-    :param idCours: id du cours à rechercher
-    :type idCours: int
-    
-    :raises DonneeIntrouvableException: Aucune donnée n'a pas être trouvé correspondant aux critères
-    
-    :return: l'id de la salle dans lequel se déroule cours
-    :rtype: json
-    """
-    query = f"select idSalle from edt.accuellir where idCours={idCours} "
-    returnStatement = {}
-    conn = connect_pg.connect()
-    try:
-        returnStatement["idSalle"] = connect_pg.get_query(conn, query)[0][0]
-    except IndexError:
-        return jsonify({'error': str(apiException.DonneeIntrouvableException("Accuellir", idCours))}), 400
-        
-    connect_pg.disconnect(conn)
-    return jsonify(returnStatement)
 
 @cours.route('/cours/getProfCours/<idCours>', methods=['GET','POST'])
 @jwt_required()
