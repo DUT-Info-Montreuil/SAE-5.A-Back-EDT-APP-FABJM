@@ -53,14 +53,14 @@ def estDeTypeTimeStamp(string):
             if not string[k].isdigit():
                 return False
 
-        if string[4] != "/":
+        if string[4] != "-":
             return False
 
         for k in range(5,6):
             if not string[k].isdigit():
                 return False
 
-        if string[7] != "/":
+        if string[7] != "-":
             return False
 
         for k in range(8,9):

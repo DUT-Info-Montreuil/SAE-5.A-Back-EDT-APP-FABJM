@@ -21,28 +21,34 @@ user = Blueprint('user', __name__)
 @user.route('/user/getProfDispo', methods=['GET', 'POST'])
 @jwt_required()
 def get_prof_dispo():
-    """Renvoit toutes les professeurs disponible sur une période via la route /salle/getDispo
+    """Renvoit tous les professeurs disponible sur une période via la route /user/getProfDispo
 
-    :raises AucuneDonneeTrouverException: Si aucune donnée n'a été trouvé dans la table salle
-
-    :param HeureDebut: date du début de la période au format time(sql)
+    :param HeureDebut: date du début de la période au format time(hh:mm:ss) spécifié dans le body
     :type HeureDebut: str 
 
-    :param NombreHeure: date de NombreHeure de la période au format time(sql)
-    :type NombreHeure: str
+    :param NombreHeure: durée de la période spécifié dans le body
+    :type NombreHeure: int
+
+    :param Jour: date de la journée où la disponibilité des cours doit être vérifer au format TIMESTAMP(yyyy:mm:jj)
+    :type Jour: str
+
+    :raises AucuneDonneeTrouverException: Si aucune donnée n'a été trouvé dans la table groupe, etudier ou cours
+    :raises ParamètreBodyManquantException: Si un paramètre est manquant
+    :raises ParamètreInvalideException: Si un des paramètres est invalide
+    :raises InsertionImpossibleException: Si une erreur est survenue lors de la récupération des données
     
     :return: touts les professeurs disponibles
-    :rtype: json  professeur enseigner
+    :rtype: flask.wrappers.Response(json)
     """
     json_datas = request.get_json()
     if not json_datas:
         return jsonify({'error ': 'missing json body'}), 400
     
-    if 'HeureDebut' not in json_datas or 'NombreHeure' not in json_datas :
+    if 'HeureDebut' not in json_datas or 'Jour' not in json_datas or 'NombreHeure' not in json_datas :
         return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
 
-    if not verif.estDeTypeTime(json_datas['HeureDebut']) or not type(json_datas['NombreHeure'] == int) :
-        return jsonify({'error': str(apiException.ParamètreInvalideException("HeureDebut ou NombreHeure"))}), 404
+    if not verif.estDeTypeTime(json_datas['HeureDebut']) or not verif.estDeTypeTimeStamp(json_datas['Jour']) or not type(json_datas['NombreHeure']) == int:
+        return jsonify({'error': str(apiException.ParamètreInvalideException("HeureDebut, NombreHeure ou Jour"))}), 404
 
     HeureDebut = json_datas['HeureDebut']
     NombreHeure = json_datas['NombreHeure']
@@ -58,7 +64,8 @@ def get_prof_dispo():
 
     query = f""" select distinct edt.professeur.* from edt.professeur full join edt.enseigner using(idProf) full join edt.cours
     using(idCours) where (idProf is not null) and ( '{json_datas['HeureDebut']}' <  HeureDebut 
-    and  '{str(HeureFin)}' <= HeureDebut or '{json_datas['HeureDebut']}' >=  (HeureDebut + NombreHeure * interval '1 hours')) or (HeureDebut is null) order by idProf asc
+    and  '{str(HeureFin)}' <= HeureDebut or '{json_datas['HeureDebut']}' >=  (HeureDebut + NombreHeure * interval '1 hours')) 
+    or ('{json_datas['Jour']}' != Jour and idGroupe is not null) or (HeureDebut is null) order by idProf asc
     """
     conn = connect_pg.connect()
     rows = connect_pg.get_query(conn, query)

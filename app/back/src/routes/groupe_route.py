@@ -132,10 +132,10 @@ def ajouter_cours(idGroupe):
         result = connect_pg.get_query(conn , f"""Select e1.* from edt.cours as e1 full join edt.etudier 
         as e2 using(idCours) where (idGroupe is not null) and ( '{courGroupe[0]['HeureDebut']}' <=  HeureDebut 
         and  '{HeureFin}' >= HeureDebut or '{courGroupe[0]['HeureDebut']}' >=  (HeureDebut + NombreHeure * interval '1 hours')) 
-        order by idCours asc""")
+        or ('{courGroupe[0]['Jour']}' != Jour and idGroupe is not null) order by idCours asc""")
         
         if result != []:
-            return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "Ce groupe n'est pas disponible à l'horaire spécifié"))}), 400
+            return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "Ce groupe n'est pas disponible à la période spécifié"))}), 400
     
     returnStatement = {}
     query = f"Insert into edt.etudier (idGroupe, idCours) values ('{idGroupe}', '{json_datas['idCours']}') returning idGroupe"
@@ -198,13 +198,19 @@ def enlever_Cours(idCours):
 def get_groupe_dispo():
     """Renvoit tous les groupes disponible sur une période via la route /groupe/getGroupeDispo
 
-    :raises AucuneDonneeTrouverException: Si aucune donnée n'a été trouvé dans la table groupe, etudier ou cours
-
-    :param HeureDebut: date du début de la période au format time(sql)
+    :param HeureDebut: date du début de la période au format time(hh:mm:ss) spécifié dans le body
     :type HeureDebut: str 
 
-    :param NombreHeure: date de NombreHeure de la période au format time(sql)
-    :type NombreHeure: str
+    :param NombreHeure: durée de la période spécifié dans le body
+    :type NombreHeure: int
+
+    :param Jour: date de la journée où la disponibilité des cours doit être vérifer au format TIMESTAMP(yyyy:mm:jj)
+    :type Jour: str
+
+    :raises AucuneDonneeTrouverException: Si aucune donnée n'a été trouvé dans la table groupe, etudier ou cours
+    :raises ParamètreBodyManquantException: Si un paramètre est manquant
+    :raises ParamètreInvalideException: Si un des paramètres est invalide
+    :raises InsertionImpossibleException: Si une erreur est survenue lors de la récupération des données
     
     :return: touts les groupes disponibles
     :rtype: flask.wrappers.Response(json)
@@ -213,11 +219,11 @@ def get_groupe_dispo():
     if not json_datas:
         return jsonify({'error ': 'missing json body'}), 400
     
-    if 'HeureDebut' not in json_datas or 'NombreHeure' not in json_datas :
+    if 'HeureDebut' not in json_datas or 'Jour' not in json_datas or 'NombreHeure' not in json_datas :
         return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
 
-    if not verif.estDeTypeTime(json_datas['HeureDebut']) or not type(json_datas['NombreHeure']) == int:
-        return jsonify({'error': str(apiException.ParamètreInvalideException("HeureDebut ou NombreHeure"))}), 404
+    if not verif.estDeTypeTime(json_datas['HeureDebut']) or not verif.estDeTypeTimeStamp(json_datas['Jour']) or not type(json_datas['NombreHeure']) == int:
+        return jsonify({'error': str(apiException.ParamètreInvalideException("HeureDebut, NombreHeure ou Jour"))}), 404
 
     HeureDebut = json_datas['HeureDebut']
     NombreHeure = json_datas['NombreHeure']
@@ -234,19 +240,19 @@ def get_groupe_dispo():
 
     query = f""" select distinct edt.groupe.*  from edt.groupe full join edt.etudier using(idGroupe) full join edt.cours
     using(idCours) where (idGroupe is not null) and ( '{json_datas['HeureDebut']}' <  HeureDebut 
-    and  '{str(HeureFin)}' <= HeureDebut or '{json_datas['HeureDebut']}' >=  (HeureDebut + NombreHeure * interval '1 hours')) or (HeureDebut is null) order by idGroupe asc
+    and  '{str(HeureFin)}' <= HeureDebut or '{json_datas['HeureDebut']}' >=  (HeureDebut + NombreHeure * interval '1 hours'))
+    or ('{json_datas['Jour']}' != Jour and idGroupe is not null) or (HeureDebut is null) order by idGroupe asc
     """
     conn = connect_pg.connect()
     returnStatement = []
     try:
         rows = connect_pg.get_query(conn, query)
         if rows == []:
-            return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "Aucun groupe disponible n'a été trouvé l'horaire spécifié"))}), 400
+            return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "Aucun groupe disponible n'a été trouvé à la période spécifié"))}), 400
         
         for row in rows:
             returnStatement.append(get_groupe_statement(row))
     except Exception as e:
-        print(e)
         return jsonify({'error': str(apiException.InsertionImpossibleException("Etudier", "récupérer"))}), 500
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
@@ -369,7 +375,6 @@ def add_groupe():
     query_start += ") "
     query_values += ") returning idGroupe"
     query = query_start + query_values
-    print("addGroupe request : " + query)
     conn = connect_pg.connect()
     try:
         returnStatement = connect_pg.execute_commands(conn, query)
@@ -442,7 +447,6 @@ def update_groupe(idGroupe):
         req = req[:-2]
     req += f" WHERE idGroupe={idGroupe} RETURNING *"
 
-    print("updateGroupe request : " + req)
     conn = connect_pg.connect()
     try:
         connect_pg.execute_commands(conn, req)

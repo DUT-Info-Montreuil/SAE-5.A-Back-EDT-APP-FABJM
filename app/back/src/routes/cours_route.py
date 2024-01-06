@@ -35,7 +35,7 @@ def get_cours(filtre):
     """
 
     conn = connect_pg.connect()
-    """
+    
     if(perm.getUserPermission(get_jwt_identity() , conn) == 2):
         rows = getCoursProf(get_jwt_identity() , conn)
         returnStatement = []
@@ -58,7 +58,7 @@ def get_cours(filtre):
             return jsonify({'error': str(apiException.AucuneDonneeTrouverException("cours"))}), 404
         connect_pg.disconnect(conn)
         return jsonify(returnStatement)
-    """
+    
     if filtre.isdigit():
         query = f"select * from edt.cours where idCours='{filtre}'"
 
@@ -189,11 +189,11 @@ def assignerProf(idCours):
     result = connect_pg.get_query(conn , f"""Select e1.* from edt.cours as e1 full join edt.enseigner 
     as e2 using(idCours)  where e2.idProf = {json_datas['idProf']} 
     and ( '{cour[0]['HeureDebut']}' <=  e1.HeureDebut 
-    and  '{HeureFin}' >= e1.HeureDebut or '{cour[0]['HeureDebut']}' >=  (HeureDebut + NombreHeure * interval '1 hours')) 
-    order by idCours asc""")
+    and  '{HeureFin}' >= e1.HeureDebut or '{cour[0]['HeureDebut']}' >=  (HeureDebut + NombreHeure * interval '1 hours'))
+    or ('{cour[0]['Jour']}' != Jour and idGroupe is not null) order by idCours asc""")
     
     if result != []:
-        return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "Ce professeur n'est pas disponible à l'horaire spécifié"))}), 400
+        return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "Ce professeur n'est pas disponible à la période spécifié"))}), 400
 
     query = f"Insert into edt.enseigner (idProf, idCours) values ('{json_datas['idProf']}', '{idCours}') returning idCours"
     
@@ -290,7 +290,7 @@ def attribuerSalle(idCours):
         result = connect_pg.get_query(conn , f"""Select e1.* from edt.cours as e1 full join edt.accuellir 
         as e2 using(idCours) where (idSalle is not null) and ( '{coursSalle[0]['HeureDebut']}' <=  e1.HeureDebut 
         and  '{HeureFin}' >= e1.HeureDebut or '{coursSalle[0]['HeureDebut']}' >=  e1.(HeureDebut + NombreHeure * interval '1 hours')) 
-        order by idCours asc""")
+        or ('{coursSalle[0]['Jour']}' != Jour and idGroupe is not null) order by idCours asc""")
         
         if result != []:
             return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "Cette salle n'est pas disponible à l'horaire spécifié"))}), 400
