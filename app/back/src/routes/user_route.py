@@ -29,7 +29,7 @@ def get_prof_dispo():
     :param NombreHeure: durée de la période spécifié dans le body
     :type NombreHeure: int
 
-    :param Jour: date de la journée où la disponibilité des groupes doit être vérifer au format TIMESTAMP(yyyy-mm-jj)
+    :param Jour: date de la journée où la disponibilité des professeurs doit être vérifer au format TIMESTAMP(yyyy-mm-dd)
     :type Jour: str
 
     :raises AucuneDonneeTrouverException: Si aucune donnée n'a été trouvé dans la table groupe, etudier ou cours

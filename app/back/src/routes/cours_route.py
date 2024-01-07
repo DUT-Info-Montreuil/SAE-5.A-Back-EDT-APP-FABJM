@@ -117,15 +117,15 @@ def get_cours_groupe(idGroupe):
 @cours.route('/cours/deplacer/<idCours>', methods=['PUT'])
 @jwt_required()
 def deplacer_cours(idCours):
-    """Permet de supprimer un cours via la route /cours/delete
+    """Permet de déplacer un cours via la route /cours/deplacer/<idCours>
     
-    :param idCours: id du cours à supprimer
+    :param idCours: id du cours à déplacer
     :type idCours: int
 
     :raises ParamètreBodyManquantException: Si aucun paramètre d'entrée attendu n'est spécifié dans le body
     :raises ParamètreTypeInvalideException: Le type de idCours est invalide, une valeur numérique est attendue
 
-    :return: id du cours supprimer si présent
+    :return: id du cours déplacer si présent
     :rtype: json
     """
     if (not idCours.isdigit()):
