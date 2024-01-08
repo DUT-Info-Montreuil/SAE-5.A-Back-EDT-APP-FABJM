@@ -22,6 +22,7 @@ from src.routes.ressource_route import ressource
 from src.routes.salle_route import salle
 from src.routes.groupe_route import groupe
 from src.routes.cours_route import cours
+from src.routes.equipement_route import equipement
 
 app = Flask(__name__)
 """JWT CONFIGURATION"""
@@ -42,6 +43,8 @@ app.register_blueprint(semestre)
 app.register_blueprint(ressource)
 
 app.register_blueprint(groupe)
+
+app.register_blueprint(equipement)
 
 
 """Variable représentant l'application web"""
