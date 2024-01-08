@@ -80,6 +80,7 @@ def get_equipement(filtre):
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 
+# TODO: test route bellow
 @equipement.route('/equipement/add', methods=['POST'])
 @jwt_required()
 def add_equipement():
@@ -115,7 +116,7 @@ def add_equipement():
     connect_pg.disconnect(conn)
     return jsonify({"success": f"The equipements with the ids  were successfully created"}), 200    #{', '.join(tabIdEquipement)}
 
-@equipement.route('/equipement/update/<idEquipement>', methods=['POST'])
+@equipement.route('/equipement/update/<idEquipement>', methods=['PUT'])
 @jwt_required()
 def update_equipement(idEquipement):
     """
@@ -130,3 +131,4 @@ def update_equipement(idEquipement):
     :rtype: json
     """
     
+# TODO: add delete route

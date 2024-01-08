@@ -44,7 +44,7 @@ def get_cours(filtre):
         return jsonify(returnStatement)
     
     elif(perm.getUserPermission(get_jwt_identity() , conn) == 3):
-        cours = getEleveCoursCours(get_jwt_identity() , conn)
+        cours = getEleveCours(get_jwt_identity() , conn)
         returnStatement = []
         try:
             for row in cours:
@@ -128,7 +128,7 @@ def deplacer_cours(idCours):
         return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idCours", "numérique"))}), 400
     
     json_datas = request.get_json()
-    
+    # TODO: refactor
     if 'HeureDebut' not in json_datas and 'Jour' not in json_datas:
         return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
     else:

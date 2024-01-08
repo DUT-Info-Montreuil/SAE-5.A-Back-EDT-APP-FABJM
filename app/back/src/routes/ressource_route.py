@@ -18,7 +18,7 @@ from flask_jwt_extended import JWTManager, jwt_required, create_access_token, ge
 ressource = Blueprint('ressource', __name__)
 
 
-
+# TODO: refactor and add method
 
 
 @ressource.route('/ressource/attribuerResponsable/<idRessource>', methods=['POST', 'PUT'])

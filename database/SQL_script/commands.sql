@@ -27,7 +27,7 @@ CREATE TABLE Groupe(
    idGroupe SERIAL,
    Nom VARCHAR(50) ,
    AnneeScolaire INTEGER,
-   Annee INTEGER,
+   Annee VARCHAR(50),
    idGroupe_parent INTEGER,
    PRIMARY KEY(idGroupe),
    FOREIGN KEY(idGroupe_parent) REFERENCES Groupe(idGroupe) ON DELETE CASCADE
