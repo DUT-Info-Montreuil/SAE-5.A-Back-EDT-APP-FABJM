@@ -13,7 +13,7 @@ def get_cours_statement(row):
     return {
         'idCours':row[0],
         'HeureDebut':str(row[1]),
-        'NombreHeure':row[2],
+        'NombreHeure':str(row[2]),
         'Jour':str(row[3]),
         'idRessource':row[4]
     }

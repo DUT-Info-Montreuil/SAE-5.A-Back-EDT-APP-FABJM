@@ -46,13 +46,13 @@ def get_salle_dispo():
     if 'HeureDebut' not in json_datas or 'Jour' not in json_datas or 'NombreHeure' not in json_datas :
         return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
 
-    if not verif.estDeTypeTime(json_datas['HeureDebut']) or not verif.estDeTypeTimeStamp(json_datas['Jour']) or not type(json_datas['NombreHeure']) == int:
+    if not verif.estDeTypeTime(json_datas['HeureDebut']) or not verif.estDeTypeTimeStamp(json_datas['Jour']) or not verif.estDeTypeTime(json_datas['NombreHeure']):
         return jsonify({'error': str(apiException.ParamètreInvalideException("HeureDebut, NombreHeure ou Jour"))}), 404
 
     HeureDebut = json_datas['HeureDebut']
     NombreHeure = json_datas['NombreHeure']
     HeureDebut = datetime.timedelta(hours = int(HeureDebut[:2]),minutes = int(HeureDebut[3:5]), seconds = int(HeureDebut[6:8]))
-    NombreHeure = datetime.timedelta(hours = NombreHeure)
+    NombreHeure = datetime.timedelta(hours = int(NombreHeure[:2]),minutes = int(NombreHeure[3:5]))
     HeureFin = HeureDebut + NombreHeure
 
     heure_ouverture_iut = datetime.timedelta(hours = 8)
@@ -63,7 +63,8 @@ def get_salle_dispo():
 
     query = f""" select edt.salle.* from edt.salle full join edt.accuellir using(idSalle) full join edt.cours
     using(idCours) where (idSalle is not null) and ( '{json_datas['HeureDebut']}' <  HeureDebut 
-    and  '{str(HeureFin)}' <= HeureDebut or '{json_datas['HeureDebut']}' >=  (HeureDebut + NombreHeure * interval '1 hours')) or (HeureDebut is null) order by idsalle asc
+    and  '{str(HeureFin)}' <= HeureDebut or '{json_datas['HeureDebut']}'::time >=  (HeureDebut + NombreHeure::interval))  
+    or (HeureDebut is null) order by idSalle asc
     """
     conn = connect_pg.connect()
     returnStatement = []
@@ -75,7 +76,6 @@ def get_salle_dispo():
         for row in rows:
             returnStatement.append(get_salle_statement(row))
     except Exception as e:
-        print(e)
         return jsonify({'error': str(apiException.InsertionImpossibleException("Salle, Etudier ou Cours", "récupérer"))}), 500
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)

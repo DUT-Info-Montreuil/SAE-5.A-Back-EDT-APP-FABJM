@@ -235,7 +235,6 @@ def UpdateRessource(id) :
         return jsonify({'erreur': str(apiException.PermissionManquanteException())}), 403
     
     datas = request.get_json()
-    print(datas.keys())
     if not datas:
         return jsonify({'erreur': str(apiException.ParamètreBodyManquantException())}), 400
     key = ["Titre", "NbrHeureSemestre", "CodeCouleur", "IdSemestre", "Numero"]

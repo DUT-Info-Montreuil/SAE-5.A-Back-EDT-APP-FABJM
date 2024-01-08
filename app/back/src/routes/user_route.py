@@ -47,13 +47,13 @@ def get_prof_dispo():
     if 'HeureDebut' not in json_datas or 'Jour' not in json_datas or 'NombreHeure' not in json_datas :
         return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
 
-    if not verif.estDeTypeTime(json_datas['HeureDebut']) or not verif.estDeTypeTimeStamp(json_datas['Jour']) or not type(json_datas['NombreHeure']) == int:
+    if not verif.estDeTypeTime(json_datas['HeureDebut']) or not verif.estDeTypeTimeStamp(json_datas['Jour']) or not verif.estDeTypeTime(json_datas['NombreHeure']):
         return jsonify({'error': str(apiException.ParamètreInvalideException("HeureDebut, NombreHeure ou Jour"))}), 404
 
     HeureDebut = json_datas['HeureDebut']
     NombreHeure = json_datas['NombreHeure']
     HeureDebut = datetime.timedelta(hours = int(HeureDebut[:2]),minutes = int(HeureDebut[3:5]), seconds = int(HeureDebut[6:8]))
-    NombreHeure = datetime.timedelta(hours = NombreHeure)
+    NombreHeure = datetime.timedelta(hours = int(NombreHeure[:2]),minutes = int(NombreHeure[3:5]))
     HeureFin = HeureDebut + NombreHeure
 
     heure_ouverture_iut = datetime.timedelta(hours = 8)
@@ -64,12 +64,24 @@ def get_prof_dispo():
 
     query = f""" select distinct edt.professeur.* from edt.professeur full join edt.enseigner using(idProf) full join edt.cours
     using(idCours) where (idProf is not null) and ( '{json_datas['HeureDebut']}' <  HeureDebut 
-    and  '{str(HeureFin)}' <= HeureDebut or '{json_datas['HeureDebut']}' >=  (HeureDebut + NombreHeure * interval '1 hours')) 
-    or ('{json_datas['Jour']}' != Jour and idGroupe is not null) or (HeureDebut is null) order by idProf asc
+    and  '{str(HeureFin)}' <= HeureDebut or '{json_datas['HeureDebut']}'::time >=  (HeureDebut + NombreHeure::interval)) 
+    or ('{json_datas['Jour']}' != Jour and idProf is not null) or (HeureDebut is null) order by idProf asc
     """
     conn = connect_pg.connect()
-    rows = connect_pg.get_query(conn, query)
     returnStatement = []
+    try:
+        rows = connect_pg.get_query(conn, query)
+        if rows == []:
+            return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "Aucun professeur disponible n'a été trouvé à la période spécifié"))}), 400
+        
+        for row in rows:
+            returnStatement.append(get_professeur_statement(row))
+    except Exception as e:
+        return jsonify({'error': str(apiException.InsertionImpossibleException("Etudier", "récupérer"))}), 500
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)
+
+
     try:
         for row in rows:
             returnStatement.append(get_professeur_statement(row))

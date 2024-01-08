@@ -125,14 +125,14 @@ def ajouter_cours(idGroupe):
         courGroupe = json.loads(get_cours_groupe(idGroupe).data) 
         HeureDebut = courGroupe[0]['HeureDebut']
         NombreHeure = courGroupe[0]['NombreHeure']
-        HeureDebut = datetime.timedelta(hours = int(HeureDebut[:2]),minutes = int(HeureDebut[3:5]), seconds = int(HeureDebut[6:8]))
-        NombreHeure = datetime.timedelta(hours = NombreHeure)
+        HeureDebut = datetime.timedelta(hours = int(HeureDebut[:2]),minutes = int(HeureDebut[3:5]), seconds = 00)
+        NombreHeure = datetime.timedelta(hours = int(NombreHeure[:2]),minutes = int(NombreHeure[3:5]), seconds = 00)
         HeureFin = str(HeureDebut + NombreHeure)
 
         result = connect_pg.get_query(conn , f"""Select e1.* from edt.cours as e1 full join edt.etudier 
         as e2 using(idCours) where (idGroupe is not null) and ( '{courGroupe[0]['HeureDebut']}' <=  HeureDebut 
-        and  '{HeureFin}' >= HeureDebut or '{courGroupe[0]['HeureDebut']}' >=  (HeureDebut + NombreHeure * interval '1 hours')) 
-        or ('{courGroupe[0]['Jour']}' != Jour and idGroupe is not null) order by idCours asc""")
+        and  '{HeureFin}' <= HeureDebut or '{courGroupe[0]['HeureDebut']}'::time >=  (HeureDebut + NombreHeure::interval))
+         or ('{courGroupe[0]['Jour']}' != Jour and idGroupe is not null) order by idCours asc""")
         
         if result != []:
             return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "Ce groupe n'est pas disponible à la période spécifié"))}), 400
@@ -222,13 +222,13 @@ def get_groupe_dispo():
     if 'HeureDebut' not in json_datas or 'Jour' not in json_datas or 'NombreHeure' not in json_datas :
         return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
 
-    if not verif.estDeTypeTime(json_datas['HeureDebut']) or not verif.estDeTypeTimeStamp(json_datas['Jour']) or not type(json_datas['NombreHeure']) == int:
+    if not verif.estDeTypeTime(json_datas['HeureDebut']) or not verif.estDeTypeTimeStamp(json_datas['Jour']) or not verif.estDeTypeTime(json_datas['NombreHeure']):
         return jsonify({'error': str(apiException.ParamètreInvalideException("HeureDebut, NombreHeure ou Jour"))}), 404
 
     HeureDebut = json_datas['HeureDebut']
     NombreHeure = json_datas['NombreHeure']
     HeureDebut = datetime.timedelta(hours = int(HeureDebut[:2]),minutes = int(HeureDebut[3:5]), seconds = int(HeureDebut[6:8]))
-    NombreHeure = datetime.timedelta(hours = NombreHeure)
+    NombreHeure = datetime.timedelta(hours = int(NombreHeure[:2]),minutes = int(NombreHeure[3:5]))
     HeureFin = HeureDebut + NombreHeure
 
     heure_ouverture_iut = datetime.timedelta(hours = 8)
@@ -240,7 +240,7 @@ def get_groupe_dispo():
 
     query = f""" select distinct edt.groupe.*  from edt.groupe full join edt.etudier using(idGroupe) full join edt.cours
     using(idCours) where (idGroupe is not null) and ( '{json_datas['HeureDebut']}' <  HeureDebut 
-    and  '{str(HeureFin)}' <= HeureDebut or '{json_datas['HeureDebut']}' >=  (HeureDebut + NombreHeure * interval '1 hours'))
+    and  '{str(HeureFin)}' <= HeureDebut or '{json_datas['HeureDebut']}'::time >=  (HeureDebut + NombreHeure::interval))
     or ('{json_datas['Jour']}' != Jour and idGroupe is not null) or (HeureDebut is null) order by idGroupe asc
     """
     conn = connect_pg.connect()
