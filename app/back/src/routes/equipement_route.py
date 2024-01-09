@@ -101,20 +101,17 @@ def add_equipement():
 
     if(permision != 0):
         return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
-
-    query = "INSERT INTO edt.equipement (Nom)  VALUES " # OUTPUT inserted.idEquipement
+    query = "INSERT INTO edt.equipement (Nom) VALUES "
     value_query = []
     for data in json_datas['data']:
         value_query.append(f"('{data['Nom']}')")
-    query += ",".join(value_query)
+    query += ",".join(value_query) + " returning idEquipement"
 
-    print(query)
+    # TODO: find why only one id is return when multiple one are inserted
     returnStatement = connect_pg.execute_commands(conn, query)
-    tabIdEquipement = returnStatement
-    print(tabIdEquipement)
 
     connect_pg.disconnect(conn)
-    return jsonify({"success": f"The equipements with the ids  were successfully created"}), 200    #{', '.join(tabIdEquipement)}
+    return jsonify({"success": f"The equipements with the ids {returnStatement} were successfully created"}), 200    #{', '.join(tabIdEquipement)}
 
 @equipement.route('/equipement/update/<idEquipement>', methods=['PUT'])
 @jwt_required()
@@ -130,5 +127,52 @@ def update_equipement(idEquipement):
     :return: success
     :rtype: json
     """
+    json_datas = request.get_json()
+    if not json_datas:
+        return jsonify({'error ': 'missing json body'}), 400
+    keys = ["Nom"]
+    tab_info = []
+    for key in json_datas.keys():
+        if key not in keys:
+            return jsonify({'error': "missing or invalid key"}), 400
+        tab_info.append(f"{key}='{json_datas[key]}'")
+
+    conn = connect_pg.connect()
+    permision = perm.getUserPermission(get_jwt_identity() , conn)
+    if(permision != 0):
+        return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
     
-# TODO: add delete route
+    query = "UPDATE edt.equipement SET " + ", ".join(tab_info) + f" WHERE idEquipement={idEquipement} RETURNING *"
+
+    try:
+        connect_pg.execute_commands(conn, query)
+    except TypeError as e:
+        return jsonify({'error': str(apiException.DonneeIntrouvableException("equipement", idEquipement))}), 404
+    connect_pg.disconnect(conn)
+    return jsonify({"success": f"the equipement with id {idEquipement} was successfully updated"}), 200
+
+@equipement.route('/equipement/delete/<idEquipement>', methods=['DELETE'])
+@jwt_required()
+def delete_equipement(idEquipement):
+    """
+    Permet de supprimer un groupe via la route /groupe/delete/<idEquipement>
+
+    :param idEquipement: l'id d'un groupe présent dans la base de donnée
+    :type idEquipement: str
+
+    :raises DonneeIntrouvableException: Impossible de trouver le groupe spécifié dans la table groupe
+
+    :return:  le parent du groupe a qui appartient cet id
+    :rtype: json
+    """
+    conn = connect_pg.connect()
+    query = f"DELETE FROM edt.Equipement WHERE idEquipement={idEquipement} RETURNING *"
+    try:
+        returnStatement = connect_pg.execute_commands(conn, query)
+    except(TypeError) as e:
+        return jsonify({'error': str(apiException.DonneeIntrouvableException("Equipement", idEquipement))}), 404
+    connect_pg.disconnect(conn)
+    return jsonify({"success": f"The equipement with id {idEquipement} was successfully removed"}), 200
+
+
+    
