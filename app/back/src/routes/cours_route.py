@@ -35,7 +35,7 @@ def get_cours(filtre):
     """
 
     conn = connect_pg.connect()
-    """
+    
     if(perm.getUserPermission(get_jwt_identity() , conn) == 2):
         rows = getCoursProf(get_jwt_identity() , conn)
         returnStatement = []
@@ -58,7 +58,7 @@ def get_cours(filtre):
             return jsonify({'error': str(apiException.AucuneDonneeTrouverException("cours"))}), 404
         connect_pg.disconnect(conn)
         return jsonify(returnStatement)
-    """
+    
     
     if filtre.isdigit():
         query = f"select * from edt.cours where idCours='{filtre}'"
@@ -192,14 +192,12 @@ def assignerProf(idCours):
         NombreHeure = datetime.timedelta(hours = int(NombreHeure[:2]),minutes = int(NombreHeure[3:5]), seconds = 00 )
         HeureFin = str(HeureDebut + NombreHeure)
 
-        result = connect_pg.get_query(conn , f"""Select edt.cours.* from edt.cours full join edt.enseigner 
-        using(idCours)  where idProf = {json_datas['idProf']} 
-        and ( '{cour[0]['HeureDebut']}' <=  HeureDebut 
-        and  '{HeureFin}' >= HeureDebut or '{cour[0]['HeureDebut']}'::time >=  (HeureDebut + NombreHeure::interval))
-         order by idCours asc""")
-   
-        #or ('{cour[0]['Jour']}' != Jour and idCours is not null)
-    
+        query = f"""SELECT edt.cours.* FROM edt.cours inner join edt.enseigner using(idCours)  where idProf = {json_datas['idProf']}
+        and ((HeureDebut <= '{cour[0]['HeureDebut']}' and '{cour[0]['HeureDebut']}'::time <=  (HeureDebut + NombreHeure::interval))
+        or ( HeureDebut <= '{HeureFin}' and '{HeureFin}'::time <= (HeureDebut + NombreHeure::interval)))
+        and ('{cour[0]['Jour']}' = Jour and idCours is not null) order by idCours asc
+        """
+        result = connect_pg.get_query(conn , query)
         if result != []:
             return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "Ce professeur n'est pas disponible à la période spécifié"))}), 400
 
@@ -284,9 +282,10 @@ def attribuerSalle(idCours):
         return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
     
     conn = connect_pg.connect()
-    coursSalle = get_cours_salle(json_datas['idSalle'])
+    coursSalle = get_cours(idCours)
+    
     if type(coursSalle) != tuple:
-        coursSalle = json.loads(get_cours_salle(json_datas['idSalle']).data)
+        coursSalle = json.loads(get_cours(idCours).data) 
 
         HeureDebut = coursSalle[0]['HeureDebut']
         NombreHeure = coursSalle[0]['NombreHeure']
@@ -294,15 +293,16 @@ def attribuerSalle(idCours):
         NombreHeure = datetime.timedelta(hours = int(NombreHeure[:2]),minutes = int(NombreHeure[3:5]), seconds = 00)
         HeureFin = str(HeureDebut + NombreHeure)
 
-        result = connect_pg.get_query(conn , f"""Select e1.* from edt.cours as e1 full join edt.accuellir 
-        as e2 using(idCours) full join edt.accuellir 
-        using(idSalle)  where idSalle = {json_datas['idSalle']}
-        and ( '{coursSalle[0]['HeureDebut']}' <=  e1.HeureDebut 
-        and  '{HeureFin}' <= e1.HeureDebut or '{coursSalle[0]['HeureDebut']}'::time >=  (HeureDebut + NombreHeure::interval))
-        or ('{coursSalle[0]['Jour']}' != Jour and idGroupe is not null) order by idCours asc""")
-        
+        query = f"""SELECT edt.cours.* FROM edt.cours inner join edt.accuellir using(idCours)  where idSalle = {json_datas['idSalle']}
+        and ((HeureDebut <= '{coursSalle[0]['HeureDebut']}' and '{coursSalle[0]['HeureDebut']}'::time <=  (HeureDebut + NombreHeure::interval))
+        or ( HeureDebut <= '{HeureFin}' and '{HeureFin}'::time <= (HeureDebut + NombreHeure::interval)))
+        and ('{coursSalle[0]['Jour']}' = Jour and idCours is not null) order by idCours asc
+        """
+
+        result = connect_pg.get_query(conn , query)
         if result != []:
             return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "Cette salle n'est pas disponible à l'horaire spécifié"))}), 400
+        
     
     returnStatement = {}
     query = f"Insert into edt.accuellir (idSalle, idCours) values ('{json_datas['idSalle']}', '{idCours}') returning idCours"

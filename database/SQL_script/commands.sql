@@ -128,7 +128,7 @@ CREATE TABLE Cours(
    idCours SERIAL,
    HeureDebut TIME,
    NombreHeure TIME,
-   Jour TIMESTAMP,
+   Jour DATE,
    idRessource INTEGER NOT NULL,
    PRIMARY KEY(idCours),
    FOREIGN KEY(idRessource) REFERENCES Ressource(idRessource)
