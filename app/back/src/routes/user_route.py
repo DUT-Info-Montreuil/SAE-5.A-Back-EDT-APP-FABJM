@@ -15,7 +15,7 @@ from psycopg2 import OperationalError, Error
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity  
 user = Blueprint('user', __name__)
 
-
+# TODO: refactor user
 @user.route('/utilisateurs/getAll', methods=['GET','POST'])
 @jwt_required()
 def get_utilisateur():
@@ -101,7 +101,9 @@ def add_utilisateur():
     json_datas = request.get_json()
     # if not perm.permissionCheck(get_jwt_identity() , 0 , conn):
     #     return jsonify({'error': 'not enough permission'}), 403
-    
+
+    # TODO: use nom salle in create user instead of id salle
+
     if not json_datas:
             return jsonify({'error ': 'missing json body'}), 400
     
@@ -207,10 +209,10 @@ def auth_utilisateur():
     return jsonify({'error': str(apiException.LoginOuMotDePasseInvalideException())}), 400
 
 
-#firstLogin route wich update the password and the firstLogin column
-@user.route('/utilisateurs/firstLogin', methods=['POST'])
+#password update route wich update the password and the firstLogin column
+@user.route('/utilisateurs/password/update', methods=['PUT'])
 @jwt_required()
-def firstLogin_utilisateur():
+def update_utilisateur_password():
     """ Permet à un utilisateur de définir un mot de passe lors de la première connexion via la route /utilisateurs/firstLogin
     
     :param password: mot de passe définie par le nouvel utilisateur spécifié dans le body
@@ -226,7 +228,7 @@ def firstLogin_utilisateur():
     password = json_datas['Password']
     if(password == ""):
         return jsonify({'error': str(apiException.ParamètreTypeInvalideException("password", "string"))}), 400    
-    query = f"update edt.utilisateur set PassWord='{password}', FirstLogin=false where idutilisateur='{id}'"
+    query = f"update edt.utilisateur set Password='{password}', FirstLogin=false where Username='{username}'"
     conn = connect_pg.connect()
     try:
         
@@ -261,7 +263,7 @@ def update_utilisateur(id):
         return jsonify({'error ': 'missing json body'}), 400
     if 'role' in json_datas.keys():
         return jsonify({'error ': 'le role ne peut pas etre modifié pour l\'instant'}), 400
-
+    # TODO: finish role vérification (use Enum)
         if (json_datas['role'] != "admin" and json_datas['role'] != "professeur" and json_datas['role'] != "eleve" and json_datas['role'] != "manager"):
             return jsonify({'error ': 'le role doit etre admin ,professeur, eleve ou manager'}), 400
     

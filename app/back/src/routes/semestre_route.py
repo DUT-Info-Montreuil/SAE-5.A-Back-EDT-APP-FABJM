@@ -16,7 +16,7 @@ from psycopg2 import OperationalError, Error
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity
 
 semestre = Blueprint('semestre', __name__)
-
+# TODO: Finir semestre et refactor
 
 @semestre.route('/semestre/getAll')
 @jwt_required()
@@ -127,6 +127,6 @@ def get_one_semestre(numeroSemestre):
     except TypeError as e:
         return jsonify({'error': str(apiException.DonneeIntrouvableException("semestre", numeroSemestre))}), 404
     connect_pg.disconnect(conn)
-    return jsonify("success"), 200
+    return jsonify(returnStatement), 200
 
 
