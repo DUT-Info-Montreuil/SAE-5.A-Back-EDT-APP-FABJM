@@ -13,6 +13,7 @@ from psycopg2 import errorcodes
 from psycopg2 import OperationalError, Error
 import src.services.permision as perm
 import json
+import src.services.verification as verif 
 
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity  
 cours = Blueprint('cours', __name__)
@@ -385,6 +386,8 @@ def add_cours():
     :raises InsertionImpossibleException: Impossible d'ajouter le cours spécifié dans la table cours
     :raises DonneeIntrouvableException: La valeur de la clée étrangère idRessource n'a pas pu être trouvé
     :raises ParamètreBodyManquantException: Si ou plusieurs paramètres sont manquant dans le body
+    :raises ParamètreInvalideException: Si ou plusieurs paramètres sont incohérent ou invalide
+    
     
     :return: le cours qui vient d'être créé
     :rtype: json
@@ -392,12 +395,15 @@ def add_cours():
     json_datas = request.get_json()
     if 'HeureDebut' not in json_datas or 'NombreHeure' not in json_datas or 'Jour' not in json_datas or 'idRessource' not in json_datas:
         return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
-    returnStatement = {}
+    
+    if not verif.estDeTypeTime(json_datas['HeureDebut']) or not verif.estDeTypeTimeStamp(json_datas['Jour']) or not verif.estDeTypeTime(json_datas['NombreHeure']) or type(json_datas['NombreHeure']) == int:
+        return jsonify({'error': str(apiException.ParamètreInvalideException("HeureDebut, NombreHeure, idRessource ou Jour"))}), 404
+
 
     HeureDebut = json_datas['HeureDebut']
     NombreHeure = json_datas['NombreHeure']
     HeureDebut = datetime.timedelta(hours = int(HeureDebut[:2]),minutes = int(HeureDebut[3:5]), seconds = int(HeureDebut[6:8]))
-    NombreHeure = datetime.timedelta(hours = NombreHeure)
+    NombreHeure = datetime.timedelta(hours = int(NombreHeure[:2]),minutes = int(NombreHeure[3:5]), seconds = 00)
     HeureFin = HeureDebut + NombreHeure
 
     heure_ouverture_iut = datetime.timedelta(hours = 8)
@@ -406,8 +412,29 @@ def add_cours():
     if HeureDebut < heure_ouverture_iut or HeureFin > heure_fermeture_iut:
         return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "L'iut est fermé à l'horaire spécifié"))}), 404
 
-    query = f"Insert into edt.cours (HeureDebut, NombreHeure, Jour, idRessource) values ('{json_datas['HeureDebut']}', '{json_datas['NombreHeure']}', '{json_datas['Jour']}', '{json_datas['idRessource']}') returning idCours"
     conn = connect_pg.connect()
+    query = f"select NbrHeureSemestre from edt.ressource where idRessource = {json_datas['idRessource']}" # vérifier si il reste assez d'heures
+    try:
+        NbrHeureSemestre = str(connect_pg.get_query(conn, query)[0][0])
+        if(NbrHeureSemestre == '00:00:00'):
+            return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "Plus aucune heures est disponible pour la ressource spécifié"))}), 400
+        
+        NbrHeureSemestre = datetime.timedelta(hours = int(NbrHeureSemestre[:2]),minutes = int(NbrHeureSemestre[3:5]))
+        NombreHeure = datetime.timedelta(hours = int(json_datas['NombreHeure'][:2]),minutes = int(json_datas['NombreHeure'][3:5]))
+
+        if (NbrHeureSemestre - NombreHeure) < datetime.timedelta(hours = 00,minutes = 00)  :
+            return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = f"La ressource spécifié ne possède pas le nombre d'heures demandé"))}), 400
+    except psycopg2.IntegrityError as e:
+        if e.pgcode == '23503':
+            # Erreur violation de contrainte clée étrangère de la table Ressources
+            return jsonify({'error': str(apiException.DonneeIntrouvableException("Ressources", json_datas['idRessource']))}), 400
+        else:
+            # Erreur inconnue
+            return jsonify({'error': str(apiException.InsertionImpossibleException("ressource", "récupérer"))}), 500
+
+
+    query = f"Insert into edt.cours (HeureDebut, NombreHeure, Jour, idRessource) values ('{json_datas['HeureDebut']}', '{json_datas['NombreHeure']}', '{json_datas['Jour']}', '{json_datas['idRessource']}') returning idCours"
+    
     try:
         returnStatement = connect_pg.execute_commands(conn, query)
     except psycopg2.IntegrityError as e:
@@ -417,9 +444,22 @@ def add_cours():
         else:
             # Erreur inconnue
             return jsonify({'error': str(apiException.InsertionImpossibleException("cours"))}), 500
-
+        
+    
+    query = f"update edt.ressource set nbrheuresemestre = '{str(NbrHeureSemestre - NombreHeure)}'  where idRessource = {json_datas['idRessource']}" # pour mettre à jour le nombre d'heures
+    
+    try:
+        connect_pg.execute_commands(conn, query)
+    except psycopg2.IntegrityError as e:
+        if e.pgcode == '23503':
+            # Erreur violation de contrainte clée étrangère de la table Ressources
+            return jsonify({'error': str(apiException.DonneeIntrouvableException("Ressources", json_datas['idRessource']))}), 400
+        else:
+            # Erreur inconnue
+            return jsonify({'error': str(apiException.InsertionImpossibleException("ressource", "mettre à jour"))}), 500
+    
     connect_pg.disconnect(conn)
-    return jsonify(returnStatement)
+    return jsonify(returnStatement) #
 
 
 
