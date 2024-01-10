@@ -6,6 +6,10 @@ INSERT INTO Utilisateur (FirstName, LastName, Username, PassWord) values ('Gilga
 INSERT INTO Utilisateur (FirstName, LastName, Username, PassWord) values ('Aya', 'Rindo', 'detective', 'immortal'); -- professeur
 INSERT INTO Utilisateur (FirstName, LastName, Username, PassWord) values ('Tsugaru ', 'Shinuchi', 'assistant', 'OniKiller');
 
+
+INSERT INTO Admin (idUtilisateur) values (2);
+
+
 -- Semestre(idSemestre, Numero)
 INSERT INTO Semestre (Numero) values (3);
 

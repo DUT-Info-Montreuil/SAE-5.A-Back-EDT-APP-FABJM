@@ -125,3 +125,30 @@ def add_salle():
             return jsonify({'error': str(apiException.InsertionImpossibleException("salle"))}), 500
 
     return jsonify({"success" : "la salle a été ajouté"}), 200
+
+
+
+
+@salle.route('/salle/update', methods=['PUT'])
+@jwt_required()
+def update_salle():
+    """Permet de modifier une salle via la route /salle/update
+    
+    :param salle: salle à modifier, spécifié dans le body
+    :type salle: json
+
+    :raises InsertionImpossibleException: Impossible de modifier la salle spécifié dans la table salle
+    
+    :return: message de succès
+    :rtype: str
+    """
+    json_datas = request.get_json()
+    if not json_datas:
+        return jsonify({'error ': 'missing json body'}), 400
+    query = f"update edt.salle set Numero='{json_datas['Numero']}', Capacite={json_datas['Capacite']} where idSalle={json_datas['idSalle']}"
+    conn = connect_pg.connect()
+    try:
+        returnStatement = connect_pg.execute_commands(conn, query)
+    except psycopg2.IntegrityError as e:
+        return jsonify({'error': str(apiException.InsertionImpossibleException("salle"))}), 500
+    return jsonify({'success': 'salle modifié'}), 200
