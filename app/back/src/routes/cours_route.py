@@ -14,6 +14,7 @@ from psycopg2 import OperationalError, Error
 import src.services.permision as perm
 import json
 import src.services.verification as verif 
+from datetime import date
 
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity  
 cours = Blueprint('cours', __name__)
@@ -355,7 +356,7 @@ def remove_salle(idCours):
 @cours.route('/cours/delete/<idCours>', methods=['DELETE'])
 @jwt_required()
 def delete_cours(idCours):
-    """Permet de supprimer un cours via la route /cours/delete/<idCours>
+    """Permet de supprimer un cours via la route /cours/delete/<idCours>, si le cours n'a pas encore eu lieu les heures de la ressource sont restaurés
     
     :param idCours: id du cours à supprimer
     :type idCours: int
@@ -365,14 +366,46 @@ def delete_cours(idCours):
     :return: id du cours supprimer si présent
     :rtype: json
     """
+
     if (not idCours.isdigit()):
         return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idCours", "numérique"))}), 400
-    else:
-        query = "delete  from edt.cours where idCours=%(idCours)s" % {'idCours':idCours}
-        conn = connect_pg.connect()
+
+    conn = connect_pg.connect() 
+    cour = get_cours(idCours)
+
+    if type(cour) != tuple : 
+        cour = json.loads(get_cours(idCours).data)
+        aujourdhui = date.today()
+        jourCours = date(int(cour[0]['Jour'][:4]), int(cour[0]['Jour'][5:7]), int(cour[0]['Jour'][8:10]))
+        HeureDebut = datetime.timedelta(hours = int(cour[0]['HeureDebut'][:2]),minutes = int(cour[0]['HeureDebut'][3:5]), seconds = 00)
+        HeureActuelle = str(datetime.datetime.now())
+        HeureActuelle = datetime.timedelta(hours = int(HeureActuelle[11:13]),minutes = int(HeureActuelle[14:16]), seconds = 00)
+
+        if( jourCours > aujourdhui  or (jourCours == aujourdhui and HeureDebut > HeureActuelle)):
+            query = f"update edt.ressource set nbrheuresemestre =  (nbrheuresemestre + '{cour[0]['NombreHeure']}')  where idRessource = {cour[0]['idRessource']}" # pour mettre à jour le nombre d'heures
+            try:
+                connect_pg.execute_commands(conn, query)
+            except psycopg2.IntegrityError as e:
+                if e.pgcode == '23503':
+                    # Erreur violation de contrainte clée étrangère de la table Ressources
+                    return jsonify({'error': str(apiException.DonneeIntrouvableException("Ressources", cour[0]['idRessource']))}), 400
+                else:
+                    # Erreur inconnue
+                    return jsonify({'error': str(apiException.InsertionImpossibleException("ressource", "mettre à jour"))}), 500
+    
+    query = "delete from edt.cours where idCours=%(idCours)s" % {'idCours':idCours}
+    try:
         connect_pg.execute_commands(conn, query)
-        connect_pg.disconnect(conn)
-        return jsonify(idCours)
+
+    except psycopg2.IntegrityError as e:
+        if e.pgcode == '23503':
+            # Erreur violation de contrainte clée étrangère de la table Ressources
+            return jsonify({'error': str(apiException.DonneeIntrouvableException("Cours", idCours))}), 400
+        else:
+            # Erreur inconnue
+            return jsonify({'error': str(apiException.InsertionImpossibleException("Cours", "supprimer"))}), 500
+    connect_pg.disconnect(conn)
+    return jsonify(idCours)
     
 
 @cours.route('/cours/add', methods=['POST'])
