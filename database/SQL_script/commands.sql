@@ -147,7 +147,7 @@ CREATE TABLE Accuellir(
    idCours INTEGER,
    PRIMARY KEY(idSalle, idCours),
    FOREIGN KEY(idSalle) REFERENCES Salle(idSalle),
-   FOREIGN KEY(idCours) REFERENCES Cours(idCours)
+   FOREIGN KEY(idCours) REFERENCES Cours(idCours) ON DELETE CASCADE
 );
 
 CREATE TABLE Equiper(
@@ -163,7 +163,7 @@ CREATE TABLE Enseigner(
    idCours INTEGER,
    PRIMARY KEY(idProf, idCours),
    FOREIGN KEY(idProf) REFERENCES Professeur(idProf),
-   FOREIGN KEY(idCours) REFERENCES Cours(idCours)
+   FOREIGN KEY(idCours) REFERENCES Cours(idCours) ON DELETE CASCADE
 );
 
 CREATE TABLE Responsable(
@@ -179,6 +179,6 @@ CREATE TABLE Etudier(
    idCours INTEGER,
    PRIMARY KEY(idGroupe, idCours),
    FOREIGN KEY(idGroupe) REFERENCES Groupe(idGroupe),
-   FOREIGN KEY(idCours) REFERENCES Cours(idCours)
+   FOREIGN KEY(idCours) REFERENCES Cours(idCours) ON DELETE CASCADE
 );
 
