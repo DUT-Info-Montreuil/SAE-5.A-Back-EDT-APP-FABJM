@@ -50,7 +50,7 @@ def get_cours(filtre):
         return jsonify(returnStatement)
     
     elif(perm.getUserPermission(get_jwt_identity() , conn) == 3):
-        idGroupe = connect_pg.get_query(conn , f"select idGroupe from edt.eleve where WHERE idUtilisateur ={get_jwt_identity()}")[0][0]
+        idGroupe = connect_pg.get_query(conn , f"select idGroupe from edt.eleve where idUtilisateur ={get_jwt_identity()}")[0][0]
         rows = getCoursGroupeService(idGroupe , conn)
         returnStatement = []
         try:

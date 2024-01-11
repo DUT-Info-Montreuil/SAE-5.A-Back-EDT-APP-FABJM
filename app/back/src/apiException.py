@@ -69,6 +69,9 @@ class ParamètreInvalideException(Exception):
     
     :param paramètre: le nom du paramètre spécifié
     :type paramètre: String
+
+    :param message: message d'erreur personnalisé qui vas écraser celui par défaut
+    :type message: String(optionnel)
 	"""
     def __init__(self, paramètre, message = None):
         if message != None:
