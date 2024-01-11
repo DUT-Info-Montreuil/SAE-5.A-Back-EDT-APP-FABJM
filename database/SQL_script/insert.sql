@@ -10,12 +10,13 @@ INSERT INTO Utilisateur (FirstName, LastName, Username, PassWord) values ('Tsuga
 INSERT INTO Semestre (Numero) values (3);
 
 -- Ressource(idRessource, Titre, Numero, NbrHeureSemestre, CodeCouleur, idSemestre)
-INSERT INTO Ressource (Titre, Numero, NbrHeureSemestre, idSemestre) values ('test ', 'R3-04', '10:00:00', '1');
+INSERT INTO Ressource (Titre, Numero, NbrHeureSemestre, idSemestre) values ('Dev', 'R3-04', '10:00:00', '1');
+INSERT INTO Ressource (Titre, Numero, NbrHeureSemestre, idSemestre) values ('Math', 'R3-12', '08:00:00', '1');
 
 
 -- Cours (idCours, HeureDebut, NombreHeure, Jour, idRessource)
 INSERT INTO Cours (HeureDebut, NombreHeure, Jour, idRessource) values ('10:00:00', '04:00:00', '2023-10-06', '1');
-INSERT INTO Cours (HeureDebut, NombreHeure, Jour, idRessource) values ('15:00:00', '02:00:00', '2023-10-06', '1');
+INSERT INTO Cours (HeureDebut, NombreHeure, Jour, idRessource) values ('15:00:00', '02:00:00', '2024-10-06', '1');
 
 
 -- Salle (idSalle, Numero ,Capacite);
