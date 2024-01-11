@@ -1,23 +1,6 @@
 -- Drop tables if they exist
-DROP TABLE IF EXISTS Accuellir cascade;
-DROP TABLE IF EXISTS Enseigner cascade;
-DROP TABLE IF EXISTS Equiper cascade;
-DROP TABLE IF EXISTS Etudier cascade;
-DROP TABLE IF EXISTS Responsable cascade;
-DROP TABLE IF EXISTS Cours cascade;
-DROP TABLE IF EXISTS Eleve cascade;
-DROP TABLE IF EXISTS Professeur cascade;
-DROP TABLE IF EXISTS Admin cascade;
-DROP TABLE IF EXISTS Token cascade;
-DROP TABLE IF EXISTS Action cascade;
-DROP TABLE IF EXISTS Manager cascade;
-DROP TABLE IF EXISTS Utilisateur cascade;
-DROP TABLE IF EXISTS Ressource cascade;
-DROP TABLE IF EXISTS Semestre cascade;
-DROP TABLE IF EXISTS Equipement cascade;
-DROP TABLE IF EXISTS Salle cascade;
-DROP TABLE IF EXISTS Groupe cascade;
-DROP SCHEMA IF EXISTS EDT;
+
+DROP SCHEMA IF EXISTS EDT cascade;
 
 CREATE SCHEMA EDT;
 SET SEARCH_PATH TO EDT;
@@ -25,9 +8,13 @@ SET SEARCH_PATH TO EDT;
 -- Create tables
 CREATE TABLE Groupe(
    idGroupe SERIAL,
+<<<<<<< HEAD
    Nom VARCHAR(50) ,
    AnneeScolaire INTEGER,
    Annee VARCHAR(50),
+=======
+   Nom VARCHAR(50) not null,
+>>>>>>> Amélioration du script commands.sql
    idGroupe_parent INTEGER,
    PRIMARY KEY(idGroupe),
    FOREIGN KEY(idGroupe_parent) REFERENCES Groupe(idGroupe) ON DELETE CASCADE
@@ -35,21 +22,22 @@ CREATE TABLE Groupe(
 
 CREATE TABLE Salle(
    idSalle SERIAL,
-   Numero VARCHAR(50) ,
+   Nom VARCHAR(50) not null ,
    Capacite INTEGER,
    PRIMARY KEY(idSalle),
-   UNIQUE(Numero)
+   UNIQUE(Nom)
 );
 
 CREATE TABLE Equipement(
    idEquipement SERIAL,
-   Nom VARCHAR(50) ,
+   Nom VARCHAR(50) not null ,
+   Unique(Nom),
    PRIMARY KEY(idEquipement)
 );
 
 CREATE TABLE Semestre(
    idSemestre SERIAL,
-   Numero INTEGER,
+   Numero INTEGER ,
    PRIMARY KEY(idSemestre)
 );
 
@@ -67,49 +55,31 @@ CREATE TABLE Ressource(
 
 CREATE TABLE Utilisateur(
    idUtilisateur SERIAL,
-   FirstName VARCHAR(50) ,
-   LastName VARCHAR(50) ,
-   Username VARCHAR(50) ,
-   PassWord VARCHAR(50) ,
+   FirstName VARCHAR(50) not null ,
+   LastName VARCHAR(50) not null,
+   Username VARCHAR(50) not null ,
+   Password VARCHAR(50) not null,
    FirstLogin BOOLEAN DEFAULT true,
    PRIMARY KEY(idUtilisateur),
    UNIQUE(Username)
 );
 
-CREATE TABLE Action(
-   idAction SERIAL,
-   ActionName VARCHAR(50) ,
-   TimeAction TIMESTAMP,
-   idUtilisateur INTEGER NOT NULL,
-   PRIMARY KEY(idAction),
-   FOREIGN KEY(idUtilisateur) REFERENCES Utilisateur(idUtilisateur)
-);
-
-CREATE TABLE Token(
-   idToken SERIAL,
-   CodeToken VARCHAR(50) ,
-   TimeCreation TIME,
-   idUtilisateur INTEGER NOT NULL,
-   PRIMARY KEY(idToken),
-   FOREIGN KEY(idUtilisateur) REFERENCES Utilisateur(idUtilisateur)
-);
-
 CREATE TABLE Admin(
-   IDAdmin SERIAL,
+   idAdmin SERIAL,
    idUtilisateur INTEGER NOT NULL,
-   PRIMARY KEY(IDAdmin),
+   PRIMARY KEY(idAdmin),
    UNIQUE(idUtilisateur),
    FOREIGN KEY(idUtilisateur) REFERENCES Utilisateur(idUtilisateur)
 );
 
 CREATE TABLE Professeur(
    idProf SERIAL,
-   Initiale VARCHAR(50) ,
+   initiale VARCHAR(50) ,
    idSalle INTEGER NOT NULL,
    idUtilisateur INTEGER NOT NULL,
    PRIMARY KEY(idProf),
    UNIQUE(idUtilisateur),
-   UNIQUE(Initiale),
+   UNIQUE(initiale),
    FOREIGN KEY(idSalle) REFERENCES Salle(idSalle),
    FOREIGN KEY(idUtilisateur) REFERENCES Utilisateur(idUtilisateur)
 );
@@ -126,7 +96,11 @@ CREATE TABLE Eleve(
 
 CREATE TABLE Cours(
    idCours SERIAL,
+<<<<<<< HEAD
    HeureDebut TIME,
+=======
+   HeureDebut TIME ,
+>>>>>>> Amélioration du script commands.sql
    NombreHeure TIME,
    Jour DATE,
    idRessource INTEGER NOT NULL,
