@@ -61,13 +61,52 @@ def get_prof():
     conn = connect_pg.connect()
 
     query = "select * from edt.professeur order by IdUtilisateur asc"
-    rows = connect_pg.get_query(conn, query)
+    
     returnStatement = []
     try:
+        rows = connect_pg.get_query(conn, query)
+        if rows == []:
+            return jsonify({'erreur': str(apiException.AucuneDonneeTrouverException("professeur"))}), 404
+        for row in rows:
+                returnStatement.append(get_professeur_statement(row))
+    except(Exception) as e:
+        return jsonify({'erreur': str(apiException.InsertionImpossibleException("professeur", "récupérer"))}), 500
+    
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)
+
+
+
+@user.route('/utilisateurs/getProf/<idProf>', methods=['GET','POST'])
+@jwt_required()
+def get_one_prof(idProf):
+    """Renvoit un prof via son id via la route /utilisateurs/getProf/<idProf>
+
+    :param idProf: id d'un professeur présent dans la base de donnée
+    :type idProf: int
+
+    :raises PermissionManquanteException: Si pas assez de droit pour effectuer un get dans la table professeur
+    :raises AucuneDonneeTrouverException: Une aucune donnée répondant aux critères n'a été trouvé dans la table professeur
+    
+    :return: un professeur
+    :rtype: json
+    """
+    
+    #check if the user is admin
+    conn = connect_pg.connect()
+
+    query = f"select * from edt.professeur where idProf = {idProf} order by IdUtilisateur asc"
+    
+    returnStatement = []
+    try:
+        rows = connect_pg.get_query(conn, query)
+        if rows == []:
+            return jsonify({'erreur': str(apiException.DonneeIntrouvableException("professeur",idProf))}), 404
         for row in rows:
             returnStatement.append(get_professeur_statement(row))
-    except(TypeError) as e:
-        return jsonify({'erreur': str(apiException.AucuneDonneeTrouverException("utilisateur"))}), 404
+    except(Exception) as e:
+        return jsonify({'erreur': str(apiException.InsertionImpossibleException("professeur", "récupérer"))}), 500
+    
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 
