@@ -8,13 +8,7 @@ SET SEARCH_PATH TO EDT;
 -- Create tables
 CREATE TABLE Groupe(
    idGroupe SERIAL,
-<<<<<<< HEAD
-   Nom VARCHAR(50) ,
-   AnneeScolaire INTEGER,
-   Annee VARCHAR(50),
-=======
    Nom VARCHAR(50) not null,
->>>>>>> Amélioration du script commands.sql
    idGroupe_parent INTEGER,
    PRIMARY KEY(idGroupe),
    FOREIGN KEY(idGroupe_parent) REFERENCES Groupe(idGroupe) ON DELETE CASCADE
