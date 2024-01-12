@@ -609,10 +609,10 @@ def supprimer_salle(idCours):
         return jsonify(idCours)
 
 
-@cours.route('/cours/delete/<idCours>', methods=['DELETE'])
+@cours.route('/cours/supprimer/<idCours>', methods=['DELETE'])
 @jwt_required()
-def delete_cours(idCours):
-    """Permet de supprimer un cours via la route /cours/delete/<idCours>, si le cours n'a pas encore eu lieu les heures de la ressource sont restaurés
+def supprimer_cours(idCours):
+    """Permet de supprimer un cours via la route /cours/supprimer/<idCours>
     
     :param idCours: id du cours à supprimer
     :type idCours: int
@@ -660,6 +660,17 @@ def delete_cours(idCours):
         else:
             # Erreur inconnue
             return jsonify({'error': str(apiException.ActionImpossibleException("Cours", "supprimer"))}), 500
+    query = f"delete  from edt.cours where idCours={idCours}"
+    query2 = f"delete  from edt.enseigner where idCours={idCours}"
+    query3 = f"delete  from edt.etudier where idCours={idCours}"
+    conn = connect_pg.connect()
+    try:
+        connect_pg.execute_commands(conn, query3)
+        connect_pg.execute_commands(conn, query2)
+        connect_pg.execute_commands(conn, query)
+    except psycopg2.IntegrityError as e:
+        print(e)
+        return jsonify({'error': str(apiException.InsertionImpossibleException("cours","supprimé"))}), 500
     connect_pg.disconnect(conn)
     return jsonify(idCours)
     
