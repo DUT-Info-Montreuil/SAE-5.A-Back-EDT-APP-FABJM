@@ -8,54 +8,54 @@ SET SEARCH_PATH TO EDT;
 -- Create tables
 CREATE TABLE Groupe(
    idGroupe SERIAL,
-   Nom VARCHAR(50) not null,
-   idGroupe_parent INTEGER,
+   nom VARCHAR(50) not null,
+   idGroupeParent INTEGER,
    PRIMARY KEY(idGroupe),
-   FOREIGN KEY(idGroupe_parent) REFERENCES Groupe(idGroupe) ON DELETE CASCADE
+   FOREIGN KEY(idGroupeParent) REFERENCES Groupe(idGroupe) ON DELETE CASCADE
 );
 
 CREATE TABLE Salle(
    idSalle SERIAL,
-   Nom VARCHAR(50) not null ,
-   Capacite INTEGER,
+   nom VARCHAR(50) not null ,
+   capacite INTEGER,
    PRIMARY KEY(idSalle),
-   UNIQUE(Nom)
+   UNIQUE(nom)
 );
 
 CREATE TABLE Equipement(
    idEquipement SERIAL,
-   Nom VARCHAR(50) not null ,
-   Unique(Nom),
+   nom VARCHAR(50) not null ,
+   Unique(nom),
    PRIMARY KEY(idEquipement)
 );
 
 CREATE TABLE Semestre(
    idSemestre SERIAL,
-   Numero INTEGER ,
+   numero INTEGER ,
    PRIMARY KEY(idSemestre)
 );
 
 CREATE TABLE Ressource(
    idRessource SERIAL,
-   Titre VARCHAR(50) ,
-   Numero VARCHAR(50) ,
-   NbrHeureSemestre TIME,
-   CodeCouleur VARCHAR(50) ,
+   titre VARCHAR(50) not null ,
+   numero VARCHAR(50) not null ,
+   nbrHeureSemestre TIME ,
+   codeCouleur VARCHAR(50) ,
    idSemestre INTEGER NOT NULL,
    PRIMARY KEY(idRessource),
-   UNIQUE(Numero),
+   UNIQUE(numero),
    FOREIGN KEY(idSemestre) REFERENCES Semestre(idSemestre)
 );
 
 CREATE TABLE Utilisateur(
    idUtilisateur SERIAL,
-   FirstName VARCHAR(50) not null ,
-   LastName VARCHAR(50) not null,
-   Username VARCHAR(50) not null ,
-   Password VARCHAR(50) not null,
-   FirstLogin BOOLEAN DEFAULT true,
+   firstName VARCHAR(50) not null ,
+   lastName VARCHAR(50) not null,
+   username VARCHAR(50) not null ,
+   password VARCHAR(50) not null,
+   firstLogin BOOLEAN DEFAULT true,
    PRIMARY KEY(idUtilisateur),
-   UNIQUE(Username)
+   UNIQUE(username)
 );
 
 CREATE TABLE Admin(
@@ -90,9 +90,15 @@ CREATE TABLE Eleve(
 
 CREATE TABLE Cours(
    idCours SERIAL,
+<<<<<<< HEAD
    HeureDebut TIME,
    NombreHeure TIME,
    Jour DATE,
+=======
+   heureDebut TIME ,
+   nombreHeure TIME,
+   jour DATE,
+>>>>>>> Uniformalisation des données du script commands.sql
    idRessource INTEGER NOT NULL,
    PRIMARY KEY(idCours),
    FOREIGN KEY(idRessource) REFERENCES Ressource(idRessource)
