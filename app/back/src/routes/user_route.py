@@ -6,7 +6,7 @@ import src.connect_pg as connect_pg
 import src.apiException as apiException
 
 from src.config import config
-from src.services.user_service import get_utilisateur_statement
+from src.services.user_service import get_utilisateur_statement, get_professeur_statement
 import src.services.permision as perm
 import psycopg2
 from psycopg2 import errorcodes
@@ -39,6 +39,33 @@ def get_utilisateur():
     try:
         for row in rows:
             returnStatement.append(get_utilisateur_statement(row))
+    except(TypeError) as e:
+        return jsonify({'erreur': str(apiException.AucuneDonneeTrouverException("utilisateur"))}), 404
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)
+
+
+@user.route('/utilisateurs/getAllProf', methods=['GET','POST'])
+@jwt_required()
+def get_prof():
+    """Renvoit tous les profs via la route /utilisateurs/getAllProf
+
+    :raises PermissionManquanteException: Si pas assez de droit pour effectuer un getAll dans la table professeur
+    :raises AucuneDonneeTrouverException: Une aucune donnée n'a été trouvé dans la table professeur
+    
+    :return:  tous les professeurs
+    :rtype: json
+    """
+    
+    #check if the user is admin
+    conn = connect_pg.connect()
+
+    query = "select * from edt.professeur order by IdUtilisateur asc"
+    rows = connect_pg.get_query(conn, query)
+    returnStatement = []
+    try:
+        for row in rows:
+            returnStatement.append(get_professeur_statement(row))
     except(TypeError) as e:
         return jsonify({'erreur': str(apiException.AucuneDonneeTrouverException("utilisateur"))}), 404
     connect_pg.disconnect(conn)
