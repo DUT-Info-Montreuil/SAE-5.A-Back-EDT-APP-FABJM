@@ -57,7 +57,50 @@ def getUserPermission(user_id , conn):
             return 3
                 
 
+def estResponsableRessource(idRessource, idUtilisateur , conn):
+    """ Permet de récupérer les permissions d'un utilisateur 
+    
+    :param userId: id de l'utilisateur
+    :type userId: int
+    
+    :param conn: la connection à une base de donnée
+    :type conn: une classe heritant de la classe mère Connexion
 
+    :return: le niveau de permission de l'utilisateur (0 = admin , 1 = manager , 2 = teacher , 3 = student)
+    :rtype: int
+    """
+    # Get user permission check if the id user is in admin then if is the id is in manager then if is the id is in teacher
+    idProf = connect_pg.get_query(conn , f"SELECT idProf FROM edt.professeur WHERE idutilisateur ={idUtilisateur}")[0][0]
+    if idProf == None:
+        return False
+    result = connect_pg.get_query(conn , f"SELECT * FROM edt.responsable WHERE idProf ={idProf} and idRessource={idRessource}")
+    if result != []:
+        return True
+    else:
+        return False
+
+
+def estEnseignantCours(idCours, idUtilisateur , conn):
+    """ Permet de récupérer les permissions d'un utilisateur 
+    
+    :param userId: id de l'utilisateur
+    :type userId: int
+    
+    :param conn: la connection à une base de donnée
+    :type conn: une classe heritant de la classe mère Connexion
+
+    :return: le niveau de permission de l'utilisateur (0 = admin , 1 = manager , 2 = teacher , 3 = student)
+    :rtype: int
+    """
+    # Get user permission check if the id user is in admin then if is the id is in manager then if is the id is in teacher
+    idProf = connect_pg.get_query(conn , f"SELECT idProf FROM edt.professeur WHERE idutilisateur ={idUtilisateur}")[0][0]
+    if idProf == None:
+        return False
+    result = connect_pg.get_query(conn , f"SELECT * FROM edt.enseigner WHERE idProf ={idProf} and idCours={idCours}")
+    if result != []:
+        return True
+    else:
+        return False
 
 
     
