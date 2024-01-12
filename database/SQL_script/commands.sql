@@ -96,11 +96,7 @@ CREATE TABLE Eleve(
 
 CREATE TABLE Cours(
    idCours SERIAL,
-<<<<<<< HEAD
    HeureDebut TIME,
-=======
-   HeureDebut TIME ,
->>>>>>> Amélioration du script commands.sql
    NombreHeure TIME,
    Jour DATE,
    idRessource INTEGER NOT NULL,
