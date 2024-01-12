@@ -4,11 +4,12 @@ SET SEARCH_PATH TO EDT;
 INSERT INTO Utilisateur (FirstName, LastName, Username, PassWord) values ('Junko', 'Enoshima', 'monokuma', 'despair'); -- élève
 INSERT INTO Utilisateur (FirstName, LastName, Username, PassWord) values ('Gilgamesh', 'Elish', 'Uruk', 'Enkidu'); -- admin
 INSERT INTO Utilisateur (FirstName, LastName, Username, PassWord) values ('Aya', 'Rindo', 'detective', 'immortal'); -- professeur
-INSERT INTO Utilisateur (FirstName, LastName, Username, PassWord) values ('Tsugaru ', 'Shinuchi', 'assistant', 'OniKiller');
+INSERT INTO Utilisateur (FirstName, LastName, Username, PassWord) values ('Tsugaru ', 'Shinuchi', 'assistant', 'OniKiller'); -- manager
 
 
 -- Admin (idAdmin, idUtilisateur)
 INSERT INTO Admin (idUtilisateur) values (2);
+
 -- Semestre(idSemestre, Numero)
 INSERT INTO Semestre (Numero) values (3);
 
@@ -31,7 +32,8 @@ INSERT INTO Salle (Nom, Capacite) values ('A1-01', 20);
 INSERT INTO Groupe(Nom) values ('Groupe A1');
 
 -- Professeur(idProf, Initiale, idSalle, idUtilisateur)
-INSERT INTO Professeur(Initiale, idSalle, idUtilisateur) values ('AR', 1, 3);
+INSERT INTO Professeur( Initiale, idSalle, idUtilisateur) values ('AR', 1, 3);
+INSERT INTO Professeur( Initiale, idSalle, idUtilisateur) values ('TS', 1, 4);
 
 -- Enseigner(idProf, idCours)
 INSERT INTO Enseigner(idProf, idCours) values (1,1);
@@ -47,3 +49,9 @@ INSERT INTO Responsable(idProf, idRessource) values (1,1);
 
 -- Accuellir(idSalle, idCours)
 INSERT INTO Accuellir(idSalle, idCours) values (2,1);
+
+-- Manager(idManager, idProf)
+INSERT INTO Manager(idProf) values (2);
+
+
+

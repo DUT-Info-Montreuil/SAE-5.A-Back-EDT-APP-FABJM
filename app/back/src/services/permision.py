@@ -21,7 +21,7 @@ def permissionCheck(userId , permissionNeeded , conn):
     :rtype: bool
     """
     # Get user permission
-    userPermission = getUserPermission(userId , conn)
+    userPermission = getUserPermission(userId , conn)[0]
     # Check if user has permission
     if userPermission <= permissionNeeded:
         return True
@@ -38,23 +38,23 @@ def getUserPermission(user_id , conn):
     :param conn: la connection à une base de donnée
     :type conn: une classe heritant de la classe mère Connexion
 
-    :return: le niveau de permission de l'utilisateur (0 = admin , 1 = manager , 2 = teacher , 3 = student)
-    :rtype: int
+    :return: le niveau de permission de l'utilisateur (0 = admin , 1 = manager , 2 = teacher , 3 = student) ainsi que ses identifiants
+    :rtype: tuple
     """
     # Get user permission check if the id user is in admin then if is the id is in manager then if is the id is in teacher
     
-    result = connect_pg.get_query(conn , f"SELECT * FROM edt.admin WHERE idutilisateur ={user_id}")
+    result = connect_pg.get_query(conn , f"SELECT idAdmin FROM edt.admin WHERE idutilisateur ={user_id}")
     if result != []:
-        return 0
+        return 0, result
     else:
-        result = connect_pg.get_query(conn , f"SELECT idprof FROM edt.professeur WHERE idutilisateur = {user_id}")
-        if result != []:
-            result = connect_pg.get_query(conn , f"SELECT idManager,idProf  FROM edt.manager inner join edt.professeur as e1 using(idProf) WHERE e1.idUtilisateur = {result[0][0]}")
-            if result != []:
-                return 1
-            return 2
+        resultProf = connect_pg.get_query(conn , f"SELECT idprof FROM edt.professeur WHERE idutilisateur = {user_id}")
+        if resultProf != []:
+            resultManager = connect_pg.get_query(conn , f"SELECT idManager,idProf  FROM edt.manager inner join edt.professeur as e1 using(idProf) WHERE e1.idUtilisateur = {user_id}")
+            if resultManager != []:
+                return 1, resultManager
+            return 2, resultProf
         else:
-            return 3
+            return 3, result
                 
 
 def estResponsableRessource(idRessource, idUtilisateur , conn):
