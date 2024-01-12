@@ -54,4 +54,3 @@ INSERT INTO Accuellir(idSalle, idCours) values (2,1);
 INSERT INTO Manager(idProf) values (2);
 
 
-
