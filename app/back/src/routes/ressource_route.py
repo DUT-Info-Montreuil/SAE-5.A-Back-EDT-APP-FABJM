@@ -107,7 +107,7 @@ def get_responsable(idRessource):
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 
-@cours.route('/cours/supprimerResponsable/<idRessource>', methods=['DELETE'])
+@ressource.route('/cours/supprimerResponsable/<idRessource>', methods=['DELETE'])
 @jwt_required()
 def supprimer_responsable(idRessource):
     """Permet de supprimer un responsable assigner à une ressouces via la route /cours/supprimerResponsable/<idRessource>
@@ -134,14 +134,14 @@ def supprimer_responsable(idRessource):
         try:
             returnStatement = connect_pg.execute_commands(conn, query)
         except Exception as e:
-        if e.pgcode == "23503":# violation contrainte clée étrangère
-            if "prof" in str(e):
-                return jsonify({'error': str(apiException.DonneeIntrouvableException("Professeur ", json_datas['idProf']))}), 400
+            if e.pgcode == "23503":# violation contrainte clée étrangère
+                if "prof" in str(e):
+                    return jsonify({'error': str(apiException.DonneeIntrouvableException("Professeur ", json_datas['idProf']))}), 400
+                else:
+                    return jsonify({'error': str(apiException.DonneeIntrouvableException("Ressource ", idRessource))}), 400
             else:
-                return jsonify({'error': str(apiException.DonneeIntrouvableException("Ressource ", idRessource))}), 400
-        else:
-            # Erreur inconnue
-            return jsonify({'error': str(apiException.InsertionImpossibleException("responsable", "supprimer"))}), 500
+                # Erreur inconnue
+                return jsonify({'error': str(apiException.InsertionImpossibleException("responsable", "supprimer"))}), 500
         connect_pg.disconnect(conn)
         return jsonify(idRessource)
 
