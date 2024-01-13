@@ -88,7 +88,7 @@ def add_utilisateur():
     :param Username: login de l'utilisateur spécifié dans le body
     :type Username: String
     
-    :raises InsertionImpossibleException: Impossible d'ajouter l'utilisateur spécifié dans la table utilisateur
+    :raises ActionImpossibleException: Impossible d'ajouter l'utilisateur spécifié dans la table utilisateur
     
     :return: l'id de l'utilisateur crée
     :rtype: json
@@ -133,7 +133,7 @@ def add_utilisateur():
                 return jsonify({'error': str(apiException.DonneeExistanteException(user['Username'], "Username", "utilisateur"))}), 400
             else:
                 # Erreur inconnue
-                return jsonify({'error': str(apiException.InsertionImpossibleException("utilisateur"))}), 500
+                return jsonify({'error': str(apiException.ActionImpossibleException("utilisateur"))}), 500
 
         
         try : 
@@ -219,7 +219,7 @@ def update_utilisateur_password():
     :type password: String
 
     :raises ParamètreTypeInvalideException: Le type de password doit être un string non vide
-    :raises InsertionImpossibleException: Impossible d'ajouter l'utilisateur spécifié dans la table utilisateur
+    :raises ActionImpossibleException: Impossible d'ajouter l'utilisateur spécifié dans la table utilisateur
     
 
     """
@@ -234,7 +234,7 @@ def update_utilisateur_password():
         
         connect_pg.execute_commands(conn, query)
     except:
-        return jsonify({'error': str(apiException.InsertionImpossibleException("utilisateur"))}), 500
+        return jsonify({'error': str(apiException.ActionImpossibleException("utilisateur"))}), 500
     connect_pg.disconnect(conn)
     
     
@@ -247,7 +247,7 @@ def update_utilisateur(id):
     
     :param Username: login de l'utilisateur spécifié dans le body
     :type Username: String
-    :raises InsertionImpossibleException: Impossible de modifier l'utilisateur spécifié dans la table utilisateur
+    :raises ActionImpossibleException: Impossible de modifier l'utilisateur spécifié dans la table utilisateur
     
     :return: l'id de l'utilisateur modifié
     :rtype: json
@@ -298,7 +298,7 @@ def update_utilisateur(id):
             return jsonify({'error': str(apiException.DonneeExistanteException(json_datas['Username'], "Username", "utilisateur"))}), 400
         else:
             
-            return jsonify({'error': str(apiException.InsertionImpossibleException("utilisateur"))}), 500
+            return jsonify({'error': str(apiException.ActionImpossibleException("utilisateur"))}), 500
     
     return jsonify({'success': 'utilisateur modifié'}), 200
 
@@ -310,7 +310,7 @@ def delete_utilisateur(id):
     
     :param Username: login de l'utilisateur spécifié dans le body
     :type Username: String
-    :raises InsertionImpossibleException: Impossible de supprimer l'utilisateur spécifié dans la table utilisateur
+    :raises ActionImpossibleException: Impossible de supprimer l'utilisateur spécifié dans la table utilisateur
     
     :return: l'id de l'utilisateur supprimé
     :rtype: json
@@ -329,7 +329,7 @@ def delete_utilisateur(id):
     except psycopg2.IntegrityError as e:
         
        
-        return jsonify({'error': str(apiException.InsertionImpossibleException("utilisateur"))}), 500
+        return jsonify({'error': str(apiException.ActionImpossibleException("utilisateur"))}), 500
     
     return jsonify({'success': 'utilisateur supprimé'}), 200
 
@@ -342,7 +342,7 @@ def getPermission():
     
     :param Username: login de l'utilisateur spécifié dans le body
     :type Username: String
-    :raises InsertionImpossibleException: Impossible de récupérer la permission de l'utilisateur spécifié dans la table utilisateur
+    :raises ActionImpossibleException: Impossible de récupérer la permission de l'utilisateur spécifié dans la table utilisateur
     
     :return: la permission de l'utilisateur
     :rtype: json

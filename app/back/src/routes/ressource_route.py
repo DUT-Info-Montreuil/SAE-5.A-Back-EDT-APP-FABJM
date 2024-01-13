@@ -35,7 +35,7 @@ def attribuerResponsable(idRessource):
     :raises ParamètreBodyManquantException: Si aucun paramètre d'entrée attendu n'est spécifié dans le body
     :raises ParamètreTypeInvalideException: Le type de idRessource est invalide, une valeur numérique est attendue
     :raises DonneeIntrouvableException: Une des clées n'a pas pu être trouvé
-    :raises InsertionImpossibleException: Impossible de réaliser l'insertion
+    :raises ActionImpossibleException: Impossible de réaliser l'insertion
 
     :return: id de la ressource
     :rtype: int
@@ -66,7 +66,7 @@ def attribuerResponsable(idRessource):
         
         else:
             # Erreur inconnue
-            return jsonify({'error': str(apiException.InsertionImpossibleException("responsable"))}), 500
+            return jsonify({'error': str(apiException.ActionImpossibleException("responsable"))}), 500
 
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
