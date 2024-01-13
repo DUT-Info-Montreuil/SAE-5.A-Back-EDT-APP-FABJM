@@ -5,7 +5,7 @@ import src.connect_pg as connect_pg
 import src.apiException as apiException
 
 from src.config import config
-from src.services.cours_service import get_cours_statement
+from src.services.cours_service import get_cours_statement, getEnseignantCours, getEleveCours
 
 import psycopg2
 from psycopg2 import errorcodes
@@ -16,10 +16,40 @@ from flask_jwt_extended import JWTManager, jwt_required, create_access_token, ge
 cours = Blueprint('cours', __name__)
 
 
+
+@cours.route('/cours/getAll')
+@jwt_required()
+def getAll_cours():
+    """Renvoit toutes les cours via la route /cours/getAll
+
+    :raises PermissionManquanteException: Si pas assez de droit pour récupérer toutes les données présentes dans la table cours
+    :raises AucuneDonneeTrouverException: Une aucune donnée n'a été trouvé dans la table cours
+    
+    :return: toutes les cours
+    :rtype: json
+    """
+    conn = connect_pg.connect()
+    
+    query = "select * from edt.cours order by idCours asc"
+    conn = connect_pg.connect()
+    rows = connect_pg.get_query(conn, query)
+    returnStatement = []
+    try:
+        rows = connect_pg.get_query(conn, query)
+        if rows == []:
+            return jsonify({'error': str(apiException.AucuneDonneeTrouverException("cours"))}), 404
+        for row in rows:
+            returnStatement.append(get_cours_statement(row))
+    except(Exception) as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("cours", "récuperer"))}), 404
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)
+
+
 @cours.route('/cours/get', methods=['GET','POST'])
 @jwt_required()
 def get_cours():
-    """Renvoit les cours via la route /cours/get
+    """Renvoit les cours spécifique à un utilisateur si possible sinon renvoit les cours générale via la route /cours/get
     
     :raises AucuneDonneeTrouverException: Aucune donnée n'a pas être trouvé correspont aux critère
     
@@ -40,7 +70,7 @@ def get_cours():
         return jsonify(returnStatement)
     
     elif(perm.getUserPermission(get_jwt_identity() , conn) == 3):
-        cours = getEleveCoursCours(get_jwt_identity() , conn)
+        cours = getEleveCours(get_jwt_identity() , conn)
         returnStatement = []
         try:
             for row in cours:
@@ -51,7 +81,7 @@ def get_cours():
         return jsonify(returnStatement)
     
     else :
-        query = f"select * from edt.cours"
+        query = f"select * from edt.cours order by idCours"
         returnStatement = []
         try:
             rows = connect_pg.get_query(conn, query)
@@ -66,20 +96,21 @@ def get_cours():
 
 
 
-@cours.route('/cours/getAll')
+
+@cours.route('/cours/getCoursSemestre/<idSemestre>', methods=['GET','POST'])
 @jwt_required()
-def getAll_cours():
-    """Renvoit toutes les cours via la route /cours/getAll
+def get_cours_semestre(idSemestre):
+    """Renvoit toutes les cours d'un semestre via la route /cours/getCoursSemestre/<idSemestre>
 
     :raises PermissionManquanteException: Si pas assez de droit pour récupérer toutes les données présentes dans la table cours
     :raises AucuneDonneeTrouverException: Une aucune donnée n'a été trouvé dans la table cours
     
-    :return: toutes les cours
+    :return: toutes les cours d'un semestre
     :rtype: json
     """
     conn = connect_pg.connect()
     
-    query = "select * from edt.cours order by idressource asc"
+    query = f"select edt.cours.* from edt.cours inner join edt.ressource using(idRessource) inner join edt.semestre using(idSemestre) where idSemestre = {idSemestre} order by idCours"
     conn = connect_pg.connect()
     rows = connect_pg.get_query(conn, query)
     returnStatement = []
@@ -94,38 +125,6 @@ def getAll_cours():
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 
-def getEnseignantCours(idUtilisateur , conn):
-    """ Renvoie les cours au quelle enseigne un professeur
-    
-    :param idUtilisateur: idUtilisateur du professeur
-    :type idUtilisateur: int
-    
-    :param conn: la connection à une base de donnée
-    :type conn: une classe heritant de la classe mère Connexion
-
-    :return: retourne les cours
-    :rtype: list
-    """
-    idProf = connect_pg.get_query(conn , f"SELECT idProf FROM edt.professeur WHERE idutilisateur ={idUtilisateur}")[0][0]
-    result = connect_pg.get_query(conn , f"Select edt.cours.* from edt.cours inner join edt.enseigner as e1 using(idCours)  where e1.idProf = {idProf} order by idCours asc")
-    
-    return result
-
-def getEleveCours(idUtilisateur , conn):
-    """ Renvoie les cours au quelle enseigne un professeur
-    
-    :param idUtilisateur: idUtilisateur du professeur
-    :type idUtilisateur: int
-    
-    :param conn: la connection à une base de donnée
-    :type conn: une classe heritant de la classe mère Connexion
-
-    :return: retourne les cours
-    :rtype: list
-    """
-    result = connect_pg.get_query(conn , f"Select edt.cours.* from edt.cours inner join edt.etudier  using(idCours)  inner join edt.eleve as e1 using (idGroupe) where e1.idUtilisateur = {idUtilisateur} order by idCours asc")
-    
-    return result
 
 @cours.route('/cours/deplacer/<idCours>', methods=['PUT'])
 @jwt_required()
