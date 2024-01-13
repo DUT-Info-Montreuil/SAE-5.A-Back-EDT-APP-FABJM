@@ -13,6 +13,7 @@ from psycopg2 import errorcodes
 from psycopg2 import OperationalError, Error
 
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity  
+import json
 user = Blueprint('user', __name__)
 
 
@@ -102,6 +103,37 @@ def get_prof_par_initiale(initialeProf):
             return jsonify({'erreur': str(apiException.DonneeIntrouvableException("professeur",initialeProf))}), 404
         for row in rows:
             returnStatement.append(get_professeur_statement(row))
+    except(Exception) as e:
+        return jsonify({'erreur': str(apiException.InsertionImpossibleException("professeur", "récupérer"))}), 500
+    
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)
+
+
+@user.route('/utilisateurs/getAllEnseignant', methods=['GET','POST'])
+@jwt_required()
+def get_enseignant():
+    """Renvoit tous les enseignants via la route /utilisateurs/getAllEnseignant
+
+    :raises PermissionManquanteException: Si pas assez de droit pour effectuer un getAll dans la table enseigner
+    :raises AucuneDonneeTrouverException: Une aucune donnée n'a été trouvé dans la table enseigner
+    
+    :return:  tous les enseignants
+    :rtype: json
+    """
+    
+    #check if the user is admin
+    conn = connect_pg.connect()
+
+    query = "select distinct * from edt.enseigner order by idProf asc"
+    
+    returnStatement = []
+    try:
+        rows = connect_pg.get_query(conn, query)
+        if rows == []:
+            return jsonify({'erreur': str(apiException.AucuneDonneeTrouverException("professeur"))}), 404
+        for row in rows:
+            returnStatement.append(json.loads((get_one_prof((row[0]))).data))
     except(Exception) as e:
         return jsonify({'erreur': str(apiException.InsertionImpossibleException("professeur", "récupérer"))}), 500
     
