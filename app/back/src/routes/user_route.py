@@ -76,6 +76,38 @@ def get_prof():
     return jsonify(returnStatement)
 
 
+@user.route('/utilisateurs/getProfParInitiale/<initialeProf>', methods=['GET','POST'])
+@jwt_required()
+def get_prof_par_initiale(initialeProf):
+    """Renvoit un prof via ses initiales via la route /utilisateurs/getProfParInitiale/<idProf>
+
+    :param initialeProf: initiale d'un professeur présent dans la base de donnée
+    :type initialeProf: str
+
+    :raises PermissionManquanteException: Si pas assez de droit pour effectuer un get dans la table professeur
+    :raises AucuneDonneeTrouverException: Une aucune donnée répondant aux critères n'a été trouvé dans la table professeur
+    
+    :return: un professeur
+    :rtype: json
+    """
+    
+    #check if the user is admin
+    conn = connect_pg.connect()
+    query = f"select * from edt.professeur where Initiale = '{initialeProf}'"
+    
+    returnStatement = []
+    try:
+        rows = connect_pg.get_query(conn, query)
+        if rows == []:
+            return jsonify({'erreur': str(apiException.DonneeIntrouvableException("professeur",initialeProf))}), 404
+        for row in rows:
+            returnStatement.append(get_professeur_statement(row))
+    except(Exception) as e:
+        return jsonify({'erreur': str(apiException.InsertionImpossibleException("professeur", "récupérer"))}), 500
+    
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)
+
 
 @user.route('/utilisateurs/getProf/<idProf>', methods=['GET','POST'])
 @jwt_required()
