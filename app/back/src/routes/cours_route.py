@@ -73,7 +73,7 @@ def get_cours(idCours):
     returnStatement = {}
     try:
         if len(rows) > 0:
-            returnStatement = get_groupe_statement(rows[0])
+            returnStatement = get_cours_statement(rows[0])
     except(TypeError) as e:
         return jsonify({'error': str(apiException.DonneeIntrouvableException("cours", idGroupe))}), 404
     connect_pg.disconnect(conn)
@@ -285,33 +285,31 @@ def modifier_cours(idCours):
         if type(cour) != tuple : 
             cour = json.loads(cour.data)
             aujourdhui = date.today()
-            jourCours = date(int(cour[0]['Jour'][:4]), int(cour[0]['Jour'][5:7]), int(cour[0]['Jour'][8:10]))
-            HeureDebut = datetime.timedelta(hours = int(cour[0]['HeureDebut'][:2]),minutes = int(cour[0]['HeureDebut'][3:5]), seconds = 00)
+            jourCours = date(int(cour['Jour'][:4]), int(cour['Jour'][5:7]), int(cour['Jour'][8:10]))
+            HeureDebut = datetime.timedelta(hours = int(cour['HeureDebut'][:2]),minutes = int(cour['HeureDebut'][3:5]), seconds = 00)
             HeureActuelle = str(datetime.datetime.now())
             HeureActuelle = datetime.timedelta(hours = int(HeureActuelle[11:13]),minutes = int(HeureActuelle[14:16]), seconds = 00)
             
             if( jourCours > aujourdhui  or (jourCours == aujourdhui and HeureDebut > HeureActuelle)):
-                if ('NombreHeure' in json_datas and json_datas['NombreHeure'] != cour[0]['NombreHeure']) and ('idRessource' not in json_datas or json_datas['idRessource'] == cour[0]['idRessource']): # Si le nombreHeure a changé mais toujours dans la même ressource
-                    query = f"update edt.ressource set nbrheuresemestre =  ((nbrheuresemestre + '{cour[0]['NombreHeure']}') - '{json_datas['NombreHeure']}' )  where idRessource = {cour[0]['idRessource']}" # pour mettre à jour le nombre d'heures
+                if ('NombreHeure' in json_datas and json_datas['NombreHeure'] != cour['NombreHeure']) and ('idRessource' not in json_datas or json_datas['idRessource'] == cour['idRessource']): # Si le nombreHeure a changé mais toujours dans la même ressource
+                    query = f"update edt.ressource set nbrheuresemestre =  ((nbrheuresemestre + '{cour['NombreHeure']}') - '{json_datas['NombreHeure']}' )  where idRessource = {cour['idRessource']}" # pour mettre à jour le nombre d'heures
                 
-                elif ('NombreHeure' not in json_datas or json_datas['NombreHeure'] == cour[0]['NombreHeure']) and ('idRessource' in json_datas and json_datas['idRessource'] != cour[0]['idRessource']): # Si le nombreHeure est inchangé mais que ce n'est plus la même ressource
-                    query = f"update edt.ressource set nbrheuresemestre =  (nbrheuresemestre + '{cour[0]['NombreHeure']}')  where idRessource = {cour[0]['idRessource']}" 
-                    query2 = f"update edt.ressource set nbrheuresemestre =  (nbrheuresemestre - '{cour[0]['NombreHeure']}')  where idRessource = {json_datas['idRessource']}" 
+                elif ('NombreHeure' not in json_datas or json_datas['NombreHeure'] == cour['NombreHeure']) and ('idRessource' in json_datas and json_datas['idRessource'] != cour['idRessource']): # Si le nombreHeure est inchangé mais que ce n'est plus la même ressource
+                    query = f"update edt.ressource set nbrheuresemestre =  (nbrheuresemestre + '{cour['NombreHeure']}')  where idRessource = {cour['idRessource']}" 
+                    query2 = f"update edt.ressource set nbrheuresemestre =  (nbrheuresemestre - '{cour['NombreHeure']}')  where idRessource = {json_datas['idRessource']}" 
                     connect_pg.execute_commands(conn, query2)
                 
-                elif ('NombreHeure' in json_datas and json_datas['NombreHeure'] != cour[0]['NombreHeure']) and  ('idRessource' in json_datas and json_datas['idRessource'] != cour[0]['idRessource']): # Si le nombreHeure a changé et que ce n'est plus la même ressource
-                    query = f"update edt.ressource set nbrheuresemestre =  (nbrheuresemestre + '{cour[0]['NombreHeure']}')  where idRessource = {cour[0]['idRessource']}" 
+                elif ('NombreHeure' in json_datas and json_datas['NombreHeure'] != cour['NombreHeure']) and  ('idRessource' in json_datas and json_datas['idRessource'] != cour['idRessource']): # Si le nombreHeure a changé et que ce n'est plus la même ressource
+                    query = f"update edt.ressource set nbrheuresemestre =  (nbrheuresemestre + '{cour['NombreHeure']}')  where idRessource = {cour['idRessource']}" 
                     query2 = f"update edt.ressource set nbrheuresemestre =  (nbrheuresemestre - '{json_datas['NombreHeure']}')  where idRessource = {json_datas['idRessource']}" 
                     connect_pg.execute_commands(conn, query2)
 
                 try:
                     connect_pg.execute_commands(conn, query)
-                    if query2:
-                        connect_pg.execute_commands(conn, query2)
                 except psycopg2.IntegrityError as e:
                     if e.pgcode == '23503':
                         # Erreur violation de contrainte clée étrangère de la table Ressources
-                        return jsonify({'error': str(apiException.DonneeIntrouvableException("Ressources", cour[0]['idRessource']))}), 400
+                        return jsonify({'error': str(apiException.DonneeIntrouvableException("Ressources", cour['idRessource']))}), 400
                     else:
                         # Erreur inconnue
                         return jsonify({'error': str(apiException.ActionImpossibleException("ressource", "mettre à jour"))}), 500
