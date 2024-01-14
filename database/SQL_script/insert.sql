@@ -15,8 +15,9 @@ INSERT INTO Ressource (Titre, Numero, NbrHeureSemestre, idSemestre) values ('Mat
 
 
 -- Cours (idCours, HeureDebut, NombreHeure, Jour, idRessource)
-INSERT INTO Cours (HeureDebut, NombreHeure, Jour, idRessource) values ('10:00:00', '04:00:00', '2023-10-06', '1');
-INSERT INTO Cours (HeureDebut, NombreHeure, Jour, idRessource) values ('15:00:00', '02:00:00', '2024-10-06', '1');
+
+INSERT INTO Cours (HeureDebut, NombreHeure, Jour, idRessource) values ('20:18:06 ', '02:00:00', '2023-12-06', '1');
+INSERT INTO Cours (HeureDebut, NombreHeure, Jour, idRessource) values ('16:49:49 ', '02:00:00', '2023-10-06', '1');
 
 
 -- Salle (idSalle, Numero ,Capacite);

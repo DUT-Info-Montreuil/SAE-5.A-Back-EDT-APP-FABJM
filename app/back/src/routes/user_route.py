@@ -14,6 +14,7 @@ from psycopg2 import OperationalError, Error
 import src.services.verification as verif 
 
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity  
+import json
 import datetime
 user = Blueprint('user', __name__)
 
@@ -117,6 +118,304 @@ def get_utilisateur():
             returnStatement.append(get_utilisateur_statement(row))
     except(TypeError) as e:
         return jsonify({'erreur': str(apiException.AucuneDonneeTrouverException("utilisateur"))}), 404
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)
+
+
+@user.route('/utilisateurs/getAllProf', methods=['GET','POST'])
+@jwt_required()
+def get_prof():
+    """Renvoit tous les profs via la route /utilisateurs/getAllProf
+
+    :raises PermissionManquanteException: Si pas assez de droit pour effectuer un getAll dans la table professeur
+    :raises AucuneDonneeTrouverException: Une aucune donnée n'a été trouvé dans la table professeur
+    
+    :return:  tous les professeurs
+    :rtype: json
+    """
+    
+    #check if the user is admin
+    conn = connect_pg.connect()
+
+    query = "select * from edt.professeur order by IdUtilisateur asc"
+    
+    returnStatement = []
+    try:
+        rows = connect_pg.get_query(conn, query)
+        if rows == []:
+            return jsonify({'erreur': str(apiException.AucuneDonneeTrouverException("professeur"))}), 404
+        for row in rows:
+                returnStatement.append(get_professeur_statement(row))
+    except(Exception) as e:
+        return jsonify({'erreur': str(apiException.InsertionImpossibleException("professeur", "récupérer"))}), 500
+    
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)
+
+
+@user.route('/utilisateurs/getProfHeureTravailler/<idProf>', methods=['GET','POST'])
+@jwt_required()
+def get_prof_heure_travailler(idProf):
+    """Renvoit toutes les heures faites par un prof via la route /utilisateurs/getProfHeureTravailler/<idProf>
+
+    :param idProf: id d'un professeur présent dans la base de donnée
+    :type idProf: int
+
+    :param idSae: id d'une ressource représentant une sae que l'on veut écarter du calcul des heures travaillés spécifié via le body
+    :type idSae: int(optionnel)
+
+    :raises PermissionManquanteException: Si pas assez de droit pour effectuer un getAll dans la table professeur
+    :raises AucuneDonneeTrouverException: Une aucune donnée n'a été trouvé dans la table professeur
+    
+    :return:  tous les professeurs
+    :rtype: json
+    """
+
+    if (not idProf.isdigit()):
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idProf", "numérique"))}), 400
+    
+    conn = connect_pg.connect()
+    querySae = ""
+    try:
+        json_datas = request.get_json()
+        if 'idSae' in json_datas:
+            if (type(json_datas['idSae']) != int):
+                return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idSae", "numérique"))}), 400
+            querySae += f" and (idRessource != {json_datas['idSae']}) "
+
+    except(Exception) as e: # Si aucune idSae n'es fournie
+        pass
+
+    dateAujourdhui = str(datetime.date.today())
+    heureActuelle = str(datetime.datetime.now())
+
+    query = f"""select sum(nombreheure) as nombreheureTravailler from edt.cours inner join edt.enseigner 
+    using(idCours)  where idProf = {idProf} and ((jour < '{dateAujourdhui}') or (jour = '{dateAujourdhui}' 
+    and (HeureDebut + NombreHeure::interval) < '{heureActuelle}'::time)){querySae};
+    """
+    
+    returnStatement = []
+    try:
+        rows = connect_pg.get_query(conn, query)
+        result = str(rows[0][0])
+        if result == "None":
+            return jsonify({'erreur': str(apiException.DonneeIntrouvableException("enseigner"))}), 404
+        
+    except(Exception) as e:
+        return jsonify({'erreur': str(apiException.InsertionImpossibleException("cours", "récupérer"))}), 500
+    
+    connect_pg.disconnect(conn)
+    return jsonify(result)
+
+
+@user.route('/utilisateurs/getProfHeurePrevue/<idProf>', methods=['GET','POST'])
+@jwt_required()
+def get_prof_heure_prevue(idProf):
+    """Renvoit toutes les heures faites par un prof via la route /utilisateurs/getProfHeurePrevue/<idProf>
+
+    :param idProf: id d'un professeur présent dans la base de donnée
+    :type idProf: int
+
+    :param idSae: id d'une ressource représentant une sae que l'on veut écarter du calcul des heures travaillés spécifié via le body
+    :type idSae: int(optionnel)
+
+    :raises PermissionManquanteException: Si pas assez de droit pour effectuer un getAll dans la table professeur
+    :raises AucuneDonneeTrouverException: Une aucune donnée n'a été trouvé dans la table professeur
+    
+    :return:  tous les professeurs
+    :rtype: json
+    """
+
+    if (not idProf.isdigit()):
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idProf", "numérique"))}), 400
+    
+    conn = connect_pg.connect()
+    querySae = ""
+    try:
+        json_datas = request.get_json()
+        if 'idSae' in json_datas:
+            if (type(json_datas['idSae']) != int):
+                return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idSae", "numérique"))}), 400
+            querySae += f" and (idRessource != {json_datas['idSae']}) "
+
+    except(Exception) as e: # Si aucune idSae n'es fournie
+        pass
+
+    dateAujourdhui = str(datetime.date.today())
+    heureActuelle = str(datetime.datetime.now())
+
+    query = f"""select sum(nombreheure) as nombreheureTravailler from edt.cours inner join edt.enseigner 
+    using(idCours)  where idProf = {idProf} and ((jour > '{dateAujourdhui}') or (jour = '{dateAujourdhui}' 
+    and (HeureDebut + NombreHeure::interval) > '{heureActuelle}'::time)){querySae};
+    """
+    
+    returnStatement = []
+    try:
+        rows = connect_pg.get_query(conn, query)
+        result = str(rows[0][0])
+        if result == "None":
+            return jsonify({'erreur': str(apiException.DonneeIntrouvableException("enseigner"))}), 404
+        
+    except(Exception) as e:
+        return jsonify({'erreur': str(apiException.InsertionImpossibleException("cours", "récupérer"))}), 500
+    
+    connect_pg.disconnect(conn)
+    return jsonify(result)
+
+
+@user.route('/utilisateurs/getProfHeureTravaillerMois/<idProf>', methods=['GET','POST'])
+@jwt_required()
+def get_prof_heure_travailler_mois(idProf):
+    """Renvoit toutes les heures faites par un prof lors d'un mois via la route /utilisateurs/getProfHeureTravaillerMois/<idProf>
+
+    :param idProf: id d'un professeur présent dans la base de donnée
+    :type idProf: int
+
+    :param mois: mois à calculer au format YYYY-MM (ex : 2023-12) à spécifié dans le body
+    :type mois: str
+
+    :param idSae: id d'une ressource représentant une sae que l'on veut écarter du calcul des heures travaillés spécifié via le body
+    :type idSae: int(optionnel)
+
+    :raises PermissionManquanteException: Si pas assez de droit pour effectuer un getAll dans la table professeur
+    :raises AucuneDonneeTrouverException: Une aucune donnée n'a été trouvé dans la table professeur
+    
+    :return:  tous les professeurs
+    :rtype: json
+    """
+
+    if (not idProf.isdigit()):
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idProf", "numérique"))}), 400
+    
+    conn = connect_pg.connect()
+    querySae = ""
+    try:
+        json_datas = request.get_json()
+        if 'idSae' in json_datas:
+            if (type(json_datas['idSae']) != int):
+                return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idSae", "numérique"))}), 400
+            querySae += f" and (idRessource != {json_datas['idSae']}) "
+
+    except(Exception) as e: # Si aucune idSae n'es fournie
+        pass
+
+    dateAujourdhui = str(datetime.date.today())
+    heureActuelle = str(datetime.datetime.now())
+
+    query = f"""select sum(nombreheure) as nombreheureTravailler from edt.cours inner join edt.enseigner 
+    using(idCours)  where idProf = {idProf} and ((jour < '{dateAujourdhui}') or (jour = '{dateAujourdhui}' 
+    and (HeureDebut + NombreHeure::interval) < '{heureActuelle}'::time)){querySae} 
+    and TO_CHAR(jour, 'YYYY-MM') = '{json_datas['mois']}';
+    """
+    
+    returnStatement = []
+    try:
+        rows = connect_pg.get_query(conn, query)
+        result = str(rows[0][0])
+        if result == "None":
+            return jsonify({'erreur': str(apiException.DonneeIntrouvableException("enseigner"))}), 404
+        
+    except(Exception) as e:
+        return jsonify({'erreur': str(apiException.InsertionImpossibleException("cours", "récupérer"))}), 500
+    
+    connect_pg.disconnect(conn)
+    return jsonify(result)
+
+
+@user.route('/utilisateurs/getProfParInitiale/<initialeProf>', methods=['GET','POST'])
+@jwt_required()
+def get_prof_par_initiale(initialeProf):
+    """Renvoit un prof via ses initiales via la route /utilisateurs/getProfParInitiale/<idProf>
+
+    :param initialeProf: initiale d'un professeur présent dans la base de donnée
+    :type initialeProf: str
+
+    :raises PermissionManquanteException: Si pas assez de droit pour effectuer un get dans la table professeur
+    :raises AucuneDonneeTrouverException: Une aucune donnée répondant aux critères n'a été trouvé dans la table professeur
+    
+    :return: un professeur
+    :rtype: json
+    """
+    
+    #check if the user is admin
+    conn = connect_pg.connect()
+    query = f"select * from edt.professeur where Initiale = '{initialeProf}'"
+    
+    returnStatement = []
+    try:
+        rows = connect_pg.get_query(conn, query)
+        if rows == []:
+            return jsonify({'erreur': str(apiException.DonneeIntrouvableException("professeur",initialeProf))}), 404
+        for row in rows:
+            returnStatement.append(get_professeur_statement(row))
+    except(Exception) as e:
+        return jsonify({'erreur': str(apiException.InsertionImpossibleException("professeur", "récupérer"))}), 500
+    
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)
+
+
+@user.route('/utilisateurs/getAllEnseignant', methods=['GET','POST'])
+@jwt_required()
+def get_enseignant():
+    """Renvoit tous les enseignants via la route /utilisateurs/getAllEnseignant
+
+    :raises PermissionManquanteException: Si pas assez de droit pour effectuer un getAll dans la table enseigner
+    :raises AucuneDonneeTrouverException: Une aucune donnée n'a été trouvé dans la table enseigner
+    
+    :return:  tous les enseignants
+    :rtype: json
+    """
+    
+    #check if the user is admin
+    conn = connect_pg.connect()
+
+    query = "select distinct * from edt.enseigner order by idProf asc"
+    
+    returnStatement = []
+    try:
+        rows = connect_pg.get_query(conn, query)
+        if rows == []:
+            return jsonify({'erreur': str(apiException.AucuneDonneeTrouverException("professeur"))}), 404
+        for row in rows:
+            returnStatement.append(json.loads((get_one_prof((row[0]))).data))
+    except(Exception) as e:
+        return jsonify({'erreur': str(apiException.InsertionImpossibleException("professeur", "récupérer"))}), 500
+    
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)
+
+
+@user.route('/utilisateurs/getProf/<idProf>', methods=['GET','POST'])
+@jwt_required()
+def get_one_prof(idProf):
+    """Renvoit un prof via son id via la route /utilisateurs/getProf/<idProf>
+
+    :param idProf: id d'un professeur présent dans la base de donnée
+    :type idProf: int
+
+    :raises PermissionManquanteException: Si pas assez de droit pour effectuer un get dans la table professeur
+    :raises AucuneDonneeTrouverException: Une aucune donnée répondant aux critères n'a été trouvé dans la table professeur
+    
+    :return: un professeur
+    :rtype: json
+    """
+    
+    #check if the user is admin
+    conn = connect_pg.connect()
+
+    query = f"select * from edt.professeur where idProf = {idProf} order by IdUtilisateur asc"
+    
+    returnStatement = []
+    try:
+        rows = connect_pg.get_query(conn, query)
+        if rows == []:
+            return jsonify({'erreur': str(apiException.DonneeIntrouvableException("professeur",idProf))}), 404
+        for row in rows:
+            returnStatement.append(get_professeur_statement(row))
+    except(Exception) as e:
+        return jsonify({'erreur': str(apiException.InsertionImpossibleException("professeur", "récupérer"))}), 500
+    
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 
