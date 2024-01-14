@@ -45,6 +45,79 @@ def get_utilisateur():
     return jsonify(returnStatement)
 
 
+
+@user.route('/utilisateurs/getLoggedUser', methods=['GET'])
+@jwt_required()
+def get_logged_user():
+    """Renvoit l'utilisateur connecté via la route /utilisateurs/getLoggedUser
+    
+    :return:  l'utilisateur connecté
+    :rtype: json
+    """
+    user_id = get_jwt_identity()
+    conn = connect_pg.connect()
+    
+    
+    query = f"select idUtilisateur,FirstName,LastName,Username from edt.utilisateur where idutilisateur = {user_id}"
+    user_rows = connect_pg.get_query(conn, query)
+    
+
+    if not user_rows:
+        connect_pg.disconnect(conn)
+        return jsonify({'erreur': str(apiException.AucuneDonneeTrouverException("utilisateur"))}), 404
+    
+    user = {
+        "idUtilisateur": user_rows[0][0],
+        "FirstName": user_rows[0][1],
+        "LastName": user_rows[0][2],
+        "Username": user_rows[0][3]
+    }
+    
+    
+    role_query = f"select IDAdmin from edt.admin where idUtilisateur = {user_id}"
+    role_rows = connect_pg.get_query(conn, role_query)
+    
+    if role_rows:
+        role = {
+        "type": "admin",
+        "id": role_rows[0][0]
+        }
+        user["role"] = role
+        connect_pg.disconnect(conn)
+        return jsonify(user)
+    
+    role_query = f"select idProf, Initiale, idSalle from edt.professeur where idUtilisateur = {user_id}"
+    role_rows = connect_pg.get_query(conn, role_query)
+
+    if role_rows:
+        role = {
+        "type": "professeur",
+        "id": role_rows[0][0],
+        "initiale": role_rows[0][1],
+        "idSalle": role_rows[0][2]
+        }
+        user["role"] = role
+        connect_pg.disconnect(conn)
+        return jsonify(user)
+    
+    role_query = f"select idEleve,idGroupe  from edt.eleve where idUtilisateur = {user_id}"
+    role_rows = connect_pg.get_query(conn, role_query)
+
+    if role_rows:
+        role = {
+        "type": "eleve",
+        "id": role_rows[0][0],
+        "idGroupe": role_rows[0][1]
+        }
+        user["role"] = role
+        connect_pg.disconnect(conn)
+        return jsonify(user)
+    
+    return jsonify({'erreur': 'Rôle non trouvé'}), 404
+    
+    
+    
+
 @user.route('/utilisateurs/get/<userName>', methods=['GET','POST'])
 @jwt_required()
 def get_one_utilisateur(userName):
