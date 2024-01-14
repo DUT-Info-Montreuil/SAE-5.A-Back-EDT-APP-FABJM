@@ -188,6 +188,65 @@ def get_prof_heure_prevue(idProf):
     return jsonify(result)
 
 
+@user.route('/utilisateurs/getProfHeureTravaillerMois/<idProf>', methods=['GET','POST'])
+@jwt_required()
+def get_prof_heure_travailler_mois(idProf):
+    """Renvoit toutes les heures faites par un prof lors d'un mois via la route /utilisateurs/getProfHeureTravaillerMois/<idProf>
+
+    :param idProf: id d'un professeur présent dans la base de donnée
+    :type idProf: int
+
+    :param mois: mois à calculer au format YYYY-MM (ex : 2023-12) à spécifié dans le body
+    :type mois: str
+
+    :param idSae: id d'une ressource représentant une sae que l'on veut écarter du calcul des heures travaillés spécifié via le body
+    :type idSae: int(optionnel)
+
+    :raises PermissionManquanteException: Si pas assez de droit pour effectuer un getAll dans la table professeur
+    :raises AucuneDonneeTrouverException: Une aucune donnée n'a été trouvé dans la table professeur
+    
+    :return:  tous les professeurs
+    :rtype: json
+    """
+
+    if (not idProf.isdigit()):
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idProf", "numérique"))}), 400
+    
+    conn = connect_pg.connect()
+    querySae = ""
+    try:
+        json_datas = request.get_json()
+        if 'idSae' in json_datas:
+            if (type(json_datas['idSae']) != int):
+                return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idSae", "numérique"))}), 400
+            querySae += f" and (idRessource != {json_datas['idSae']}) "
+
+    except(Exception) as e: # Si aucune idSae n'es fournie
+        pass
+
+    dateAujourdhui = str(datetime.date.today())
+    heureActuelle = str(datetime.datetime.now())
+
+    query = f"""select sum(nombreheure) as nombreheureTravailler from edt.cours inner join edt.enseigner 
+    using(idCours)  where idProf = {idProf} and ((jour < '{dateAujourdhui}') or (jour = '{dateAujourdhui}' 
+    and (HeureDebut + NombreHeure::interval) < '{heureActuelle}'::time)){querySae} 
+    and TO_CHAR(jour, 'YYYY-MM') = '{json_datas['mois']}';
+    """
+    
+    returnStatement = []
+    try:
+        rows = connect_pg.get_query(conn, query)
+        result = str(rows[0][0])
+        if result == "None":
+            return jsonify({'erreur': str(apiException.DonneeIntrouvableException("enseigner"))}), 404
+        
+    except(Exception) as e:
+        return jsonify({'erreur': str(apiException.InsertionImpossibleException("cours", "récupérer"))}), 500
+    
+    connect_pg.disconnect(conn)
+    return jsonify(result)
+
+
 @user.route('/utilisateurs/getProfParInitiale/<initialeProf>', methods=['GET','POST'])
 @jwt_required()
 def get_prof_par_initiale(initialeProf):
