@@ -15,8 +15,8 @@ INSERT INTO Ressource (Titre, Numero, NbrHeureSemestre, idSemestre) values ('tes
 
 -- Cours (idCours, HeureDebut, NombreHeure, Jour, idRessource)
 
-INSERT INTO Cours (HeureDebut, NombreHeure, Jour, idRessource) values ('20:18:06 ', '2', '2023-12-06', '1');
-INSERT INTO Cours (HeureDebut, NombreHeure, Jour, idRessource) values ('16:49:49 ', '2', '2023-10-06', '1');
+INSERT INTO Cours (HeureDebut, NombreHeure, Jour, idRessource) values ('20:18:06 ', '02:00:00', '2023-12-06', '1');
+INSERT INTO Cours (HeureDebut, NombreHeure, Jour, idRessource) values ('16:49:49 ', '02:00:00', '2023-10-06', '1');
 
 
 -- Salle (idSalle, Numero ,Capacite);
@@ -24,7 +24,7 @@ INSERT INTO Salle (Numero, Capacite) values ('A2-05', 35);
 INSERT INTO Salle (Numero, Capacite) values ('A1-01', 20);
 
 -- Groupe(idGroupe ,Nom, AnneeScolaire,Annee ,idGroupe_parent)
-INSERT INTO Groupe(Nom, AnneeScolaire,Annee ) values ('Groupe A1', 2024, 2023);
+INSERT INTO Groupe(Nom, AnneeScolaire,Annee ) values ('A1', 2024, 2023);
 
 -- Professeur(idProf, Initiale, idSalle, idUtilisateur)
 INSERT INTO Professeur( Initiale, idSalle, idUtilisateur) values ('AR', 1, 3);
@@ -39,4 +39,4 @@ INSERT INTO Etudier(idgroupe, idcours) values (1,1);
 INSERT INTO Eleve(idGroupe,idUtilisateur) values (1,1);
 
 -- Responsable(idProf, idRessource)
-INSERT INTO Enseigner(idProf, idCours) values (1,2);
+INSERT INTO Responsable(idProf, idRessource) values (1,1);
