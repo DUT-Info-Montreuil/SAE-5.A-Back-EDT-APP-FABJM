@@ -16,6 +16,23 @@ def get_utilisateur_statement(row):
         'PassWord':row[4],
         'FirstLogin':row[5]
     }
+
+def get_professeur_statement(row):
+    """ 
+    Fonction de mappage de la table professeur
+    
+    :param row: donnée représentant un professeur
+    :type row: tableau
+    
+    :return: les données représentant un professeur
+    :rtype: dictionnaire
+    """
+    return {
+        'idProf':row[0],
+        'Initiale':row[1],
+        'idSalle':row[2],
+        'idUtilisateur':row[3]
+    }
     
 
 

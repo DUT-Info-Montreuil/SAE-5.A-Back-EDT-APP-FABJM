@@ -22,7 +22,7 @@ class DonneeIntrouvableException(Exception):
     def __init__(self, table, id = -1):
         if id != -1:
             self.message = f" Aucune donnée avec l'ID {id} n'a pu être trouvé dans la table {table} "
-        else: 
+        else:
             self.message = f" Aucune donnée répondant aux critères n'a pu être trouvé dans la table {table} "
         super().__init__(self.message)
         
@@ -69,9 +69,15 @@ class ParamètreInvalideException(Exception):
     
     :param paramètre: le nom du paramètre spécifié
     :type paramètre: String
+
+    :param message: message d'erreur personnalisé qui vas écraser celui par défaut
+    :type message: String(optionnel)
 	"""
-    def __init__(self, paramètre):
-        self.message = f" La valeur spécifié pour le paramètre {paramètre} est invalide"
+    def __init__(self, paramètre, message = None):
+        if message != None:
+            self.message = message
+        else:
+            self.message = f" La valeur spécifié pour le paramètre {paramètre} est invalide"
         super().__init__(self.message)
         
 class LoginOuMotDePasseInvalideException(Exception): 

@@ -120,7 +120,7 @@ def supprimer_responsable(idRessource):
 
     :raises ParamètreTypeInvalideException: Si le type de idRessource est invalide, une valeur numérique est attendue
     :raises DonneeIntrouvableException: Si la clée idRessource ou idProf n'a pas pu être trouvé
-    :raises InsertionImpossibleException: Si une erreur inconnue est survenue lors de l'insertion
+    :raises ActionImpossibleException: Si une erreur inconnue est survenue lors de l'insertion
 
     :return: id de la ressource
     :rtype: json
@@ -141,7 +141,7 @@ def supprimer_responsable(idRessource):
                     return jsonify({'error': str(apiException.DonneeIntrouvableException("Ressource ", idRessource))}), 400
             else:
                 # Erreur inconnue
-                return jsonify({'error': str(apiException.InsertionImpossibleException("responsable", "supprimer"))}), 500
+                return jsonify({'error': str(apiException.ActionImpossibleException("responsable", "supprimer"))}), 500
         connect_pg.disconnect(conn)
         return jsonify(idRessource)
 
@@ -217,6 +217,34 @@ def getAll_ressource():
     
 
     query = "select * from edt.ressource order by idressource asc"
+    conn = connect_pg.connect()
+    rows = connect_pg.get_query(conn, query)
+    returnStatement = []
+    try:
+        for row in rows:
+            returnStatement.append(get_ressource_statement(row))
+    except TypeError as e:
+        return jsonify({'error': str(apiException.AucuneDonneeTrouverException("ressource"))}), 404
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)
+
+@ressource.route('/ressource/getDispo')
+@jwt_required()
+def get_ressource_dispo():
+    """Renvoit toutes les ressources disponible, c'est à dire celles dont toutes les heures n'ont pas encore été allouées via la route /ressource/getDispo
+
+    :raises PermissionManquanteException: Si pas assez de droit pour récupérer toutes les données présentes dans la table ressource
+    :raises AucuneDonneeTrouverException: Une aucune donnée n'a été trouvé dans la table ressource
+    
+    :return:  toutes les resources
+    :rtype: json
+    """
+    conn = connect_pg.connect()
+    if not perm.permissionCheck(get_jwt_identity() , 3 , conn):
+        return jsonify({'erreur': str(apiException.PermissionManquanteException())}), 403
+    
+
+    query = "select * from edt.ressource where NbrHeureSemestre > '00:00' order by idRessource asc"
     conn = connect_pg.connect()
     rows = connect_pg.get_query(conn, query)
     returnStatement = []
@@ -330,7 +358,6 @@ def UpdateRessource(id) :
         return jsonify({'erreur': str(apiException.PermissionManquanteException())}), 403
     
     datas = request.get_json()
-    print(datas.keys())
     if not datas:
         return jsonify({'erreur': str(apiException.ParamètreBodyManquantException())}), 400
     key = ["Titre", "NbrHeureSemestre", "CodeCouleur", "IdSemestre", "Numero"]

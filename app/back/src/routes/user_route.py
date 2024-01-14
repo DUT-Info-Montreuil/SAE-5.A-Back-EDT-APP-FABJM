@@ -6,16 +6,92 @@ import src.connect_pg as connect_pg
 import src.apiException as apiException
 
 from src.config import config
-from src.services.user_service import get_utilisateur_statement
+from src.services.user_service import get_utilisateur_statement, get_professeur_statement
 import src.services.permision as perm
 import psycopg2
 from psycopg2 import errorcodes
 from psycopg2 import OperationalError, Error
+import src.services.verification as verif 
 
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity  
+import datetime
 user = Blueprint('user', __name__)
 
 # TODO: refactor user
+
+@user.route('/user/getProfDispo', methods=['GET', 'POST'])
+@jwt_required()
+def get_prof_dispo():
+    """Renvoit tous les professeurs disponible sur une période via la route /user/getProfDispo
+
+    :param HeureDebut: date du début de la période au format time(hh:mm:ss) spécifié dans le body
+    :type HeureDebut: str 
+
+    :param NombreHeure: durée de la période spécifié dans le body
+    :type NombreHeure: int
+
+    :param Jour: date de la journée où la disponibilité des professeurs doit être vérifer au format TIMESTAMP(yyyy-mm-dd)
+    :type Jour: str
+
+    :raises AucuneDonneeTrouverException: Si aucune donnée n'a été trouvé dans la table groupe, etudier ou cours
+    :raises ParamètreBodyManquantException: Si un paramètre est manquant
+    :raises ParamètreInvalideException: Si un des paramètres est invalide
+    :raises ActionImpossibleException: Si une erreur est survenue lors de la récupération des données
+    
+    :return: touts les professeurs disponibles
+    :rtype: flask.wrappers.Response(json)
+    """
+    json_datas = request.get_json()
+    if not json_datas:
+        return jsonify({'error ': 'missing json body'}), 400
+    
+    if 'HeureDebut' not in json_datas or 'Jour' not in json_datas or 'NombreHeure' not in json_datas :
+        return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
+
+    if not verif.estDeTypeTime(json_datas['HeureDebut']) or not verif.estDeTypeTimeStamp(json_datas['Jour']) or not verif.estDeTypeTime(json_datas['NombreHeure']):
+        return jsonify({'error': str(apiException.ParamètreInvalideException("HeureDebut, NombreHeure ou Jour"))}), 404
+
+    HeureDebut = json_datas['HeureDebut']
+    NombreHeure = json_datas['NombreHeure']
+    HeureDebut = datetime.timedelta(hours = int(HeureDebut[:2]),minutes = int(HeureDebut[3:5]), seconds = int(HeureDebut[6:8]))
+    NombreHeure = datetime.timedelta(hours = int(NombreHeure[:2]),minutes = int(NombreHeure[3:5]))
+    HeureFin = HeureDebut + NombreHeure
+
+    heure_ouverture_iut = datetime.timedelta(hours = 8)
+    heure_fermeture_iut = datetime.timedelta(hours = 19)
+
+    if HeureDebut < heure_ouverture_iut or HeureFin > heure_fermeture_iut:
+        return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "L'iut est fermé durant la période spécifié"))}), 404
+
+    query = f""" select distinct edt.professeur.* from edt.professeur full join edt.enseigner using(idProf) full join edt.cours
+    using(idCours) where (idProf is not null) and ( '{json_datas['HeureDebut']}' <  HeureDebut 
+    and  '{str(HeureFin)}' <= HeureDebut or '{json_datas['HeureDebut']}'::time >=  (HeureDebut + NombreHeure::interval)) 
+    or ('{json_datas['Jour']}' != Jour and idProf is not null) or (HeureDebut is null) order by idProf asc
+    """
+    conn = connect_pg.connect()
+    returnStatement = []
+    try:
+        rows = connect_pg.get_query(conn, query)
+        if rows == []:
+            return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "Aucun professeur disponible n'a été trouvé à la période spécifié"))}), 400
+        
+        for row in rows:
+            returnStatement.append(get_professeur_statement(row))
+    except Exception as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("Etudier", "récupérer"))}), 500
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)
+
+
+    try:
+        for row in rows:
+            returnStatement.append(get_professeur_statement(row))
+    except TypeError as e:
+        return jsonify({'error': str(apiException.AucuneDonneeTrouverException("professeur"))}), 404
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)
+
+
 @user.route('/utilisateurs/getAll', methods=['GET','POST'])
 @jwt_required()
 def get_utilisateur():

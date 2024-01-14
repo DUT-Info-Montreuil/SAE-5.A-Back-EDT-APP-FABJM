@@ -1,3 +1,6 @@
+
+import src.connect_pg as connect_pg
+
 def get_groupe_statement(row):
     """
     Fonction de mappage de la table groupe

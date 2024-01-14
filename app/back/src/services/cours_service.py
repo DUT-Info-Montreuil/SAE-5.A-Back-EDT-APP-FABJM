@@ -1,3 +1,5 @@
+import src.connect_pg as connect_pg
+
 def get_cours_statement(row):
     """ 
     Fonction de mappage de la table cours
@@ -11,12 +13,12 @@ def get_cours_statement(row):
     return {
         'idCours':row[0],
         'HeureDebut':str(row[1]),
-        'NombreHeure':row[2],
-        'Jour':row[3],
+        'NombreHeure':str(row[2]),
+        'Jour':str(row[3]),
         'idRessource':row[4]
     }
 
-def getProfCours(idUtilisateur , conn):
+def getCoursProf(idUtilisateur , conn):
     """ Renvoie les cours au quelle enseigne un professeur
     
     :param idUtilisateur: idUtilisateur du professeur
@@ -33,18 +35,20 @@ def getProfCours(idUtilisateur , conn):
     
     return result
 
-def getEleveCours(idUtilisateur , conn):
-    """ Renvoie les cours au quelle enseigne un professeur
+def getCoursGroupeService(idGroupe , conn):
+    """ Renvoie les cours d'un groupe 
     
-    :param idUtilisateur: idUtilisateur du professeur
-    :type idUtilisateur: int
+    :param idGroupe: idGroupe d'un groupe
+    :type idGroupe: int
     
     :param conn: la connection à une base de donnée
     :type conn: une classe heritant de la classe mère Connexion
 
-    :return: retourne les cours
+    :return: les cours
     :rtype: list
     """
-    result = connect_pg.get_query(conn , f"Select edt.cours.* from edt.cours inner join edt.etudier  using(idCours)  inner join edt.eleve as e1 using (idGroupe) where e1.idUtilisateur = {idUtilisateur} order by idCours asc")
+    result = connect_pg.get_query(conn , f"Select edt.cours.* from edt.cours inner join edt.etudier  using(idCours)  inner join edt.groupe as e1 using (idGroupe) where e1.idGroupe = {idGroupe} order by idCours asc")
     
     return result
+
+    
