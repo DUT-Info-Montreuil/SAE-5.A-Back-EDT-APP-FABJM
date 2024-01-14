@@ -1,3 +1,5 @@
+
+
 from flask import Blueprint, request, jsonify
 from flask_cors import CORS
 import flask
@@ -14,6 +16,7 @@ from psycopg2 import OperationalError, Error
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity
 
 import src.services.permision as perm
+from src.services.cours_service import get_cours_statement
 
 from src.services.groupe_service import get_groupe_statement, getGroupeProf
 import src.services.verification as verif 
@@ -459,4 +462,29 @@ def update_groupe(idGroupe):
     return jsonify({"success": f"the group with id {idGroupe} was successfully updated"}), 200
 
 
+@groupe.route('/groupe/getCoursGroupe/<idGroupe>', methods=['GET'])
+# @jwt_required()
+def get_cours_groupe(idGroupe):
+    """Renvoit tous les cours du groupe spécifié par son idGroupe via la route /groupe/parent/get/<idGroupe>
 
+    :param idGroupe: l'id d'un groupe présent dans la base de donnée
+    :type idGroupe: str
+
+    :raises DonneeIntrouvableException: Impossible de trouver le groupe spécifié dans la table groupe
+
+    :return:  la liste des cours du groupe a qui appartient cet id
+    :rtype: json
+    """
+
+    query = f"select edt.cours.* from edt.groupe inner join edt.etudier using(idGroupe) inner join edt.cours using(idCours) where idGroupe={idGroupe}"
+
+    conn = connect_pg.connect()
+    rows = connect_pg.get_query(conn, query)
+    returnStatement = []
+    try:
+        for row in rows:
+            returnStatement.append(get_cours_statement(row))
+    except(TypeError) as e:
+        return jsonify({'erreur': str(apiException.DonneeIntrouvableException("groupe", idGroupe))}), 404
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)
