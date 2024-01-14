@@ -79,22 +79,22 @@ def get_logged_user():
     
     if role_rows:
         role = {
-        "type": "admin",
+        "type": "Administrateur",
         "id": role_rows[0][0]
         }
         user["role"] = role
         connect_pg.disconnect(conn)
         return jsonify(user)
     
-    role_query = f"select idProf, Initiale, idSalle from edt.professeur where idUtilisateur = {user_id}"
+    role_query = f"SELECT p.idProf, p.Initiale, s.Numero FROM edt.professeur as p JOIN edt.salle as s ON p.idSalle = s.idSalle WHERE p.idUtilisateur = {user_id}"
     role_rows = connect_pg.get_query(conn, role_query)
 
     if role_rows:
         role = {
-        "type": "professeur",
+        "type": "Enseignant",
         "id": role_rows[0][0],
         "initiale": role_rows[0][1],
-        "idSalle": role_rows[0][2]
+        "bureau": role_rows[0][2]
         }
         user["role"] = role
         connect_pg.disconnect(conn)
@@ -105,7 +105,7 @@ def get_logged_user():
 
     if role_rows:
         role = {
-        "type": "eleve",
+        "type": "Élève",
         "id": role_rows[0][0],
         "idGroupe": role_rows[0][1]
         }
