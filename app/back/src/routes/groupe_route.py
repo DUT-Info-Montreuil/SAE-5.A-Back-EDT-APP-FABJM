@@ -250,3 +250,33 @@ def update_groupe(idGroupe):
         return jsonify({'error': str(apiException.DonneeIntrouvableException("groupe", idGroupe))}), 404
     connect_pg.disconnect(conn)
     return jsonify({"success": f"the group with id {idGroupe} was successfully updated"}), 200
+
+@groupe.route('/groupe/getGroupeCours', methods=['GET'])
+@jwt_required()
+def get_groupe_cours(idGroupe):
+    """Renvoit tous les cours du groupe spécifié par son idGroupe via la route /groupe/parent/get/<idGroupe>
+
+    :param idGroupe: l'id d'un groupe présent dans la base de donnée
+    :type idGroupe: str
+
+    :raises DonneeIntrouvableException: Impossible de trouver le groupe spécifié dans la table groupe
+
+    :return:  la liste des cours du groupe a qui appartient cet id
+    :rtype: json
+    """
+
+    query = f"select edt.cours.* from edt.groupe inner join edt.etudier using(idGroupe) inner join edt.cours using(idCours) where idGroupe={idGroupe}"
+
+    conn = connect_pg.connect()
+    rows = connect_pg.get_query(conn, query)
+    returnStatement = {}
+    try:
+        if len(rows) > 0:
+            returnStatement = ""
+            for row in rows:
+                returnStatement += f"{get_groupe_statement(row)}"
+    except TypeError as e:
+        print(f"ERRRRRRRRRRRRRRRRRRRROR : {e}")
+        return jsonify({'error': str(apiException.DonneeIntrouvableException("groupe", idGroupe))}), 404
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)
