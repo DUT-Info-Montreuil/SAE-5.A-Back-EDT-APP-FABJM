@@ -29,8 +29,8 @@ def get_groupe():
     :rtype: json
     """
     conn = connect_pg.connect()
-    if(perm.getUserPermission(get_jwt_identity() , conn) == 2):
-        groupes = getGroupeProf(get_jwt_identity() , conn)
+    if (perm.getUserPermission(get_jwt_identity(), conn) == 2):
+        groupes = getGroupeProf(get_jwt_identity(), conn)
         returnStatement = []
         try:
             for row in groupes:
@@ -41,7 +41,7 @@ def get_groupe():
         return jsonify(returnStatement)
 
     query = "select * from edt.groupe order by IdGroupe asc"
-    
+
     rows = connect_pg.get_query(conn, query)
     returnStatement = []
     try:
@@ -70,7 +70,7 @@ def get_one_groupe(idGroupe):
 
     query = f"select * from edt.groupe where idGroupe='{idGroupe}'"
     conn = connect_pg.connect()
-    result = getEnseignantGroupe(get_jwt_identity() , conn)
+    result = getEnseignantGroupe(get_jwt_identity(), conn)
     verification = False
     for row in result:
         if str(row[0]) == idGroupe:
@@ -78,7 +78,7 @@ def get_one_groupe(idGroupe):
 
     if not verification:
         return jsonify({'error': str(apiException.PermissionManquanteException())}), 404
-        
+
     rows = connect_pg.get_query(conn, query)
     returnStatement = {}
     try:
@@ -184,7 +184,7 @@ def add_groupe():
             print("ERROR : " + e.pgcode)
             # Erreur inconnue
             return jsonify({'error': str(apiException.ActionImpossibleException("groupe"))}), 500
-    
+
     connect_pg.disconnect(conn)
     return jsonify({"success": f"The group with id {idGroupe} was successfully created"}), 200
 
@@ -210,7 +210,8 @@ def delete_groupe(idGroupe):
     except(TypeError) as e:
         return jsonify({'error': str(apiException.DonneeIntrouvableException("groupe", idGroupe))}), 404
     connect_pg.disconnect(conn)
-    return jsonify({"success": f"The group with id {idGroupe} and all subgroups from this group were successfully removed"}), 200
+    return jsonify(
+        {"success": f"The group with id {idGroupe} and all subgroups from this group were successfully removed"}), 200
 
 
 @groupe.route('/groupe/update/<idGroupe>', methods=['PUT'])
@@ -251,7 +252,8 @@ def update_groupe(idGroupe):
     connect_pg.disconnect(conn)
     return jsonify({"success": f"the group with id {idGroupe} was successfully updated"}), 200
 
-@groupe.route('/groupe/getGroupeCours', methods=['GET'])
+
+@groupe.route('/groupe/getGroupeCours/<idGroupe>', methods=['GET'])
 @jwt_required()
 def get_groupe_cours(idGroupe):
     """Renvoit tous les cours du groupe spécifié par son idGroupe via la route /groupe/parent/get/<idGroupe>
