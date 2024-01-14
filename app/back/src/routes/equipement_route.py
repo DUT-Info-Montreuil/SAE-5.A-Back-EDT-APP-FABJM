@@ -27,9 +27,8 @@ def get_all_equipement():
     :rtype: json
     """
     conn = connect_pg.connect()
-    permision = perm.getUserPermission(get_jwt_identity() , conn)
-
-    if(permision == 3):
+    
+    if not (perm.permissionCheck(get_jwt_identity() , 3 , conn)):
         return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
 
     query = f"SELECT * from edt.equipement"
@@ -60,9 +59,9 @@ def get_equipement(filtre):
     """
 
     conn = connect_pg.connect()
-    permision = perm.getUserPermission(get_jwt_identity() , conn)
+  
 
-    if(permision == 3):
+    if not (perm.permissionCheck(get_jwt_identity() , 3 , conn)):
         return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
 
     if filtre.isdigit():
