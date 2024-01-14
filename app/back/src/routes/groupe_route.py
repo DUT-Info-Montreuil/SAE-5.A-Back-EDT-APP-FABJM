@@ -1,3 +1,5 @@
+
+
 from flask import Blueprint, request, jsonify
 from flask_cors import CORS
 import flask
@@ -14,6 +16,7 @@ from psycopg2 import OperationalError, Error
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity
 
 import src.services.permision as perm
+from src.services.cours_service import get_cours_statement
 
 from src.services.groupe_service import get_groupe_statement, getGroupeProf
 
@@ -254,7 +257,7 @@ def update_groupe(idGroupe):
 
 
 @groupe.route('/groupe/getGroupeCours/<idGroupe>', methods=['GET'])
-@jwt_required()
+# @jwt_required()
 def get_groupe_cours(idGroupe):
     """Renvoit tous les cours du groupe spécifié par son idGroupe via la route /groupe/parent/get/<idGroupe>
 
@@ -271,14 +274,11 @@ def get_groupe_cours(idGroupe):
 
     conn = connect_pg.connect()
     rows = connect_pg.get_query(conn, query)
-    returnStatement = {}
+    returnStatement = []
     try:
-        if len(rows) > 0:
-            returnStatement = ""
-            for row in rows:
-                returnStatement += f"{get_groupe_statement(row)}"
-    except TypeError as e:
-        print(f"ERRRRRRRRRRRRRRRRRRRROR : {e}")
-        return jsonify({'error': str(apiException.DonneeIntrouvableException("groupe", idGroupe))}), 404
+        for row in rows:
+            returnStatement.append(get_cours_statement(row))
+    except(TypeError) as e:
+        return jsonify({'erreur': str(apiException.DonneeIntrouvableException("groupe", idGroupe))}), 404
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
