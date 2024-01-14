@@ -51,9 +51,38 @@ def getAll_cours():
     return jsonify(returnStatement)
 
 
-@cours.route('/cours/get', methods=['GET','POST'])
+@cours.route('/cours/get/<idCours>', methods=['GET'])
 @jwt_required()
-def get_cours():
+def get_cours(idCours):
+    """
+    Renvoit un cours spécifié par son idGroupe via la route /cours/get/<idCours>
+
+    :param idCours: l'id d'un cours présent dans la base de donnée
+    :type idCours: str
+
+    :raises DonneeIntrouvableException: Impossible de trouver l'idCours spécifié dans la table cours
+
+    :return:  le cours a qui appartient cet id
+    :rtype: json
+    """
+
+    query = f"select * from edt.cours where idCours='{idCours}'"
+    conn = connect_pg.connect()
+
+    rows = connect_pg.get_query(conn, query)
+    returnStatement = {}
+    try:
+        if len(rows) > 0:
+            returnStatement = get_groupe_statement(rows[0])
+    except(TypeError) as e:
+        return jsonify({'error': str(apiException.DonneeIntrouvableException("cours", idGroupe))}), 404
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)
+
+
+@cours.route('/cours/getSpe', methods=['GET','POST'])
+@jwt_required()
+def get_cours_spe():
     """Renvoit les cours spécifique à un utilisateur si possible sinon renvoit les cours générale via la route /cours/get
     
     :raises AucuneDonneeTrouverException: Aucune donnée n'a pas être trouvé correspont aux critère
