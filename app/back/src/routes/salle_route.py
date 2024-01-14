@@ -6,6 +6,9 @@ import src.apiException as apiException
 
 from src.config import config
 from src.services.salle_service import get_salle_statement
+from src.services.equipement_service import get_equipement_statement
+
+import src.services.permision as perm
 
 import psycopg2
 from psycopg2 import errorcodes
@@ -14,7 +17,7 @@ from psycopg2 import OperationalError, Error
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity  
 salle = Blueprint('salle', __name__)
 
-
+# TODO: Update salle
 @salle.route('/salle/getAll')
 @jwt_required()
 def get_salle():
@@ -68,8 +71,6 @@ def get_one_salle(idSalle):
     return jsonify(returnStatement), 200
 
 
-
-
 @salle.route('/salle/delete/<idSalle>', methods=['DELETE'])
 @jwt_required()
 def delete_salle(idSalle):
@@ -78,7 +79,7 @@ def delete_salle(idSalle):
     :param idSalle: id de la salle à supprimer
     :type idSalle: int
 
-    :raises InsertionImpossibleException: Impossible de supprimer la salle spécifié dans la table salle
+    :raises ActionImpossibleException: Impossible de supprimer la salle spécifié dans la table salle
     
     :return: message de succès
     :rtype: str
@@ -88,7 +89,7 @@ def delete_salle(idSalle):
     try:
         returnStatement = connect_pg.execute_commands(conn, query)
     except psycopg2.IntegrityError as e:
-        return jsonify({'error': str(apiException.InsertionImpossibleException("salle","supprimé"))}), 500
+        return jsonify({'error': str(apiException.ActionImpossibleException("salle","supprimé"))}), 500
     
     return jsonify({'success': 'salle supprimé'}), 200
 
@@ -100,7 +101,7 @@ def add_salle():
     :param salle: salle à ajouter, spécifié dans le body
     :type salle: json
 
-    :raises InsertionImpossibleException: Impossible d'ajouter la salle spécifié dans la table salle
+    :raises ActionImpossibleException: Impossible d'ajouter la salle spécifié dans la table salle
     :raises DonneeExistanteException: Cette salle existe déjà
     
     :return: l'id de l'utilisateur crée
@@ -122,6 +123,99 @@ def add_salle():
                 apiException.DonneeExistanteException(json_datas['Numero'], "Numero", "salle"))}), 400
         else:
             # Erreur inconnue
-            return jsonify({'error': str(apiException.InsertionImpossibleException("salle"))}), 500
+            return jsonify({'error': str(apiException.ActionImpossibleException("salle"))}), 500
 
     return jsonify({"success" : "la salle a été ajouté"}), 200
+
+@salle.route('/salle/getSalleCours/<idCours>', methods=['GET','POST'])
+@jwt_required()
+def get_salle_cours(idCours):
+    """Renvoit la salle dans lequel se déroule le cours via la route /salle/getSalleCours/<idCours>
+    
+    :param idCours: id du cours à rechercher
+    :type idCours: int
+    
+    :raises DonneeIntrouvableException: Aucune donnée n'a pas être trouvé correspondant aux critères
+    
+    :return: l'id de la salle dans lequel se déroule cours
+    :rtype: json
+    """
+    query = f"select idSalle from edt.accuellir where idCours={idCours} "
+    returnStatement = {}
+    conn = connect_pg.connect()
+    try:
+        returnStatement["idSalle"] = connect_pg.get_query(conn, query)[0][0]
+    except IndexError:
+        return jsonify({'error': str(apiException.DonneeIntrouvableException("Accuellir", idCours))}), 400
+        
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)
+
+##################    Equipement de Salle    ####################
+# TODO: Delete
+@salle.route('/salle/get/equipement/<idSalle>', methods=['GET'])
+@jwt_required()
+def get_equipements_of_salle(idSalle):
+    """Renvoit tous les salles au quel l'equipement(avec l'idEquipement) est lié via la route /salle/get/equipement/<idSalle>
+
+    :param idSalle: l'id d'un groupe présent dans la base de donnée
+    :type idSalle: str
+
+    :raises PermissionManquanteException: L'utilisatuer n'a pas les droits pour avoir accés à cette route
+    
+    :return: tous les equipements d'une salle
+    :rtype: json
+    """
+    conn = connect_pg.connect()
+    permision = perm.getUserPermission(get_jwt_identity() , conn)
+
+    if(permision == 3):
+        return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
+
+    query = f"SELECT equipement.* from edt.equiper AS e NATURAL JOIN edt.equipement AS equipement WHERE e.idSalle={idSalle}"
+
+    equipements = connect_pg.get_query(conn, query)
+    returnStatement = []
+    try:
+        for row in equipements:
+            returnStatement.append(get_equipement_statement(row))
+    except(TypeError) as e:
+        return jsonify({'error': str(apiException.AucuneDonneeTrouverException("equiper"))}), 404
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)
+
+@salle.route('/salle/add/equipement/<idSalle>', methods=['POST'])
+@jwt_required()
+def add_equipements_of_salle(idSalle):
+    """Permet d'ajouter une ou plusieurs salles a un équipement via la route /equipement/add/salle/<idEquipement>
+
+    :param idSalle: l'id d'un groupe présent dans la base de donnée
+    :type idSalle: str
+
+    :raises PermissionManquanteException: L'utilisatuer n'a pas les droits pour avoir accés à cette route
+
+    :return: un tableau d'id d'equipement crééent
+    :rtype: json
+    """
+    json_datas = request.get_json()
+    if not json_datas:
+        return jsonify({'error ': 'missing json body'}), 400
+
+    conn = connect_pg.connect()
+    permision = perm.getUserPermission(get_jwt_identity() , conn)
+
+    if(permision != 0):
+        return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
+    query = "INSERT INTO edt.equiper (idSalle, idEquipement) VALUES "
+    value_query = []
+    for data in json_datas['data']:
+        value_query.append(f"({idSalle},'{data['idEquipement']}')")
+    query += ",".join(value_query) + " returning idEquipement"
+
+    # TODO: find why only one id is return when multiple one are inserted
+    returnStatement = connect_pg.execute_commands(conn, query)
+    # TODO: handle error pair of key already exist
+    connect_pg.disconnect(conn)
+    return jsonify({"success": f"The equipements with the ids {returnStatement} were successfully created"}), 200    #{', '.join(tabIdEquipement)}
+
+

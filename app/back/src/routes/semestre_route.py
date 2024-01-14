@@ -16,7 +16,7 @@ from psycopg2 import OperationalError, Error
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity
 
 semestre = Blueprint('semestre', __name__)
-
+# TODO: Finir semestre et refactor
 
 @semestre.route('/semestre/getAll')
 @jwt_required()
@@ -58,7 +58,7 @@ def add_semestre():
     
     :raises PermissionManquanteException: Si l'utilisateur n'a pas assez de droit pour ajouter des données dans la table semestre
     :raises DonneeExistanteException: Les données entrée existe déjà dans la table semestre
-    :raises InsertionImpossibleException: Impossible d'ajouter le semestre spécifié dans la table semestre
+    :raises ActionImpossibleException: Impossible d'ajouter le semestre spécifié dans la table semestre
     :raises ParamètreBodyManquantException: Le body requis n'a pas pu être trouvé
     
     :return: l'id du semestre crée
@@ -87,7 +87,7 @@ def add_semestre():
                 apiException.DonneeExistanteException(json_datas['Numero'], "Numero", "semestre"))}), 400
         else:
             # Erreur inconnue
-            return jsonify({'error': str(apiException.InsertionImpossibleException("semestre"))}), 500
+            return jsonify({'error': str(apiException.ActionImpossibleException("semestre"))}), 500
 
     return jsonify({"success" : "semestre was added"}), 200
 
@@ -127,6 +127,6 @@ def get_one_semestre(numeroSemestre):
     except TypeError as e:
         return jsonify({'error': str(apiException.DonneeIntrouvableException("semestre", numeroSemestre))}), 404
     connect_pg.disconnect(conn)
-    return jsonify("success"), 200
+    return jsonify(returnStatement), 200
 
 

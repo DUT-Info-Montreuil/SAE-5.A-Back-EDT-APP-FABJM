@@ -5,7 +5,7 @@ import src.connect_pg as connect_pg
 import src.apiException as apiException
 
 from src.config import config
-from src.services.cours_service import get_cours_statement
+from src.services.cours_service import get_cours_statement, getProfCours, getEleveCours
 
 import psycopg2
 from psycopg2 import errorcodes
@@ -16,24 +16,50 @@ from flask_jwt_extended import JWTManager, jwt_required, create_access_token, ge
 cours = Blueprint('cours', __name__)
 
 
-@cours.route('/cours/get/<filtre>', methods=['GET','POST'])
+
+@cours.route('/cours/getAll')
 @jwt_required()
-def get_cours(filtre):
-    """Renvoit les cours remplisant les critères d'un filtre spécifié par son via la route /cours/get/<filtre>
+def getAll_cours():
+    """Renvoit toutes les cours via la route /cours/getAll
+
+    :raises PermissionManquanteException: Si pas assez de droit pour récupérer toutes les données présentes dans la table cours
+    :raises AucuneDonneeTrouverException: Une aucune donnée n'a été trouvé dans la table cours
     
-    :param filtre: peut-être l'id du cours ou un jour au format aaaa-mm-jj, si le filtre == "null" aucun filtre est appliqué
-    :type filtre: str, int
+    :return: toutes les cours
+    :rtype: json
+    """
+    conn = connect_pg.connect()
     
-    :raises ParamètreInvalideException: Le paramètre filtre est invalide
+    query = "select * from edt.cours order by idCours asc"
+    conn = connect_pg.connect()
+    rows = connect_pg.get_query(conn, query)
+    returnStatement = []
+    try:
+        rows = connect_pg.get_query(conn, query)
+        if rows == []:
+            return jsonify({'error': str(apiException.AucuneDonneeTrouverException("cours"))}), 404
+        for row in rows:
+            returnStatement.append(get_cours_statement(row))
+    except(Exception) as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("cours", "récuperer"))}), 404
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)
+
+
+@cours.route('/cours/get', methods=['GET','POST'])
+@jwt_required()
+def get_cours():
+    """Renvoit les cours spécifique à un utilisateur si possible sinon renvoit les cours générale via la route /cours/get
+    
     :raises AucuneDonneeTrouverException: Aucune donnée n'a pas être trouvé correspont aux critère
     
-    :return: Les cours filtrés
+    :return: Les cours 
     :rtype: json
     """
 
     conn = connect_pg.connect()
     if(perm.getUserPermission(get_jwt_identity() , conn) == 2):
-        cours = getEnseignantCours(get_jwt_identity() , conn)
+        cours = getProfCours(get_jwt_identity() , conn)
         returnStatement = []
         try:
             for row in cours:
@@ -44,7 +70,7 @@ def get_cours(filtre):
         return jsonify(returnStatement)
     
     elif(perm.getUserPermission(get_jwt_identity() , conn) == 3):
-        cours = getEleveCoursCours(get_jwt_identity() , conn)
+        cours = getEleveCours(get_jwt_identity() , conn)
         returnStatement = []
         try:
             for row in cours:
@@ -53,62 +79,52 @@ def get_cours(filtre):
             return jsonify({'error': str(apiException.AucuneDonneeTrouverException("cours"))}), 404
         connect_pg.disconnect(conn)
         return jsonify(returnStatement)
-
-    if filtre.isdigit():
-        query = f"select * from edt.cours where idCours='{filtre}'"
-
-    elif len(filtre) == 10 and len(filtre.split("-")) == 3 : 
-        query = f"select * from edt.cours where jour='{filtre}'"
-
-    elif filtre == "null":
-        query = f"select * from edt.cours"
-
-    else:
-        return jsonify({'error': str(apiException.ParamètreInvalideException("filtre"))}), 400
-
     
+    else :
+        query = f"select * from edt.cours order by idCours"
+        returnStatement = []
+        try:
+            rows = connect_pg.get_query(conn, query)
+            if rows == []:
+                return jsonify({'error': str(apiException.AucuneDonneeTrouverException("cours"))}), 404
+            for row in rows:
+                returnStatement.append(get_cours_statement(row))
+        except(Exception) as e:
+            return jsonify({'error': str(apiException.ActionImpossibleException("cours", "récuperer"))}), 404
+        connect_pg.disconnect(conn)
+        return jsonify(returnStatement)
+
+
+
+
+@cours.route('/cours/getCoursSemestre/<idSemestre>', methods=['GET','POST'])
+@jwt_required()
+def get_cours_semestre(idSemestre):
+    """Renvoit toutes les cours d'un semestre via la route /cours/getCoursSemestre/<idSemestre>
+
+    :raises PermissionManquanteException: Si pas assez de droit pour récupérer toutes les données présentes dans la table cours
+    :raises AucuneDonneeTrouverException: Une aucune donnée n'a été trouvé dans la table cours
+    
+    :return: toutes les cours d'un semestre
+    :rtype: json
+    """
+    conn = connect_pg.connect()
+    
+    query = f"select edt.cours.* from edt.cours inner join edt.ressource using(idRessource) inner join edt.semestre using(idSemestre) where idSemestre = {idSemestre} order by idCours"
+    conn = connect_pg.connect()
     rows = connect_pg.get_query(conn, query)
     returnStatement = []
     try:
+        rows = connect_pg.get_query(conn, query)
+        if rows == []:
+            return jsonify({'error': str(apiException.AucuneDonneeTrouverException("cours"))}), 404
         for row in rows:
             returnStatement.append(get_cours_statement(row))
-    except(TypeError) as e:
-        return jsonify({'error': str(apiException.AucuneDonneeTrouverException("cours"))}), 404
+    except(Exception) as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("cours", "récuperer"))}), 404
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 
-def getEnseignantCours(idUtilisateur , conn):
-    """ Renvoie les cours au quelle enseigne un professeur
-    
-    :param idUtilisateur: idUtilisateur du professeur
-    :type idUtilisateur: int
-    
-    :param conn: la connection à une base de donnée
-    :type conn: une classe heritant de la classe mère Connexion
-
-    :return: retourne les cours
-    :rtype: list
-    """
-    idProf = connect_pg.get_query(conn , f"SELECT idProf FROM edt.professeur WHERE idutilisateur ={idUtilisateur}")[0][0]
-    result = connect_pg.get_query(conn , f"Select edt.cours.* from edt.cours inner join edt.enseigner as e1 using(idCours)  where e1.idProf = {idProf} order by idCours asc")
-    
-    return result
-
-def getEleveCours(idUtilisateur , conn):
-    """ Renvoie les cours au quelle enseigne un professeur
-    
-    :param idUtilisateur: idUtilisateur du professeur
-    :type idUtilisateur: int
-    
-    :param conn: la connection à une base de donnée
-    :type conn: une classe heritant de la classe mère Connexion
-
-    :return: retourne les cours
-    :rtype: list
-    """
-    result = connect_pg.get_query(conn , f"Select edt.cours.* from edt.cours inner join edt.etudier  using(idCours)  inner join edt.eleve as e1 using (idGroupe) where e1.idUtilisateur = {idUtilisateur} order by idCours asc")
-    
-    return result
 
 @cours.route('/cours/deplacer/<idCours>', methods=['PUT'])
 @jwt_required()
@@ -128,7 +144,7 @@ def deplacer_cours(idCours):
         return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idCours", "numérique"))}), 400
     
     json_datas = request.get_json()
-    
+    # TODO: refactor
     if 'HeureDebut' not in json_datas and 'Jour' not in json_datas:
         return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
     else:
@@ -161,14 +177,14 @@ def attribuerSalle(idCours):
     :raises ParamètreBodyManquantException: Si aucun paramètre d'entrée attendu n'est spécifié dans le body
     :raises ParamètreTypeInvalideException: Le type de idCours est invalide, une valeur numérique est attendue
     :raises DonneeIntrouvableException: Une des clées n'a pas pu être trouvé
-    :raises InsertionImpossibleException: Impossible de réaliser l'insertion
+    :raises ActionImpossibleException: Impossible de réaliser l'insertion
 
     :return: id du cours supprimer si présent
     :rtype: json
     """
     json_datas = request.get_json()
     if (not idCours.isdigit() or type(json_datas['idSalle']) != int   ):
-        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idCours", "numérique"))}), 400
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idCours ou idSalle", "numérique"))}), 400
     
     
     if 'idSalle' not in json_datas :
@@ -192,15 +208,62 @@ def attribuerSalle(idCours):
         
         else:
             # Erreur inconnue
-            return jsonify({'error': str(apiException.InsertionImpossibleException("accuellir"))}), 500
+            return jsonify({'error': str(apiException.ActionImpossibleException("accuellir"))}), 500
 
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 
-@cours.route('/cours/removeSalle/<idCours>', methods=['DELETE'])
+
+@cours.route('/cours/changerSalle/<idCours>', methods=['PUT'])
 @jwt_required()
-def remove_salle(idCours):
-    """Permet de supprimer une salle attribuer à un cours via la route /cours/deleteSalle/<idCours>
+def changer_salle(idCours):
+    """Permet de changer la salle attribuer à un cours via la route /cours/changerSalle/<idCours>
+    
+    :param idCours: id du cours dont la salle doit être changer
+    :type idCours: int
+
+    :param idSalle: id de la salle de la nouvelle salle
+    :type idSalle: int
+
+    :raises ParamètreTypeInvalideException: Le type de idCours est invalide, une valeur numérique est attendue
+    :raises ParamètreBodyManquantException: Si aucun paramètre d'entrée attendu n'est spécifié dans le body
+    :raises DonneeIntrouvableException: Une des clées n'a pas pu être trouvé
+    :raises ActionImpossibleException: Impossible de réaliser la mise à jour
+
+    :return: id du cours dont la salle à changer
+    :rtype: json
+    """
+    json_datas = request.get_json()
+    if (not idCours.isdigit() or type(json_datas['idSalle']) != int   ):
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idCours ou idSalle", "numérique"))}), 400
+    else:
+        query = f"update edt.accuellir set idSalle = {json_datas['idSalle']}  where idCours={idCours}"
+        conn = connect_pg.connect()
+        
+        try:
+            connect_pg.execute_commands(conn, query)
+        except Exception as e:
+            if e.pgcode == "23503":# violation contrainte clée étrangère
+                if "salle" in str(e):
+                    return jsonify({'error': str(apiException.DonneeIntrouvableException("Salle ", json_datas['idSalle']))}), 400
+                else:
+                    return jsonify({'error': str(apiException.DonneeIntrouvableException("Cours ", idCours))}), 400
+            elif e.pgcode == "23505": # si existe déjà
+                messageId = f"idCours = {idCours} et idSalle = {json_datas['idSalle']}"
+                messageColonne = f"idCours et idSalle"
+                return jsonify({'error': str(apiException.DonneeExistanteException(messageId, messageColonne, "accuellir"))}), 400
+            
+            else:
+                # Erreur inconnue
+                return jsonify({'error': str(apiException.ActionImpossibleException("accuellir", "mise à jour"))}), 500
+        
+        connect_pg.disconnect(conn)
+        return jsonify(idCours)
+
+@cours.route('/cours/supprimerSalle/<idCours>', methods=['DELETE'])
+@jwt_required()
+def supprimer_salle(idCours):
+    """Permet de supprimer une salle attribuer à un cours via la route /cours/supprimerSalle/<idCours>
     
     :param idCours: id du cours à supprimer
     :type idCours: int
@@ -251,7 +314,7 @@ def add_cours():
     :param cours: donnée représentant un cours spécifié dans le body
     :type cours: json
     
-    :raises InsertionImpossibleException: Impossible d'ajouter le cours spécifié dans la table cours
+    :raises ActionImpossibleException: Impossible d'ajouter le cours spécifié dans la table cours
     :raises DonneeIntrouvableException: La valeur de la clée étrangère idRessource n'a pas pu être trouvé
     :raises ParamètreBodyManquantException: Si ou plusieurs paramètres sont manquant dans le body
     
@@ -272,32 +335,38 @@ def add_cours():
             return jsonify({'error': str(apiException.DonneeIntrouvableException("Ressources", json_datas['idRessource']))}), 400
         else:
             # Erreur inconnue
-            return jsonify({'error': str(apiException.InsertionImpossibleException("cours"))}), 500
+            return jsonify({'error': str(apiException.ActionImpossibleException("cours"))}), 500
 
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 
 
-@cours.route('/cours/getSalleCours/<idCours>', methods=['GET','POST'])
+
+@cours.route('/cours/getCoursSalle/<idSalle>', methods=['GET','POST'])
 @jwt_required()
-def get_salle_cours(idCours):
-    """Renvoit la salle dans lequel se déroule le cours via la route /cours/getSalle/<idCours>
+def get_cours_salle(idSalle):
+    """Renvoit les se déroulant dans une salle via la route /cours/getCoursSalle/<idSalle>
     
-    :param idCours: id du cours à rechercher
-    :type idCours: int
+    :param idSalle: id du cours à rechercher
+    :type idSalle: int
     
     :raises DonneeIntrouvableException: Aucune donnée n'a pas être trouvé correspondant aux critères
+    :raises ActionImpossibleException: Si une erreur survient durant la récupération des données
     
     :return: l'id de la salle dans lequel se déroule cours
     :rtype: json
     """
-    query = f"select idSalle from edt.accuellir where idCours={idCours} "
-    returnStatement = {}
+    query = f"Select edt.cours.* from edt.cours inner join edt.accuellir  using(idCours)  inner join edt.salle as e1 using (idSalle) where e1.idSalle = {idSalle} order by idCours asc"
+    returnStatement = []
     conn = connect_pg.connect()
+    rows = connect_pg.get_query(conn, query)
+    if rows == []:
+        return jsonify({'error': str(apiException.DonneeIntrouvableException("Accuellir"))}), 400
     try:
-        returnStatement["idSalle"] = connect_pg.get_query(conn, query)[0][0]
-    except IndexError:
-        return jsonify({'error': str(apiException.DonneeIntrouvableException("Accuellir", idCours))}), 400
+        for row in rows:
+            returnStatement.append(get_cours_statement(row))
+    except Exception as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("Accuellir", "récupérer"))}), 500
         
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
