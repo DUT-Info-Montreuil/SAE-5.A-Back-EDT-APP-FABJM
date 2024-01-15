@@ -1,8 +1,9 @@
+import hashlib
 from flask import jsonify
 from markupsafe import escape
 from src.apiException import ParamètreInvalideException
 
-def get(table_name, where, key_to_return="*"):
+def get(table_name, where=None, key_to_return=["*"]):
     """
     Récupérer les données d'une table spécifiée dans la base de données.
 
@@ -16,10 +17,13 @@ def get(table_name, where, key_to_return="*"):
     :return: Un tuple contenant la requête SQL et les paramètres de la requête si il y en a.
     :rtype: tuple
     """
-    get_query =  "SELECT " + key_to_return + " edt." + table_name
-    if where:
-        get_query += " WHERE %s"
-        return (get_query, (where))
+    get_query =  "SELECT " + ", ".join(key_to_return) + " FROM edt." + table_name
+    if where != None:
+        tab_condition = []
+        for filtre in where.keys():
+            tab_condition.append(filtre+"=%s")
+        get_query += " WHERE "+" AND ".join(tab_condition)
+        return (get_query, tuple([where[key.split("=")[0]] for key in tab_condition]))
     return (get_query)
 
 def add_one(table_name, key_to_return, data, possible_keys):
@@ -81,7 +85,7 @@ def update(table_name, where, key_to_return, data, possible_keys):
     :return: Les arguments pour une update et sont query.
     :rtype: tuple
     """
-    update_query =  "UPDATE edt." + table_name + " SET %s WHERE %s"
+    update_query =  "UPDATE edt." + table_name + " SET %s WHERE "+" AND ".join([filtre+"=%s" for filtre in where.keys()])
     if key_to_return:
         update_query += " RETURNING " + key_to_return
     tab_query = []
@@ -96,7 +100,7 @@ def update(table_name, where, key_to_return, data, possible_keys):
         tab_query.append(f"{key}='{data[key]}'")
     # Create string of set value
     value_to_set = ", ".join(tab_query)
-    return (update_query, (value_to_set, where))
+    return (update_query, (value_to_set, *tuple(value for value in where)))
 
 def delete(table_name, where, key_to_return):
     """
@@ -111,7 +115,16 @@ def delete(table_name, where, key_to_return):
         tuple: A tuple containing the delete query and the parameters for the query.
 
     """
-    delete_query =  "DELETE edt." + table_name + " WHERE %s"
+    delete_query =  "DELETE edt." + table_name + " WHERE "+" AND ".join([filtre+"=%s" for filtre in where.keys()])
     if key_to_return:
         delete_query += " RETURNING " + key_to_return
-    return (delete_query, (where))
+    return (delete_query, tuple(value for value in where))
+
+def password_encode(password):
+    salt = "4di"
+    salt_password = password+salt
+    encode_password = hashlib.md5(salt_password.encode())
+    return encode_password.hexdigest()
+
+def where_builder(where):
+    text = " WHERE "

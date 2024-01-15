@@ -83,7 +83,6 @@ def get_equipement(filtre):
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 
-# TODO: test route bellow
 @equipement.route('/equipement/add', methods=['POST'])
 @jwt_required()
 def add_equipement():
@@ -94,8 +93,8 @@ def add_equipement():
     :return: un tableau d'id d'equipement crééent
     :rtype: json
     """
-    json_datas = request.get_json()
-    if not json_datas:
+    json_data = request.get_json()
+    if not json_data:
         return jsonify({'error ': 'missing json body'}), 400
 
 
@@ -106,7 +105,7 @@ def add_equipement():
         return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
     query = "INSERT INTO edt.equipement (Nom) VALUES "
     value_query = []
-    for data in json_datas['data']:
+    for data in json_data['data']:
         value_query.append(f"('{data['Nom']}')")
     query += ",".join(value_query) + " returning idEquipement"
 
@@ -130,9 +129,10 @@ def update_equipement(idEquipement):
     :return: success
     :rtype: json
     """
-    json_datas = request.get_json()
-    if not json_datas:
+    json_data = request.get_json()
+    if not json_data:
         return jsonify({'error ': 'missing json body'}), 400
+    table_name = "Equipement"
     keys = ["Nom"]
     
     query = update("Equipement", f"idEquipement={idEquipement}", json_datas, keys)
@@ -222,8 +222,8 @@ def add_salle_of_equipement(idEquipement):
     :return: un tableau d'id d'equipement crééent
     :rtype: json
     """
-    json_datas = request.get_json()
-    if not json_datas:
+    json_data = request.get_json()
+    if not json_data:
         return jsonify({'error ': 'missing json body'}), 400
 
     conn = connect_pg.connect()
@@ -233,7 +233,7 @@ def add_salle_of_equipement(idEquipement):
         return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
     query = "INSERT INTO edt.equiper (idEquipement, idSalle) VALUES "
     value_query = []
-    for data in json_datas['data']:
+    for data in json_data['data']:
         value_query.append(f"({idEquipement},'{data['idSalle']}')")
     query += ",".join(value_query) + " returning idSalle"
 

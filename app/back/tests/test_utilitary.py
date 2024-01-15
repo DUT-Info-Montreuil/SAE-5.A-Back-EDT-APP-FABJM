@@ -10,7 +10,7 @@ def test_retrieve_all_data_with_no_where_clause_and_default_key_to_return():
     # Arrange
     table_name = "employees"
     where = ""
-    key_to_return = "*"
+    key_to_return = ["*"]
 
     # Act
     result = get(table_name, where, key_to_return)
@@ -23,7 +23,7 @@ def test_retrieve_specific_data_with_where_clause_and_default_key_to_return():
     # Arrange
     table_name = "employees"
     where = "age > 30"
-    key_to_return = "*"
+    key_to_return = ["*"]
 
     # Act
     result = get(table_name, where, key_to_return)
@@ -37,7 +37,7 @@ def test_retrieve_specific_data_with_where_clause_and_specific_key_to_return():
     # Arrange
     table_name = "employees"
     where = "age > 30"
-    key_to_return = "name, age"
+    key_to_return = ["name","age"]
 
     # Act
     result = get(table_name, where, key_to_return)

@@ -1,17 +1,19 @@
+import base64
 from flask import Blueprint, request, jsonify
 from flask_cors import CORS
-import flask
 
 import src.connect_pg as connect_pg
 import src.apiException as apiException
 
 from src.config import config
-from src.services.user_service import get_utilisateur_statement, get_professeur_statement, get_professeur_statement_extended
+from src.services.user_service import get_utilisateur_protected_statement, get_utilisateur_statement, get_professeur_statement, get_professeur_statement_extended
 import src.services.permision as perm
+import src.utilitary as util
+import src.services.verification as verif
+
 import psycopg2
 from psycopg2 import errorcodes
 from psycopg2 import OperationalError, Error
-import src.services.verification as verif 
 
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity  
 import json
@@ -102,12 +104,12 @@ def get_utilisateur():
     if not perm.permissionCheck(get_jwt_identity() , 0 , conn):
         return jsonify({'erreur': str(apiException.PermissionManquanteException())}), 403
     
-    query = "SELECT * from edt.utilisateur order by IdUtilisateur asc"
-    rows = connect_pg.get_query(conn, query)
+    request = util.get("Utilisateur", key_to_return=["idUtilisateur", "FirstName", "LastName", "Username"])
+    rows = connect_pg.get_query(conn, request)
     returnStatement = []
     try:
         for row in rows:
-            returnStatement.append(get_utilisateur_statement(row))
+            returnStatement.append(get_utilisateur_protected_statement(row))
     except(TypeError) as e:
         return jsonify({'erreur': str(apiException.AucuneDonneeTrouverException("utilisateur"))}), 404
     connect_pg.disconnect(conn)
@@ -456,20 +458,16 @@ def get_logged_user():
     conn = connect_pg.connect()
     
     
-    query = f"select idUtilisateur,FirstName,LastName,Username from edt.utilisateur where idutilisateur = {user_id}"
-    user_rows = connect_pg.get_query(conn, query)
+    # query = f"select idUtilisateur,FirstName,LastName,Username from edt.utilisateur where idutilisateur = {user_id}"
+    request = util.get("Utilisateur", {"idUtilisateur": user_id}, ["idUtilisateur","FirstName","LastName","Username"])
+    user_rows = connect_pg.get_query(conn, request)
     
 
     if not user_rows:
         connect_pg.disconnect(conn)
         return jsonify({'erreur': str(apiException.AucuneDonneeTrouverException("utilisateur"))}), 404
     
-    user = {
-        "idUtilisateur": user_rows[0][0],
-        "FirstName": user_rows[0][1],
-        "LastName": user_rows[0][2],
-        "Username": user_rows[0][3]
-    }
+    user = get_utilisateur_protected_statement(user_rows)
     
     
     role_query = f"select IDAdmin from edt.admin where idUtilisateur = {user_id}"
@@ -567,18 +565,18 @@ def add_utilisateur():
     
     #check if the user is admin
     conn = connect_pg.connect()
-    json_datas = request.get_json()
+    json_data = request.get_json()
     # if not perm.permissionCheck(get_jwt_identity() , 0 , conn):
     #     return jsonify({'error': 'not enough permission'}), 403
 
     # TODO: use nom salle in create user instead of id salle
 
-    if not json_datas:
+    if not json_data:
             return jsonify({'error ': 'missing json body'}), 400
     
-    if (json_datas['role'] != "admin" and json_datas['role'] != "professeur" and json_datas['role'] != "eleve" and json_datas['role'] != "manager"):
+    if (json_data['role'] != "admin" and json_data['role'] != "professeur" and json_data['role'] != "eleve" and json_data['role'] != "manager"):
         return jsonify({'error ': 'le role doit etre admin ,professeur, eleve ou manager'}), 400
-    for user in json_datas['users']:
+    for user in json_data['users']:
         conn = connect_pg.connect()
 
         if "info" not in user.keys():
@@ -608,16 +606,16 @@ def add_utilisateur():
         try : 
             
             #switch case pour le role
-            if json_datas['role'] == "admin":
+            if json_data['role'] == "admin":
                 query = f"Insert into edt.admin (IdUtilisateur) values ({idUser}) returning IdUtilisateur"
-            elif json_datas['role'] == "professeur":
+            elif json_data['role'] == "professeur":
                 query = f"Insert into edt.professeur (initiale , idsalle , Idutilisateur) values ('{user['info']['initiale']}' , '{user['info']['idsalle']}' ,'{idUser}') returning idProf" 
                 
-            elif json_datas['role'] == "eleve":
+            elif json_data['role'] == "eleve":
                 query = f"Insert into edt.Eleve (idgroupe , Idutilisateur) values ('{user['info']['idgroupe']}' , '{idUser}') returning IdUtilisateur"
             returnStatement = connect_pg.execute_commands(conn, query)
             
-            if json_datas['role'] == "professeur":
+            if json_data['role'] == "professeur":
                 if(user['info']['isManager'] ):
                     query = f"Insert into edt.manager (IdProf) values ({returnStatement}) returning IdUtilisateur"
                     returnStatement = connect_pg.execute_commands(conn, query)
@@ -654,20 +652,31 @@ def auth_utilisateur():
     :return: jwt token
     :rtype: str
     """
-    try:
-        json_datas = request.get_json()
-    except (Exception) as error:
-        print(error)
-    json_datas = request.get_json()
-    username = json_datas['Username']
-    password = json_datas['Password']
-    query = f"SELECT Password, FirstLogin , idutilisateur from edt.utilisateur where Username='{username}'"
+
+    request.headers.get('Authorization')
+    basic_auth = request.headers.get('Authorization')
+    if basic_auth is not None:
+        basic_auth = basic_auth.split(' ')
+        if len(basic_auth) != 2:
+            # return make_response(jsonify({'message': 'Basic auth mal formée !'}), 401)
+            print("todo")
+        basic_auth = base64.b64decode(basic_auth[1]).decode('utf-8')
+        basic_auth = basic_auth.split(':')
+        if len(basic_auth) != 2:
+            # return make_response(jsonify({'message': 'Basic auth mal formée !'}), 401)
+            print("todo")
+        username = basic_auth[0]
+        password = basic_auth[1]
+    password = util.password_encode(password)
+
+    # query = f"SELECT Password, FirstLogin , idutilisateur from edt.utilisateur where Username='{username}'"
+    query = util.get("Utilisateur", {"Username": username}, ["Password", "FirstLogin" , "idutilisateur"])
     conn = connect_pg.connect()
-    rows = connect_pg.get_query(conn, query)
+    rows = connect_pg.get_query(conn, query[0], query[1])
+
     if (type(username) != str):
         return jsonify({'error': str(apiException.ParamètreTypeInvalideException("username", "string"))}), 400
     if (not rows):
-        
         return jsonify({'error': str(apiException.DonneeIntrouvableException("utilisateur", username))}), 404
     
     
@@ -692,16 +701,25 @@ def update_utilisateur_password():
     
 
     """
-    username = get_jwt_identity()
-    json_datas = request.get_json()
-    password = json_datas['Password']
-    if(password == ""):
-        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("password", "string"))}), 400    
-    query = f"update edt.utilisateur set Password='{password}', FirstLogin=false where Username='{username}'"
+    # username = get_jwt_identity()
+    idUser = get_jwt_identity()
+    json_data = request.get_json()
+    if not json_data:
+        return jsonify({'error ': 'missing json body'}), 400
+    if(json_data['Password'] == ""):
+        return jsonify({'error': str(apiException.ParamètreInvalideException("password", "string"))}), 400
+    # Encode password
+    json_data['Password'] = util.password_encode(json_data['Password'])
+
+    json_data["FirstLogin"] = False
+    table_name = "Utilisateur"
+    keys = ["Password", "FirstLogin"]
+        
+    request = util.update(table_name, where={"idUtilisateur": idUser}, data=json_data, possible_keys=keys)
+
     conn = connect_pg.connect()
     try:
-        
-        connect_pg.execute_commands(conn, query)
+        connect_pg.execute_commands(conn, request)
     except:
         return jsonify({'error': str(apiException.ActionImpossibleException("utilisateur"))}), 500
     connect_pg.disconnect(conn)
@@ -727,29 +745,29 @@ def update_utilisateur(id):
     if not perm.permissionCheck(get_jwt_identity() , 0 , conn):
         return jsonify({'error': 'not enough permission'}), 403
     
-    json_datas = request.get_json()
-    if not json_datas:
+    json_data = request.get_json()
+    if not json_data:
         return jsonify({'error ': 'missing json body'}), 400
-    if 'role' in json_datas.keys():
+    if 'role' in json_data.keys():
         return jsonify({'error ': 'le role ne peut pas etre modifié pour l\'instant'}), 400
     # TODO: finish role vérification (use Enum)
-        if (json_datas['role'] != "admin" and json_datas['role'] != "professeur" and json_datas['role'] != "eleve" and json_datas['role'] != "manager"):
+        if (json_data['role'] != "admin" and json_data['role'] != "professeur" and json_data['role'] != "eleve" and json_data['role'] != "manager"):
             return jsonify({'error ': 'le role doit etre admin ,professeur, eleve ou manager'}), 400
     
-        if "info" not in json_datas.keys():
+        if "info" not in json_data.keys():
             return jsonify({'error': 'missing "info" part of the body'}), 400
     
-    #req = "Insert into edt.utilisateur (FirstName, LastName, Username, PassWord) values ('{json_datas['FirstName']}', '{json_datas['LastName']}', '{json_datas['Username']}', '{json_datas['Password']}') returning IdUtilisateur" 
-
+    #req = "Insert into edt.utilisateur (FirstName, LastName, Username, PassWord) values ('{json_data['FirstName']}', '{json_data['LastName']}', '{json_data['Username']}', '{json_data['Password']}') returning IdUtilisateur" 
+    json_data['Password'] = util.password_encode(json_data['Password'])
     req = "update edt.utilisateur set "
-    if 'FirstName' in json_datas.keys():
-        req += f"firstname = '{json_datas['FirstName']}' , "
-    if 'LastName' in json_datas.keys():
-        req += f"lastname = '{json_datas['LastName']}' , "
-    if 'Username' in json_datas.keys():
-        req += f"username = '{json_datas['Username']}' , "
-    if 'Password' in json_datas.keys():
-        req += f"password = '{json_datas['Password']}'"
+    if 'FirstName' in json_data.keys():
+        req += f"firstname = '{json_data['FirstName']}' , "
+    if 'LastName' in json_data.keys():
+        req += f"lastname = '{json_data['LastName']}' , "
+    if 'Username' in json_data.keys():
+        req += f"username = '{json_data['Username']}' , "
+    if 'Password' in json_data.keys():
+        req += f"password = '{json_data['Password']}'"
     
     #remove "and" if there is no update
     if req[-2:] == ", ":
@@ -764,7 +782,7 @@ def update_utilisateur(id):
     except psycopg2.IntegrityError as e:
         if e.pgcode == errorcodes.UNIQUE_VIOLATION:
            
-            return jsonify({'error': str(apiException.DonneeExistanteException(json_datas['Username'], "Username", "utilisateur"))}), 400
+            return jsonify({'error': str(apiException.DonneeExistanteException(json_data['Username'], "Username", "utilisateur"))}), 400
         else:
             
             return jsonify({'error': str(apiException.ActionImpossibleException("utilisateur"))}), 500
@@ -790,7 +808,7 @@ def delete_utilisateur(id):
     if not perm.permissionCheck(get_jwt_identity() , 0 , conn):
         return jsonify({'error': 'not enough permission'}), 403
     
-    json_datas = request.get_json()
+    json_data = request.get_json()
     query = f"delete from edt.utilisateur where idutilisateur={id}"
     conn = connect_pg.connect()
     try:

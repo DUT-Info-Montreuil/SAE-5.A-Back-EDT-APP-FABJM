@@ -25,7 +25,7 @@ import datetime
 import json
 
 groupe = Blueprint('groupe', __name__)
-
+# TODO: fix route get and test other
 
 @groupe.route('/groupe/getAll', methods=['GET'])
 @jwt_required()
@@ -370,14 +370,14 @@ def add_groupe():
     :return: l'id du groupe créé
     :rtype: json
     """
-    json_datas = request.get_json()
-    if not json_datas:
+    json_data = request.get_json()
+    if not json_data:
         return jsonify({'error ': 'missing json body'}), 400
     query_start = "Insert into edt.groupe (Nom, AnneeScolaire, Annee"
-    query_values = f"values ('{json_datas['Nom']}', '{json_datas['AnneeScolaire']}', '{json_datas['Annee']}'"
-    if "idGroupe_parent" in json_datas.keys():
+    query_values = f"values ('{json_data['Nom']}', '{json_data['AnneeScolaire']}', '{json_data['Annee']}'"
+    if "idGroupe_parent" in json_data.keys():
         query_start += ", idGroupe_parent"
-        query_values += f", {json_datas['idGroupe_parent']}"
+        query_values += f", {json_data['idGroupe_parent']}"
     query_start += ") "
     query_values += ") returning idGroupe"
     query = query_start + query_values
@@ -389,7 +389,7 @@ def add_groupe():
         if e.pgcode == errorcodes.UNIQUE_VIOLATION:
             # Erreur violation de contrainte unique
             return jsonify({'error': str(
-                apiException.DonneeExistanteException(json_datas['Nom'], "Nom", "groupe"))}), 400
+                apiException.DonneeExistanteException(json_data['Nom'], "Nom", "groupe"))}), 400
         else:
             print("ERROR : " + e.pgcode)
             # Erreur inconnue
@@ -438,8 +438,8 @@ def update_groupe(idGroupe):
     :return: success
     :rtype: json
     """
-    json_datas = request.get_json()
-    if not json_datas:
+    json_data = request.get_json()
+    if not json_data:
         return jsonify({'error ': 'missing json body'}), 400
     key = ["Nom", "AnneeScolaire", "Annee", "idGroupe_parent"]
     for k in json_datas.keys():

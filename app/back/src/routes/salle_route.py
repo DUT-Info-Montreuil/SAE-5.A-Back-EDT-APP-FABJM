@@ -199,11 +199,11 @@ def add_salle():
     :return: l'id de l'utilisateur crée
     :rtype: json
     """
-    json_datas = request.get_json()
-    if not json_datas:
+    json_data = request.get_json()
+    if not json_data:
         return jsonify({'error ': 'missing json body'}), 400
 
-    query = f"Insert into edt.salle (Numero, Capacite) values ('{json_datas['Numero']}',{json_datas['Capacite']}) returning idSalle"
+    query = f"Insert into edt.salle (Numero, Capacite) values ('{json_data['Numero']}',{json_data['Capacite']}) returning idSalle"
     conn = connect_pg.connect()
     try:
         returnStatement = connect_pg.execute_commands(conn, query)
@@ -212,7 +212,7 @@ def add_salle():
         if e.pgcode == errorcodes.UNIQUE_VIOLATION:
             # Erreur violation de contrainte unique
             return jsonify({'error': str(
-                apiException.DonneeExistanteException(json_datas['Numero'], "Numero", "salle"))}), 400
+                apiException.DonneeExistanteException(json_data['Numero'], "Numero", "salle"))}), 400
         else:
             # Erreur inconnue
             return jsonify({'error': str(apiException.ActionImpossibleException("salle"))}), 500
@@ -267,8 +267,8 @@ def add_equipements_of_salle(idSalle):
     :return: un tableau d'id d'equipement crééent
     :rtype: json
     """
-    json_datas = request.get_json()
-    if not json_datas:
+    json_data = request.get_json()
+    if not json_data:
         return jsonify({'error ': 'missing json body'}), 400
 
     conn = connect_pg.connect()
@@ -278,7 +278,7 @@ def add_equipements_of_salle(idSalle):
         return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
     query = "INSERT INTO edt.equiper (idSalle, idEquipement) VALUES "
     value_query = []
-    for data in json_datas['data']:
+    for data in json_data['data']:
         value_query.append(f"({idSalle},'{data['idEquipement']}')")
     query += ",".join(value_query) + " returning idEquipement"
 
