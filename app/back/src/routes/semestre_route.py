@@ -7,7 +7,6 @@ import src.apiException as apiException
 from src.config import config
 from src.services.semestre_service import get_semestre_statement
 import src.services.permision as perm
-from src.routes.ressource_route import supprimer_ressource
 
 
 import psycopg2
@@ -129,40 +128,5 @@ def get_one_semestre(numeroSemestre):
         return jsonify({'error': str(apiException.DonneeIntrouvableException("semestre", numeroSemestre))}), 404
     connect_pg.disconnect(conn)
     return jsonify(returnStatement), 200
-
-@semestre.route('/semestre/supprimer/<idSemestre>', methods=['DELETE'])
-@jwt_required()
-def supprimer_semestre(idSemestre):
-    """Permet de supprimer un semestre via la route /semestre/supprimer/<idSemestre>
-    
-    :param idSemestre: id du semestre à supprimer
-    :type idSemestre: int
-
-    :raises InsertionImpossibleException: Impossible de supprimer le semestre spécifié dans la table semestre
-    
-    :return: message de succès
-    :rtype: str
-    """
-    conn = connect_pg.connect()
-    query = f"select idRessource from edt.ressource where idSemestre={idSemestre}"
-    try:
-        returnStatement = connect_pg.get_query(conn, query)
-    except psycopg2.IntegrityError as e:
-        return jsonify({'error': str(apiException.InsertionImpossibleException("ressource","récupérer"))}), 500
-    
-    for k in range(len(returnStatement)):
-        for i in range(len(returnStatement[k])):
-            supprimer_ressource(str(returnStatement[k][i]) )
-
-    query2 = f"delete from edt.ressource where idSemestre={idSemestre}"
-    query = f"delete from edt.semestre where idSemestre={idSemestre}"
-    
-    try:
-        connect_pg.execute_commands(conn, query2)
-        connect_pg.execute_commands(conn, query)
-    except psycopg2.IntegrityError as e:
-        return jsonify({'error': str(apiException.InsertionImpossibleException("semestre","supprimé"))}), 500
-    
-    return jsonify({'success': 'semestre supprimé'}), 200
 
 
