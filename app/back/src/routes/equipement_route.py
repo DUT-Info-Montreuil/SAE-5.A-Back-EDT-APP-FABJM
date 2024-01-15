@@ -8,6 +8,8 @@ from src.config import config
 from src.services.equipement_service import get_equipement_statement
 from src.services.salle_service import get_salle_statement
 
+from src.utilitary import query_update
+
 import psycopg2
 from psycopg2 import errorcodes
 from psycopg2 import OperationalError, Error
@@ -132,19 +134,17 @@ def update_equipement(idEquipement):
     if not json_datas:
         return jsonify({'error ': 'missing json body'}), 400
     keys = ["Nom"]
-    tab_info = []
-    for key in json_datas.keys():
-        if key not in keys:
-            return jsonify({'error': "missing or invalid key"}), 400
-        tab_info.append(f"{key}='{json_datas[key]}'")
+    
+    query = query_update("Equipement", f"idEquipement={idEquipement}", json_datas, keys)
+    # Si query update return une error
+    if type(query) == tuple:
+        return query
 
     conn = connect_pg.connect()
     permision = perm.getUserPermission(get_jwt_identity() , conn)
     if(permision != 0):
         return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
     
-    query = "UPDATE edt.equipement SET " + ", ".join(tab_info) + f" WHERE idEquipement={idEquipement} RETURNING *"
-
     try:
         connect_pg.execute_commands(conn, query)
     except TypeError as e:
