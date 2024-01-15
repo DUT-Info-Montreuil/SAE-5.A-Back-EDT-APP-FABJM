@@ -215,7 +215,7 @@ def get_prof_heure_travailler(idProf):
 
     query = f"""select sum(nombreheure) as nombreheureTravailler from edt.cours inner join edt.enseigner 
     using(idCours)  where idProf = {idProf} and ((jour < '{dateAujourdhui}') or (jour = '{dateAujourdhui}' 
-    and (HeureDebut + NombreHeure::interval) < '{heureActuelle}'::time)){querySae};
+    and (HeureDebut + NombreHeure::interval) < '{heureActuelle}'::time)){querySae}
     """
     
     returnStatement = []
@@ -772,7 +772,7 @@ def update_utilisateur(id):
     return jsonify({'success': 'utilisateur modifié'}), 200
 
 
-@user.route('/utilisateurs/delete/<id>', methods=['GET','POST'])
+@user.route('/utilisateurs/delete/<id>', methods=['DELETE'])
 @jwt_required()
 def delete_utilisateur(id):
     """Permet de supprimer un utilisateur via la route /utilisateurs/delete
@@ -787,18 +787,49 @@ def delete_utilisateur(id):
 
     #check if the user is admin
     conn = connect_pg.connect()
+    """
     if not perm.permissionCheck(get_jwt_identity() , 0 , conn):
         return jsonify({'error': 'not enough permission'}), 403
+    """
     
     json_datas = request.get_json()
+    tabQuery = []
     query = f"delete from edt.utilisateur where idutilisateur={id}"
+    tabQuery.append(query)
     conn = connect_pg.connect()
+
+    permission = perm.getUserPermission(id, conn)
+    
+    if(permission[0] == 0):
+        query2 = f"delete from edt.admin where idutilisateur={id}"
+        tabQuery.append(query2)
+
+    elif(permission[0] == 1):
+        query2 = f"delete from edt.professeur where idutilisateur={id}"
+        query3 = f"delete from edt.manager where idProf={permission[1][0][1]}"
+        tabQuery.append(query2)
+        tabQuery.append(query3)
+
+    elif(permission[0] == 2):
+        query2 = f"delete from edt.professeur where idutilisateur={id}" 
+        query3 = f"delete from edt.enseigner where idProf={permission[1][0][0]}"
+        query4 = f"delete from edt.responsable where idProf={permission[1][0][0]}"
+        tabQuery.append(query2)
+        tabQuery.append(query3)
+        tabQuery.append(query4)
+    
+    elif(permission[0] == 3):
+        query2 = f"delete from edt.eleve where idutilisateur={id}"
+        tabQuery.append(query2)
+
     try:
-        returnStatement = connect_pg.execute_commands(conn, query)
+        for k in range(len(tabQuery) - 1, -1 , -1): # fonctionnement en pile
+            connect_pg.execute_commands(conn, tabQuery[k])
+
     except psycopg2.IntegrityError as e:
         
        
-        return jsonify({'error': str(apiException.ActionImpossibleException("utilisateur"))}), 500
+        return jsonify({'error': str(apiException.ActionImpossibleException("utilisateur","supprimer"))}), 500
     
     return jsonify({'success': 'utilisateur supprimé'}), 200
 

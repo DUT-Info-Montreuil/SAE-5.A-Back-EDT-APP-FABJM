@@ -20,7 +20,6 @@ from src.services.cours_service import get_cours_statement
 
 from src.services.groupe_service import get_groupe_statement, getGroupeProf
 import src.services.verification as verif 
-from src.routes.cours_route import get_cours
 import datetime
 
 import json
@@ -112,6 +111,7 @@ def ajouter_cours(idGroupe):
     :return: id du groupe
     :rtype: flask.wrappers.Response(json)
     """
+    from src.routes.cours_route import get_cours
     conn = connect_pg.connect()
     json_datas = request.get_json()
     if (not idGroupe.isdigit() or type(json_datas['idCours']) != int   ):
@@ -210,7 +210,7 @@ def get_groupe_dispo():
     :param NombreHeure: durée de la période spécifié dans le body
     :type NombreHeure: int
 
-    :param Jour: date de la journée où la disponibilité des groupes doit être vérifer au format TIMESTAMP(yyyy-mm-dd)
+    :param Jour: date de la journée où la disponibilité des groupes doit être vérifer au format DATE(yyyy-mm-dd)
     :type Jour: str
 
     :raises AucuneDonneeTrouverException: Si aucune donnée n'a été trouvé dans la table groupe, etudier ou cours
@@ -228,7 +228,7 @@ def get_groupe_dispo():
     if 'HeureDebut' not in json_datas or 'Jour' not in json_datas or 'NombreHeure' not in json_datas :
         return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
 
-    if not verif.estDeTypeTime(json_datas['HeureDebut']) or not verif.estDeTypeTimeStamp(json_datas['Jour']) or not verif.estDeTypeTime(json_datas['NombreHeure']):
+    if not verif.estDeTypeTime(json_datas['HeureDebut']) or not verif.estDeTypeDate(json_datas['Jour']) or not verif.estDeTypeTime(json_datas['NombreHeure']):
         return jsonify({'error': str(apiException.ParamètreInvalideException("HeureDebut, NombreHeure ou Jour"))}), 404
 
     HeureDebut = json_datas['HeureDebut']
@@ -414,8 +414,12 @@ def delete_groupe(idGroupe):
     :rtype: json
     """
     conn = connect_pg.connect()
-    query = f"DELETE from edt.groupe WHERE idgroupe={idGroupe} RETURNING *"
+    query = f"DELETE from edt.groupe WHERE idgroupe={idGroupe}"
+    query2 = f"DELETE from edt.etudier WHERE idgroupe={idGroupe}"
+    query3 = f"DELETE from edt.eleve WHERE idgroupe={idGroupe}"
     try:
+        returnStatement = connect_pg.execute_commands(conn, query3)
+        returnStatement = connect_pg.execute_commands(conn, query2)
         returnStatement = connect_pg.execute_commands(conn, query)
     except(TypeError) as e:
         return jsonify({'error': str(apiException.DonneeIntrouvableException("groupe", idGroupe))}), 404

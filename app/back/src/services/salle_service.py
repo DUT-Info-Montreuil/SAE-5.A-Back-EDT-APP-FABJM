@@ -10,6 +10,6 @@ def get_salle_statement(row):
     """
     return {
         'idSalle':row[0],
-        'Numero':row[1],
+        'Nom':row[1],
         'Capacite':row[2]
     }
