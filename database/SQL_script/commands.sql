@@ -88,6 +88,8 @@ CREATE TABLE Eleve(
    FOREIGN KEY(idUtilisateur) REFERENCES Utilisateur(idUtilisateur)
 );
 
+Create type TypeCours as ENUM ('Amphi', 'Td', 'Tp', 'Sae');
+
 CREATE TABLE Cours(
    idCours SERIAL,
 <<<<<<< HEAD
@@ -100,15 +102,22 @@ CREATE TABLE Cours(
    jour DATE,
 >>>>>>> Uniformalisation des données du script commands.sql
    idRessource INTEGER NOT NULL,
+   typeCours TypeCours,
    PRIMARY KEY(idCours),
    FOREIGN KEY(idRessource) REFERENCES Ressource(idRessource)
 );
 
+
+
+
 CREATE TABLE Manager(
    idManager SERIAL,
    idProf INTEGER NOT NULL,
+   idGroupe INTEGER NOT NULL,
    PRIMARY KEY(idManager),
    UNIQUE(idProf),
+   UNIQUE(idGroupe),
+   FOREIGN KEY(idProf) REFERENCES Professeur(idProf),
    FOREIGN KEY(idProf) REFERENCES Professeur(idProf)
 );
 

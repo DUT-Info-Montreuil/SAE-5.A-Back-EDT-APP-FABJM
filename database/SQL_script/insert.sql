@@ -17,12 +17,10 @@ INSERT INTO Semestre (Numero) values (3);
 INSERT INTO Ressource (titre, numero, nbrHeureSemestre, idSemestre) values ('Dev', 'R3-04', '10:00:00', '1');
 INSERT INTO Ressource (titre, numero, nbrHeureSemestre, idSemestre) values ('Math', 'R3-12', '08:00:00', '1');
 
+-- Cours (idCours, HeureDebut, NombreHeure, Jour, idRessource, TypeCours)
 
--- Cours (idCours, heureDebut, nombreHeure, jour, idRessource)
-
-INSERT INTO Cours (heureDebut, nombreHeure, jour, idRessource) values ('10:00:00', '04:00:00', '2023-10-06', '1');
-INSERT INTO Cours (heureDebut, nombreHeure, jour, idRessource) values ('15:00:00', '02:00:00', '2024-10-06', '1');
-
+INSERT INTO Cours (HeureDebut, NombreHeure, Jour, idRessource, TypeCours) values ('20:18:06 ', '02:00:00', '2023-12-06', '1', 'Sae');
+INSERT INTO Cours (HeureDebut, NombreHeure, Jour, idRessource, TypeCours) values ('16:49:49 ', '02:00:00', '2023-10-06', '1', 'Td');
 
 -- Salle (idSalle, nom ,capacite);
 INSERT INTO Salle (nom, capacite) values ('A2-05', 35);
@@ -50,7 +48,7 @@ INSERT INTO Responsable(idProf, idRessource) values (1,2);
 -- Accuellir(idSalle, idCours)
 INSERT INTO Accuellir(idSalle, idCours) values (2,1);
 
--- Manager(idManager, idProf)
-INSERT INTO Manager(idProf) values (2);
+-- Manager(idManager, idProf, idGroupe)
+INSERT INTO Manager(idProf, idGroupe) values (2,1);
 
 
