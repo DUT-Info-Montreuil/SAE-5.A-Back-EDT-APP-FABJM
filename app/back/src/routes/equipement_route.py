@@ -8,7 +8,7 @@ from src.config import config
 from src.services.equipement_service import get_equipement_statement
 from src.services.salle_service import get_salle_statement
 
-from src.utilitary import query_update
+from src.utilitary import update
 
 import psycopg2
 from psycopg2 import errorcodes
@@ -135,7 +135,7 @@ def update_equipement(idEquipement):
         return jsonify({'error ': 'missing json body'}), 400
     keys = ["Nom"]
     
-    query = query_update("Equipement", f"idEquipement={idEquipement}", json_datas, keys)
+    query = update("Equipement", f"idEquipement={idEquipement}", json_datas, keys)
     # Si query update return une error
     if type(query) == tuple:
         return query
@@ -146,7 +146,7 @@ def update_equipement(idEquipement):
         return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
     
     try:
-        connect_pg.execute_commands(conn, query)
+        connect_pg.execute_commands(conn, query[0], query[1])
     except TypeError as e:
         return jsonify({'error': str(apiException.DonneeIntrouvableException("equipement", idEquipement))}), 404
     connect_pg.disconnect(conn)

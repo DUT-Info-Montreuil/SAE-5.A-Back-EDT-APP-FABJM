@@ -55,7 +55,7 @@ def disconnect(conn):
         print('Database connection closed.')
 
 
-def execute_commands(conn, commands):
+def execute_commands(conn, commands, param):
     """Execute la commande sql
 
     :param conn: objet représentant la connection à la base de donnée
@@ -81,7 +81,7 @@ def execute_commands(conn, commands):
             return cur.lastrowid
 
     else:
-        cur.execute(commands)
+        cur.execute(commands, param)
         if " returning " in commands.lower():
             returningValue = cur.fetchone()[0]
             # commit the changes
