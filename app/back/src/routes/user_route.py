@@ -6,7 +6,7 @@ import src.connect_pg as connect_pg
 import src.apiException as apiException
 
 from src.config import config
-from src.services.user_service import get_utilisateur_statement, get_professeur_statement
+from src.services.user_service import get_utilisateur_statement, get_professeur_statement, get_professeur_statement_extended
 import src.services.permision as perm
 import psycopg2
 from psycopg2 import errorcodes
@@ -31,7 +31,7 @@ def get_prof_dispo():
     :param NombreHeure: durée de la période spécifié dans le body
     :type NombreHeure: int
 
-    :param Jour: date de la journée où la disponibilité des professeurs doit être vérifer au format TIMESTAMP(yyyy-mm-dd)
+    :param Jour: date de la journée où la disponibilité des professeurs doit être vérifer au format DATE(yyyy-mm-dd)
     :type Jour: str
 
     :raises AucuneDonneeTrouverException: Si aucune donnée n'a été trouvé dans la table groupe, etudier ou cours
@@ -79,18 +79,10 @@ def get_prof_dispo():
         for row in rows:
             returnStatement.append(get_professeur_statement(row))
     except Exception as e:
-        return jsonify({'error': str(apiException.ActionImpossibleException("Etudier", "récupérer"))}), 500
+        return jsonify({'error': str(apiException.ActionImpossibleException("Enseigner", "récupérer"))}), 500
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 
-
-    try:
-        for row in rows:
-            returnStatement.append(get_professeur_statement(row))
-    except TypeError as e:
-        return jsonify({'error': str(apiException.AucuneDonneeTrouverException("professeur"))}), 404
-    connect_pg.disconnect(conn)
-    return jsonify(returnStatement)
 
 
 @user.route('/utilisateurs/getAll', methods=['GET','POST'])
@@ -118,6 +110,37 @@ def get_utilisateur():
             returnStatement.append(get_utilisateur_statement(row))
     except(TypeError) as e:
         return jsonify({'erreur': str(apiException.AucuneDonneeTrouverException("utilisateur"))}), 404
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)
+
+
+@user.route('/utilisateurs/getProfE', methods=['GET','POST'])
+@jwt_required()
+def get_prof_etendue():
+    """Renvoit tous les professeurs avec des informations de la table utilisateur via la route /utilisateurs/get
+
+    :raises PermissionManquanteException: Si pas assez de droit pour effectuer un getAll dans la table prof/utilisateur
+    :raises AucuneDonneeTrouverException: Une aucune donnée n'a été trouvé dans la table utilisateur/prof
+    
+    :return:  tous les utilisateurs
+    :rtype: json
+    """
+    
+    #check if the user is admin
+    conn = connect_pg.connect()
+
+    query = "select idprof,initiale, idsalle,firstname, lastname,idutilisateur from edt.utilisateur inner join edt.professeur using(idutilisateur) order by IdUtilisateur asc"
+    
+    returnStatement = []
+    try:
+        rows = connect_pg.get_query(conn, query)
+        if rows == []:
+            return jsonify({'erreur': str(apiException.AucuneDonneeTrouverException("professeur"))}), 404
+        for row in rows:
+                returnStatement.append(get_professeur_statement_extended(row))
+    except(Exception) as e:
+        return jsonify({'erreur': str(apiException.InsertionImpossibleException("professeur", "récupérer"))}), 500
+    
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 

@@ -33,6 +33,25 @@ def get_professeur_statement(row):
         'idSalle':row[2],
         'idUtilisateur':row[3]
     }
+
+def get_professeur_statement_extended(row):
+    """ 
+    Fonction de mappage de la table professeur
+    
+    :param row: donnée représentant un professeur
+    :type row: tableau
+    
+    :return: les données représentant un professeur
+    :rtype: dictionnaire
+    """
+    return {
+        'idProf':row[0],
+        'Initiale':row[1],
+        'idSalle':row[2],
+        'FirstName':row[3],
+        'LastName':row[4],
+        'idUtilisateur':row[5]
+    }
     
 
 
