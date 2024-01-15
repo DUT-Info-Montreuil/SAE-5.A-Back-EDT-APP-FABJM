@@ -104,7 +104,7 @@ def get_groupe_manager(idManager):
     :return: le groupe
     :rtype: flask.wrappers.Response
     """
-    returnStatement = []
+    returnStatement = {}
     conn = connect_pg.connect()
     query = f"Select edt.groupe.*  from edt.groupe inner join edt.manager using(idGroupe) where idManager = {idManager} order by idManager asc"
     try:
@@ -112,7 +112,7 @@ def get_groupe_manager(idManager):
         if rows == []:
             return jsonify({'erreur': str(apiException.DonneeIntrouvableException("Manager"))}), 400
         for row in rows:
-            returnStatement.append(get_groupe_statement(row))
+            returnStatement = get_groupe_statement(rows[0])
     except Exception as e:
         return jsonify({'error': str(apiException.ActionImpossibleException("Groupe ou Manager", "récupérer"))}), 500
     

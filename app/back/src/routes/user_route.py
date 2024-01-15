@@ -870,8 +870,9 @@ def get_manager_groupe(idGroupe):
     :param idGroupe: id du groupe à rechercher
     :type idGroupe: int
 
-    :raises PermissionManquanteException: Si pas assez de droit pour effectuer un get/id dans la table manager
+    :raises PermissionManquanteException: Si pas assez de droit pour effectuer un get dans la table manager
     :raises AucuneDonneeTrouverException: Une aucune donnée n'a été trouvé dans la table manager
+    :raises ActionImpossibleException: Si une erreur est survenue lors de la récupération des données
     
     :return: un manager
     :rtype: json
@@ -887,6 +888,47 @@ def get_manager_groupe(idGroupe):
         return jsonify({'erreur': str(apiException.PermissionManquanteException())}), 403
     
     query = f"select * from edt.manager where idGroupe = {idGroupe} order by idManager asc"
+    
+    returnStatement = {}
+    try:
+        rows = connect_pg.get_query(conn, query)
+        if rows == []:
+            return jsonify({'erreur': str(apiException.DonneeIntrouvableException("Manager"))}), 400
+        for row in rows:
+            returnStatement = get_manager_statement(rows[0])
+    except Exception as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("Manager", "récupérer"))}), 500
+
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)
+
+@user.route('/utilisateurs/getManager/<idManager>', methods=['GET','POST'])
+@jwt_required()
+def get_one_manager(idManager):
+    """Renvoit un manager de par son id via la route /utilisateurs/getManager/<idManager>
+
+        
+    :param idManager: id du groupe à rechercher
+    :type idManager: int
+
+    :raises PermissionManquanteException: Si pas assez de droit pour effectuer un get/id dans la table manager
+    :raises AucuneDonneeTrouverException: Une aucune donnée n'a été trouvé dans la table manager
+    :raises ActionImpossibleException: Si une erreur est survenue lors de la récupération des données
+    
+    :return: un manager
+    :rtype: json
+    """
+    
+    if (not idManager.isdigit()):
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idManager", "numérique"))}), 400
+    
+    #check if the user is admin
+    conn = connect_pg.connect()
+    
+    if not perm.permissionCheck(get_jwt_identity() , 0 , conn):
+        return jsonify({'erreur': str(apiException.PermissionManquanteException())}), 403
+    
+    query = f"select * from edt.manager where idManager = {idManager}"
     
     returnStatement = {}
     try:
