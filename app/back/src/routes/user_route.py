@@ -185,8 +185,8 @@ def get_prof_heure_travailler(idProf):
     :param idProf: id d'un professeur présent dans la base de donnée
     :type idProf: int
 
-    :param idSae: id d'une ressource représentant une sae que l'on veut écarter du calcul des heures travaillés spécifié via le body
-    :type idSae: int(optionnel)
+    :param pasSae: boolean pour savoir si les sae doivent être prise en compte spécifié via le body
+    :type pasSae: bool(optionnel)
 
     :raises PermissionManquanteException: Si pas assez de droit pour effectuer un getAll dans la table professeur
     :raises AucuneDonneeTrouverException: Une aucune donnée n'a été trouvé dans la table professeur
@@ -202,12 +202,14 @@ def get_prof_heure_travailler(idProf):
     querySae = ""
     try:
         json_datas = request.get_json()
-        if 'idSae' in json_datas:
-            if (type(json_datas['idSae']) != int):
-                return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idSae", "numérique"))}), 400
-            querySae += f" and (idRessource != {json_datas['idSae']}) "
+        if 'pasSae' in json_datas:
+            if type(json_datas['pasSae']) == bool:
+                if json_datas['pasSae']:
+                    querySae += f" and (TypeCours != 'Sae') "
+            else:
+                return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idProf", "bool"))}), 400
 
-    except(Exception) as e: # Si aucune idSae n'es fournie
+    except(Exception) as e: # Si aucune pasSae n'es fournie
         pass
 
     dateAujourdhui = str(datetime.date.today())
@@ -240,8 +242,8 @@ def get_prof_heure_prevue(idProf):
     :param idProf: id d'un professeur présent dans la base de donnée
     :type idProf: int
 
-    :param idSae: id d'une ressource représentant une sae que l'on veut écarter du calcul des heures travaillés spécifié via le body
-    :type idSae: int(optionnel)
+    :param pasSae: boolean pour savoir si les sae doivent être prise en compte spécifié via le body
+    :type pasSae: bool(optionnel)
 
     :raises PermissionManquanteException: Si pas assez de droit pour effectuer un getAll dans la table professeur
     :raises AucuneDonneeTrouverException: Une aucune donnée n'a été trouvé dans la table professeur
@@ -257,12 +259,14 @@ def get_prof_heure_prevue(idProf):
     querySae = ""
     try:
         json_datas = request.get_json()
-        if 'idSae' in json_datas:
-            if (type(json_datas['idSae']) != int):
-                return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idSae", "numérique"))}), 400
-            querySae += f" and (idRessource != {json_datas['idSae']}) "
+        if 'pasSae' in json_datas:
+            if type(json_datas['pasSae']) == bool:
+                if json_datas['pasSae'] :
+                    querySae += f" and (TypeCours != 'Sae') "
+            else:
+                return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idProf", "bool"))}), 400
 
-    except(Exception) as e: # Si aucune idSae n'es fournie
+    except(Exception) as e: # Si aucune pasSae n'es fournie
         pass
 
     dateAujourdhui = str(datetime.date.today())
@@ -298,8 +302,8 @@ def get_prof_heure_travailler_mois(idProf):
     :param mois: mois à calculer au format YYYY-MM (ex : 2023-12) à spécifié dans le body
     :type mois: str
 
-    :param idSae: id d'une ressource représentant une sae que l'on veut écarter du calcul des heures travaillés spécifié via le body
-    :type idSae: int(optionnel)
+    :param pasSae: boolean pour savoir si les sae doivent être prise en compte spécifié via le body
+    :type pasSae: bool(optionnel)
 
     :raises PermissionManquanteException: Si pas assez de droit pour effectuer un getAll dans la table professeur
     :raises AucuneDonneeTrouverException: Une aucune donnée n'a été trouvé dans la table professeur
@@ -315,12 +319,14 @@ def get_prof_heure_travailler_mois(idProf):
     querySae = ""
     try:
         json_datas = request.get_json()
-        if 'idSae' in json_datas:
-            if (type(json_datas['idSae']) != int):
-                return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idSae", "numérique"))}), 400
-            querySae += f" and (idRessource != {json_datas['idSae']}) "
+        if 'pasSae' in json_datas:
+            if type(json_datas['pasSae']) == bool:
+                if json_datas['pasSae'] :
+                    querySae += f" and (TypeCours != 'Sae') "
+            else:
+                return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idProf", "bool"))}), 400
 
-    except(Exception) as e: # Si aucune idSae n'es fournie
+    except(Exception) as e: # Si aucune pasSae n'es fournie
         pass
 
     dateAujourdhui = str(datetime.date.today())
@@ -329,9 +335,8 @@ def get_prof_heure_travailler_mois(idProf):
     query = f"""select sum(nombreheure) as nombreheureTravailler from edt.cours inner join edt.enseigner 
     using(idCours)  where idProf = {idProf} and ((jour < '{dateAujourdhui}') or (jour = '{dateAujourdhui}' 
     and (HeureDebut + NombreHeure::interval) < '{heureActuelle}'::time)){querySae} 
-    and TO_CHAR(jour, 'YYYY-MM') = '{json_datas['mois']}';
+    and ((TO_CHAR(jour, 'YYYY-MM')) = '{json_datas['mois']}')
     """
-    
     returnStatement = []
     try:
         rows = connect_pg.get_query(conn, query)
@@ -484,7 +489,7 @@ def get_logged_user():
         connect_pg.disconnect(conn)
         return jsonify(user)
     
-    role_query = f"SELECT p.idProf, p.Initiale, s.Numero FROM edt.professeur as p JOIN edt.salle as s ON p.idSalle = s.idSalle WHERE p.idUtilisateur = {user_id}"
+    role_query = f"SELECT p.idProf, p.Initiale, s.nom FROM edt.professeur as p JOIN edt.salle as s ON p.idSalle = s.idSalle WHERE p.idUtilisateur = {user_id}"
     role_rows = connect_pg.get_query(conn, role_query)
 
     if role_rows:
