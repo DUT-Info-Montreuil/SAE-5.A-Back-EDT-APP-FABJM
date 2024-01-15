@@ -92,15 +92,9 @@ Create type TypeCours as ENUM ('Amphi', 'Td', 'Tp', 'Sae');
 
 CREATE TABLE Cours(
    idCours SERIAL,
-<<<<<<< HEAD
-   HeureDebut TIME,
-   NombreHeure TIME,
-   Jour DATE,
-=======
    heureDebut TIME ,
    nombreHeure TIME,
    jour DATE,
->>>>>>> Uniformalisation des données du script commands.sql
    idRessource INTEGER NOT NULL,
    typeCours TypeCours,
    PRIMARY KEY(idCours),
