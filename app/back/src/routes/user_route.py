@@ -84,14 +84,6 @@ def get_prof_dispo():
     return jsonify(returnStatement)
 
 
-    try:
-        for row in rows:
-            returnStatement.append(get_professeur_statement(row))
-    except TypeError as e:
-        return jsonify({'error': str(apiException.AucuneDonneeTrouverException("professeur"))}), 404
-    connect_pg.disconnect(conn)
-    return jsonify(returnStatement)
-
 
 @user.route('/utilisateurs/getAll', methods=['GET','POST'])
 @jwt_required()
@@ -147,7 +139,7 @@ def get_prof():
         for row in rows:
                 returnStatement.append(get_professeur_statement(row))
     except(Exception) as e:
-        return jsonify({'erreur': str(apiException.InsertionImpossibleException("professeur", "récupérer"))}), 500
+        return jsonify({'erreur': str(apiException.ActionImpossibleException("professeur", "récupérer"))}), 500
     
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
@@ -191,7 +183,7 @@ def get_prof_heure_travailler(idProf):
 
     query = f"""select sum(nombreheure) as nombreheureTravailler from edt.cours inner join edt.enseigner 
     using(idCours)  where idProf = {idProf} and ((jour < '{dateAujourdhui}') or (jour = '{dateAujourdhui}' 
-    and (HeureDebut + NombreHeure::interval) < '{heureActuelle}'::time)){querySae};
+    and (HeureDebut + NombreHeure::interval) < '{heureActuelle}'::time)){querySae}
     """
     
     returnStatement = []
@@ -202,7 +194,7 @@ def get_prof_heure_travailler(idProf):
             return jsonify({'erreur': str(apiException.DonneeIntrouvableException("enseigner"))}), 404
         
     except(Exception) as e:
-        return jsonify({'erreur': str(apiException.InsertionImpossibleException("cours", "récupérer"))}), 500
+        return jsonify({'erreur': str(apiException.ActionImpossibleException("cours", "récupérer"))}), 500
     
     connect_pg.disconnect(conn)
     return jsonify(result)
@@ -257,7 +249,7 @@ def get_prof_heure_prevue(idProf):
             return jsonify({'erreur': str(apiException.DonneeIntrouvableException("enseigner"))}), 404
         
     except(Exception) as e:
-        return jsonify({'erreur': str(apiException.InsertionImpossibleException("cours", "récupérer"))}), 500
+        return jsonify({'erreur': str(apiException.ActionImpossibleException("cours", "récupérer"))}), 500
     
     connect_pg.disconnect(conn)
     return jsonify(result)
@@ -316,7 +308,7 @@ def get_prof_heure_travailler_mois(idProf):
             return jsonify({'erreur': str(apiException.DonneeIntrouvableException("enseigner"))}), 404
         
     except(Exception) as e:
-        return jsonify({'erreur': str(apiException.InsertionImpossibleException("cours", "récupérer"))}), 500
+        return jsonify({'erreur': str(apiException.ActionImpossibleException("cours", "récupérer"))}), 500
     
     connect_pg.disconnect(conn)
     return jsonify(result)
@@ -349,7 +341,7 @@ def get_prof_par_initiale(initialeProf):
         for row in rows:
             returnStatement.append(get_professeur_statement(row))
     except(Exception) as e:
-        return jsonify({'erreur': str(apiException.InsertionImpossibleException("professeur", "récupérer"))}), 500
+        return jsonify({'erreur': str(apiException.ActionImpossibleException("professeur", "récupérer"))}), 500
     
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
@@ -380,7 +372,7 @@ def get_enseignant():
         for row in rows:
             returnStatement.append(json.loads((get_one_prof((row[0]))).data))
     except(Exception) as e:
-        return jsonify({'erreur': str(apiException.InsertionImpossibleException("professeur", "récupérer"))}), 500
+        return jsonify({'erreur': str(apiException.ActionImpossibleException("professeur", "récupérer"))}), 500
     
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
@@ -414,7 +406,7 @@ def get_one_prof(idProf):
         for row in rows:
             returnStatement.append(get_professeur_statement(row))
     except(Exception) as e:
-        return jsonify({'erreur': str(apiException.InsertionImpossibleException("professeur", "récupérer"))}), 500
+        return jsonify({'erreur': str(apiException.ActionImpossibleException("professeur", "récupérer"))}), 500
     
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)

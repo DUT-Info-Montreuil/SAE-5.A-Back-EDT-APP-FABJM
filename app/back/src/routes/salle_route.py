@@ -32,7 +32,7 @@ def get_salle_dispo():
     :param NombreHeure: durée de la période spécifié dans le body
     :type NombreHeure: int
 
-    :param Jour: date de la journée où la disponibilité des salles doit être vérifer au format TIMESTAMP(yyyy-mm-dd)
+    :param Jour: date de la journée où la disponibilité des salles doit être vérifer au format DATE(yyyy-mm-dd)
     :type Jour: str
 
     :raises AucuneDonneeTrouverException: Si aucune donnée n'a été trouvé dans la table groupe, etudier ou cours
@@ -50,7 +50,7 @@ def get_salle_dispo():
     if 'HeureDebut' not in json_datas or 'Jour' not in json_datas or 'NombreHeure' not in json_datas :
         return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
 
-    if not verif.estDeTypeTime(json_datas['HeureDebut']) or not verif.estDeTypeTimeStamp(json_datas['Jour']) or not verif.estDeTypeTime(json_datas['NombreHeure']):
+    if not verif.estDeTypeTime(json_datas['HeureDebut']) or not verif.estDeTypeDate(json_datas['Jour']) or not verif.estDeTypeTime(json_datas['NombreHeure']):
         return jsonify({'error': str(apiException.ParamètreInvalideException("HeureDebut, NombreHeure ou Jour"))}), 404
 
     HeureDebut = json_datas['HeureDebut']
