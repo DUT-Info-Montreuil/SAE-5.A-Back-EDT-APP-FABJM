@@ -158,7 +158,7 @@ def getRessourceProf(idUtilisateur , conn):
     :rtype: list
     """
     idProf = connect_pg.get_query(conn , f"SELECT idProf FROM edt.professeur WHERE idutilisateur ={idUtilisateur}")[0][0]
-    result = connect_pg.get_query(conn , f"Select edt.ressource.* from edt.ressource inner join edt.responsable as r1 using(idRessource)  where r1.idProf = {idProf} order by idRessource asc")
+    result = connect_pg.get_query(conn , f"SELECT edt.ressource.* from edt.ressource inner join edt.responsable as r1 using(idRessource)  where r1.idProf = {idProf} order by idRessource asc")
     
     return result
 
@@ -174,7 +174,7 @@ def getRessourceEleve(idUtilisateur , conn):
     :return: retourne les ressources
     :rtype: list
     """
-    result = connect_pg.get_query(conn , f"Select edt.ressource.* from edt.ressource inner join edt.cours using(idRessource) inner join edt.etudier using(idCours) inner join edt.eleve as e1 using(idGroupe) where e1.idutilisateur ={idUtilisateur} order by idRessource asc")
+    result = connect_pg.get_query(conn , f"SELECT edt.ressource.* from edt.ressource inner join edt.cours using(idRessource) inner join edt.etudier using(idCours) inner join edt.eleve as e1 using(idGroupe) where e1.idutilisateur ={idUtilisateur} order by idRessource asc")
     
     return result
 
@@ -216,7 +216,7 @@ def getAll_ressource():
         return jsonify(returnStatement)
     
 
-    query = "select * from edt.ressource order by idressource asc"
+    query = "SELECT * from edt.ressource order by idressource asc"
     conn = connect_pg.connect()
     rows = connect_pg.get_query(conn, query)
     returnStatement = []
@@ -326,7 +326,7 @@ def getRessource(id):
     if not perm.permissionCheck(get_jwt_identity() , 3 , conn):
         return jsonify({'erreur': str(apiException.PermissionManquanteException())}), 403
     
-    query = f"select * from edt.ressource where idressource = {id}"
+    query = f"SELECT * from edt.ressource where idressource = {id}"
     conn = connect_pg.connect()
     rows = connect_pg.get_query(conn, query)
     returnStatement = []

@@ -102,7 +102,7 @@ def get_utilisateur():
     if not perm.permissionCheck(get_jwt_identity() , 0 , conn):
         return jsonify({'erreur': str(apiException.PermissionManquanteException())}), 403
     
-    query = "select * from edt.utilisateur order by IdUtilisateur asc"
+    query = "SELECT * from edt.utilisateur order by IdUtilisateur asc"
     rows = connect_pg.get_query(conn, query)
     returnStatement = []
     try:
@@ -533,7 +533,7 @@ def get_one_utilisateur(userName):
     if not perm.permissionCheck(get_jwt_identity() , 3 , conn):
         return jsonify({'error': 'not enough permission'}), 403
     
-    query = f"select * from edt.utilisateur where Username='{userName}'"
+    query = f"SELECT * from edt.utilisateur where Username='{userName}'"
 
     conn = connect_pg.connect()
     rows = connect_pg.get_query(conn, query)
@@ -661,7 +661,7 @@ def auth_utilisateur():
     json_datas = request.get_json()
     username = json_datas['Username']
     password = json_datas['Password']
-    query = f"select Password, FirstLogin , idutilisateur from edt.utilisateur where Username='{username}'"
+    query = f"SELECT Password, FirstLogin , idutilisateur from edt.utilisateur where Username='{username}'"
     conn = connect_pg.connect()
     rows = connect_pg.get_query(conn, query)
     if (type(username) != str):

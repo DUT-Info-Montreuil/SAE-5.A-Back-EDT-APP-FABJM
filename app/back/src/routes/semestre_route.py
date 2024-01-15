@@ -35,7 +35,7 @@ def get_semestre():
     if not perm.permissionCheck(get_jwt_identity() , 3 , conn):
         return jsonify({'erreur': str(apiException.PermissionManquanteException())}), 403
         
-    query = "select * from edt.semestre order by idsemestre asc"
+    query = "SELECT * from edt.semestre order by idsemestre asc"
     conn = connect_pg.connect()
     rows = connect_pg.get_query(conn, query)
     returnStatement = []
@@ -114,7 +114,7 @@ def get_one_semestre(numeroSemestre):
         return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
 
 
-    query = f"select * from edt.semestre where numero='{numeroSemestre}'"
+    query = f"SELECT * from edt.semestre where numero='{numeroSemestre}'"
 
     conn = connect_pg.connect()
     rows = connect_pg.get_query(conn, query)

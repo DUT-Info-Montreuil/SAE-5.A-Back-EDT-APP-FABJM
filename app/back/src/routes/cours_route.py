@@ -95,7 +95,7 @@ def get_cours_spe():
 
     conn = connect_pg.connect()
     if(perm.getUserPermission(get_jwt_identity() , conn) == 2):
-        rows = getCoursProf(get_jwt_identity() , conn)
+        cours = getEnseignantCours(get_jwt_identity() , conn)
         returnStatement = []
         try:
             for row in rows:

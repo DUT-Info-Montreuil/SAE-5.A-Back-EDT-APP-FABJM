@@ -94,7 +94,7 @@ def get_salle():
     :return: toutes les salles
     :rtype: json
     """
-    query = "select * from edt.salle order by idsalle asc"
+    query = "SELECT * from edt.salle order by idsalle asc"
     conn = connect_pg.connect()
     rows = connect_pg.get_query(conn, query)
     returnStatement = []
@@ -121,7 +121,7 @@ def get_one_salle(idSalle):
     :rtype: json
     """
 
-    query = f"select * from edt.salle where idSalle='{idSalle}'"
+    query = f"SELECT * from edt.salle where idSalle='{idSalle}'"
 
     conn = connect_pg.connect()
     rows = connect_pg.get_query(conn, query)

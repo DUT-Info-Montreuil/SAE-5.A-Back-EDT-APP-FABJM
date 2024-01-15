@@ -47,8 +47,8 @@ def get_groupe():
         connect_pg.disconnect(conn)
         return jsonify(returnStatement)
 
-    query = "select * from edt.groupe order by IdGroupe asc"
-
+    query = "SELECT * from edt.groupe order by IdGroupe asc"
+    
     rows = connect_pg.get_query(conn, query)
     returnStatement = []
     try:
@@ -279,7 +279,7 @@ def get_one_groupe(idGroupe):
     :rtype: json
     """
 
-    query = f"select * from edt.groupe where idGroupe='{idGroupe}'"
+    query = f"SELECT * from edt.groupe where idGroupe='{idGroupe}'"
     conn = connect_pg.connect()
     result = getGroupeProf(get_jwt_identity(), conn)
     verification = False
@@ -288,8 +288,8 @@ def get_one_groupe(idGroupe):
             verification = True
 
     if not verification:
-        return jsonify({'error': str(apiException.PermissionManquanteException())}), 404
-
+        return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
+        
     rows = connect_pg.get_query(conn, query)
     returnStatement = {}
     try:
@@ -315,7 +315,7 @@ def get_parent_groupe(idGroupe):
     :rtype: json
     """
 
-    query = f"select * from edt.groupe where idGroupe=(select idGroupe_parent from edt.groupe where idGroupe = '{idGroupe}')"
+    query = f"SELECT * from edt.groupe where idGroupe=(SELECT idGroupe_parent from edt.groupe where idGroupe = '{idGroupe}')"
 
     conn = connect_pg.connect()
     rows = connect_pg.get_query(conn, query)
@@ -343,7 +343,7 @@ def get_all_children(idGroupe):
     :rtype: json
     """
 
-    query = f"select * from edt.groupe where idGroupe_parent={idGroupe}"
+    query = f"SELECT * from edt.groupe where idGroupe_parent={idGroupe}"
 
     conn = connect_pg.connect()
     rows = connect_pg.get_query(conn, query)
