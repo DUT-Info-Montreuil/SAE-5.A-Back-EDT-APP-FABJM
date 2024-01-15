@@ -2,10 +2,13 @@ SET SEARCH_PATH TO EDT;
 
 -- Utilisateur (IdUtilisateur, FirstName, LastName, Username, PassWord, FirstLogin)
 INSERT INTO Utilisateur (FirstName, LastName, Username, PassWord) values ('Junko', 'Enoshima', 'monokuma', 'despair'); -- élève
-INSERT INTO Utilisateur (FirstName, LastName, Username, PassWord) values ('Gilgamesh', 'Elish', 'Uruk', 'Enkidu');
+INSERT INTO Utilisateur (FirstName, LastName, Username, PassWord) values ('Gilgamesh', 'Elish', 'Uruk', 'Enkidu'); -- admin
 INSERT INTO Utilisateur (FirstName, LastName, Username, PassWord) values ('Aya', 'Rindo', 'detective', 'immortal'); -- professeur
 INSERT INTO Utilisateur (FirstName, LastName, Username, PassWord) values ('Tsugaru ', 'Shinuchi', 'assistant', 'OniKiller');
 
+
+-- Admin (idAdmin, idUtilisateur)
+INSERT INTO Admin (idUtilisateur) values (2);
 -- Semestre(idSemestre, Numero)
 INSERT INTO Semestre (Numero) values (3);
 
