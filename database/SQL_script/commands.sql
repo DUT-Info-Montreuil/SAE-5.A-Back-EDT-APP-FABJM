@@ -57,7 +57,7 @@ CREATE TABLE Ressource(
    idRessource SERIAL,
    Titre VARCHAR(50) ,
    Numero VARCHAR(50) ,
-   NbrHeureSemestre INTEGER,
+   NbrHeureSemestre TIME,
    CodeCouleur VARCHAR(50) ,
    idSemestre INTEGER NOT NULL,
    PRIMARY KEY(idRessource),
@@ -127,8 +127,8 @@ CREATE TABLE Eleve(
 CREATE TABLE Cours(
    idCours SERIAL,
    HeureDebut TIME,
-   NombreHeure INTEGER,
-   Jour TIMESTAMP,
+   NombreHeure TIME,
+   Jour DATE,
    idRessource INTEGER NOT NULL,
    PRIMARY KEY(idCours),
    FOREIGN KEY(idRessource) REFERENCES Ressource(idRessource)
@@ -163,7 +163,7 @@ CREATE TABLE Enseigner(
    idCours INTEGER,
    PRIMARY KEY(idProf, idCours),
    FOREIGN KEY(idProf) REFERENCES Professeur(idProf),
-   FOREIGN KEY(idCours) REFERENCES Cours(idCours)
+   FOREIGN KEY(idCours) REFERENCES Cours(idCours) 
 );
 
 CREATE TABLE Responsable(
@@ -179,6 +179,6 @@ CREATE TABLE Etudier(
    idCours INTEGER,
    PRIMARY KEY(idGroupe, idCours),
    FOREIGN KEY(idGroupe) REFERENCES Groupe(idGroupe),
-   FOREIGN KEY(idCours) REFERENCES Cours(idCours)
+   FOREIGN KEY(idCours) REFERENCES Cours(idCours) 
 );
 

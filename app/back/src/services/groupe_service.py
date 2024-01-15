@@ -1,3 +1,6 @@
+
+import src.connect_pg as connect_pg
+
 def get_groupe_statement(row):
     """
     Fonction de mappage de la table groupe
@@ -11,8 +14,8 @@ def get_groupe_statement(row):
     return {
         'IdGroupe': row[0],
         'Nom': row[1],
-        'AnneeScolaire': row[2],
-        'Annee': row[3],
+        'AnneeScolaire': str(row[2]),
+        'Annee': str(row[3]),
         'idGroupe_parent': row[4],
     }
 
