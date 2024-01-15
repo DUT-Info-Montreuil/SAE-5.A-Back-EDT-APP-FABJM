@@ -36,7 +36,7 @@ def get_professeur_statement(row):
 
 def get_professeur_statement_extended(row):
     """ 
-    Fonction de mappage de la table professeur
+    Fonction de mappage de la table professeur contenant des données de la table utilisateur
     
     :param row: donnée représentant un professeur
     :type row: tableau
@@ -55,12 +55,12 @@ def get_professeur_statement_extended(row):
 
 def get_manager_statement(row):
     """ 
-    Fonction de mappage de la table professeur
+    Fonction de mappage de la table manager
     
-    :param row: donnée représentant un professeur
+    :param row: donnée représentant un manager
     :type row: tableau
     
-    :return: les données représentant un professeur
+    :return: les données représentant un manager
     :rtype: dictionnaire
     """
     return {

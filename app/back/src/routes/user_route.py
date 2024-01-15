@@ -689,8 +689,10 @@ def update_utilisateur_password():
 
     :raises ParamètreTypeInvalideException: Le type de password doit être un string non vide
     :raises ActionImpossibleException: Impossible d'ajouter l'utilisateur spécifié dans la table utilisateur
-    
 
+    :return: un message de succès
+    :rtype: json
+    
     """
     username = get_jwt_identity()
     json_datas = request.get_json()
@@ -705,6 +707,45 @@ def update_utilisateur_password():
     except:
         return jsonify({'error': str(apiException.ActionImpossibleException("utilisateur"))}), 500
     connect_pg.disconnect(conn)
+    return jsonify({'success': 'mot de passe modifié'}), 200
+
+
+@user.route('/utilisateurs/changerGroupeManager/<idManager>', methods=['PUT'])
+@jwt_required()
+def changer_groupe_manager(idManager):
+    """ Permet à un utilisateur de définir un mot de passe lors de la première connexion via la route /utilisateurs/firstLogin
+    
+    :param idManager: id du manager dont on doit changer le groupe
+    :type idManager: int
+
+    :param idGroupe: id du nouveau groupe à assigner au manager spécifié dans le body
+    :type idGroupe: int
+
+    :raises ParamètreTypeInvalideException: Les paramètres d'entrées doivent être de type numérique
+    :raises ParamètreBodyManquantException: Un des paramètres spécifié dans le body est manquant
+    :raises ActionImpossibleException: Impossible de mettre à jour le manager spécifié dans la table Manager
+
+    :return: un message de succès
+    :rtype: json
+    
+    """
+
+    json_datas = request.get_json()
+
+    if 'idGroupe' not in json_datas :
+        return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
+
+    if (not idManager.isdigit() or type(json_datas['idGroupe']) != int   ):
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idManager ou idGroupe", "numérique"))}), 400
+    
+    query = f"update edt.manager set idGroupe='{json_datas['idGroupe']}' where idManager='{idManager}'"
+    conn = connect_pg.connect()
+    try:
+        connect_pg.execute_commands(conn, query)
+    except (Exception) as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("Manager", "mettre à jour"))}), 500
+    connect_pg.disconnect(conn)
+    return jsonify({'success': 'groupe modifié'}), 200
     
     
         

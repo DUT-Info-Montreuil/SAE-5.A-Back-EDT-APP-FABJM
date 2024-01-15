@@ -483,12 +483,12 @@ def attribuerSalle(idCours):
     :rtype: json
     """
     json_datas = request.get_json()
-    if (not idCours.isdigit() or type(json_datas['idSalle']) != int   ):
-        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idCours ou idSalle", "numérique"))}), 400
-    
-    
+
     if 'idSalle' not in json_datas :
         return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
+
+    if (not idCours.isdigit() or type(json_datas['idSalle']) != int   ):
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idCours ou idSalle", "numérique"))}), 400
     
     conn = connect_pg.connect()
     coursSalle = get_cours(idCours)
