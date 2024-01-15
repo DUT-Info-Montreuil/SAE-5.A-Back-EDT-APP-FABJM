@@ -323,29 +323,86 @@ def get_prof_heure_travailler_mois(idProf):
     
     
     query = f"""
-        select nombreheure, titre from edt.cours inner join edt.enseigner on edt.cours.idCours = edt.enseigner.idCours inner join edt.ressource  on edt.cours.idRessource = edt.ressource.idRessource where idProf = {idProf}"""
-    
-    timeLimit = None;
+    SELECT SUM(nombreheure) AS workedHours
+    FROM edt.cours
+    INNER JOIN edt.enseigner ON edt.cours.idCours = edt.enseigner.idCours
+    INNER JOIN edt.ressource ON edt.cours.idRessource = edt.ressource.idRessource
+    WHERE idProf = {idProf}
+    """
+
+    timeLimit = None
 
     if 'currentDay' in json_datas:
-        timeLimit = f" and Jour >= '{mois}-01' and Jour <= '{json_datas['currentDay']}';"
+        timeLimit = f" AND Jour >= '{mois}-01' AND Jour <= '{json_datas['currentDay']}';"
     else:
-        timeLimit = f" and Jour >= '{mois}-01' and Jour <= '{mois}-31';"
+        timeLimit = f" AND Jour >= '{mois}-01' AND Jour <= '{mois}-31';"
 
     try:
         rows = connect_pg.get_query(conn, query + timeLimit)
-        if rows == []:
+        if not rows:
             return jsonify({'erreur': str(apiException.DonneeIntrouvableException("enseigner"))}), 404
-    except(Exception) as e:
+    except Exception as e:
+        return jsonify({'erreur': str(apiException.ActionImpossibleException("cours", "récupérer"))}), 500
+
+
+    totalHours = rows[0][0]
+    
+    #get workedHours by SAE type
+    query = f"""
+    SELECT SUM(nombreheure) AS workedHours
+    FROM edt.cours inner join edt.enseigner on edt.cours.idCours = edt.enseigner.idCours
+    where idProf = {idProf} and TypeCours = SAE"""
+    
+    try:
+        rows = connect_pg.get_query(conn, query + timeLimit)
+        if not rows:
+            return jsonify({'erreur': str(apiException.DonneeIntrouvableException("enseigner"))}), 404
+    except Exception as e:
         return jsonify({'erreur': str(apiException.ActionImpossibleException("cours", "récupérer"))}), 500
     
+    SAEHours = rows[0][0]
+    
+    #get workedHours by TD/TP type
+    query = f"""
+    SELECT SUM(nombreheure) AS workedHours
+    FROM edt.cours inner join edt.enseigner on edt.cours.idCours = edt.enseigner.idCours
+    where idProf = {idProf} and (TypeCours = TD or TypeCours = TP)"""
+    
+    try:
+        rows = connect_pg.get_query(conn, query + timeLimit)
+        if not rows:
+            return jsonify({'erreur': str(apiException.DonneeIntrouvableException("enseigner"))}), 404
+    except Exception as e:
+        return jsonify({'erreur': str(apiException.ActionImpossibleException("cours", "récupérer"))}), 500
+    
+    TDTPHours = rows[0][0]
+    
+    #get workedHours by AMPHI type
+    query = f"""
+    SELECT SUM(nombreheure) AS workedHours
+    FROM edt.cours inner join edt.enseigner on edt.cours.idCours = edt.enseigner.idCours
+    where idProf = {idProf} and TypeCours = AMPHI"""
+    
+    try:
+        rows = connect_pg.get_query(conn, query + timeLimit)
+        if not rows:
+            return jsonify({'erreur': str(apiException.DonneeIntrouvableException("enseigner"))}), 404
+    except Exception as e:
+        return jsonify({'erreur': str(apiException.ActionImpossibleException("cours", "récupérer"))}), 500
+    
+    AMPHIHours = rows[0][0]
+    
+    workedHours = {
+        "total": totalHours,
+        "SAE": SAEHours,
+        "TDTP": TDTPHours,
+        "AMPHI": AMPHIHours
+    }
+    
+
     #getnomber of hours of SAE worked in the current month
     connect_pg.disconnect(conn)
-    return jsonify(rows)
-
-    
-    
-    
+    return jsonify(workedHours)
 
 
 @user.route('/utilisateurs/getProfParInitiale/<initialeProf>', methods=['GET','POST'])
