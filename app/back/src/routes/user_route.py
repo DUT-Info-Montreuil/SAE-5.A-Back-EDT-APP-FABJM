@@ -833,11 +833,42 @@ def delete_utilisateur(id):
     
     return jsonify({'success': 'utilisateur supprimé'}), 200
 
+
+@user.route('/utilisateurs/getAllManager/', methods=['GET','POST'])
+@jwt_required()
+def get_all_manager():
+    """Renvoit tous les managers via la route /utilisateurs/getAllManager/
+    
+    :raises DonneeIntrouvableException: Aucune donnée n'a pas être trouvé correspondant aux critères
+    :raises ActionImpossibleException: Si une erreur inconnue survient durant la récupération des données
+    
+    :return: tous les managers
+    :rtype: flask.wrappers.Response
+    """
+    returnStatement = []
+    conn = connect_pg.connect()
+    query = f"Select * from edt.manager order by idManager asc"
+    try:
+        rows = connect_pg.get_query(conn, query)
+        if rows == []:
+            return jsonify({'erreur': str(apiException.DonneeIntrouvableException("Manager"))}), 400
+        for row in rows:
+            returnStatement.append(get_manager_statement(row))
+    except Exception as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("Manager", "récupérer"))}), 500
+    
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)
+
         
 @user.route('/utilisateurs/getManagerGroupe/<idGroupe>', methods=['GET','POST'])
 @jwt_required()
 def get_manager_groupe(idGroupe):
-    """Renvoit le manage d'un groupe via la route /utilisateurs/getManagerGroupe/<idGroupe>
+    """Renvoit le manager d'un groupe via la route /utilisateurs/getManagerGroupe/<idGroupe>
+
+        
+    :param idGroupe: id du groupe à rechercher
+    :type idGroupe: int
 
     :raises PermissionManquanteException: Si pas assez de droit pour effectuer un get/id dans la table manager
     :raises AucuneDonneeTrouverException: Une aucune donnée n'a été trouvé dans la table manager
