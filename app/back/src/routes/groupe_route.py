@@ -90,6 +90,35 @@ def get_groupe_cours(idCours):
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 
+@groupe.route('/cours/getGroupeManager/<idManager>', methods=['GET','POST'])
+@jwt_required()
+def get_groupe_manager(idManager):
+    """Renvoit le groupe d'un manager via la route /cours/getGroupeManager/<idManager>
+    
+    :param idManager: id du groupe à rechercher
+    :type idManager: int
+    
+    :raises DonneeIntrouvableException: Aucune donnée n'a pas être trouvé correspondant aux critères
+    :raises ActionImpossibleException: Si une erreur inconnue survient durant la récupération des données
+    
+    :return: le groupe
+    :rtype: flask.wrappers.Response
+    """
+    returnStatement = []
+    conn = connect_pg.connect()
+    query = f"Select edt.groupe.*  from edt.groupe inner join edt.manager using(idGroupe) where idManager = {idManager} order by idManager asc"
+    try:
+        rows = connect_pg.get_query(conn, query)
+        if rows == []:
+            return jsonify({'erreur': str(apiException.DonneeIntrouvableException("Manager"))}), 400
+        for row in rows:
+            returnStatement.append(get_groupe_statement(row))
+    except Exception as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("Groupe ou Manager", "récupérer"))}), 500
+    
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)
+
 
 @groupe.route('/groupe/ajouterCours/<idGroupe>', methods=['POST', 'PUT'])
 @jwt_required()
