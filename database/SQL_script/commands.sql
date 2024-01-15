@@ -96,7 +96,7 @@ CREATE TABLE Cours(
    nombreHeure TIME,
    jour DATE,
    idRessource INTEGER NOT NULL,
-   typeCours TypeCours,
+   typeCours TypeCours NOT NULL,
    PRIMARY KEY(idCours),
    FOREIGN KEY(idRessource) REFERENCES Ressource(idRessource)
 );

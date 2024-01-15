@@ -52,7 +52,23 @@ def get_professeur_statement_extended(row):
         'LastName':row[4],
         'idUtilisateur':row[5]
     }
+
+def get_manager_statement(row):
+    """ 
+    Fonction de mappage de la table professeur
     
+    :param row: donnée représentant un professeur
+    :type row: tableau
+    
+    :return: les données représentant un professeur
+    :rtype: dictionnaire
+    """
+    return {
+        'idManager':row[0],
+        'idProf':row[1],
+        'idGroupe':row[2]
+    }
+
 
 
 

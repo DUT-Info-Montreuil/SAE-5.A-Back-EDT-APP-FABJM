@@ -27,7 +27,7 @@ INSERT INTO Salle (nom, capacite) values ('A2-05', 35);
 INSERT INTO Salle (nom, capacite) values ('A1-01', 20);
 
 -- Groupe(idGroupe ,nom,idGroupeParent)
-INSERT INTO Groupe(nom) values ('Groupe A1');
+INSERT INTO Groupe(nom) values ('A1');
 
 -- Professeur(idProf, initiale, idSalle, idUtilisateur)
 INSERT INTO Professeur( initiale, idSalle, idUtilisateur) values ('AR', 1, 3);

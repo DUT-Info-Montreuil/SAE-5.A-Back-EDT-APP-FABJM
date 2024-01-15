@@ -467,7 +467,7 @@ def update_groupe(idGroupe):
 
 
 @groupe.route('/groupe/getCoursGroupe/<idGroupe>', methods=['GET'])
-# @jwt_required()
+@jwt_required()
 def get_cours_groupe(idGroupe):
     """Renvoit tous les cours du groupe spécifié par son idGroupe via la route /groupe/parent/get/<idGroupe>
 

@@ -6,7 +6,7 @@ import src.connect_pg as connect_pg
 import src.apiException as apiException
 
 from src.config import config
-from src.services.user_service import get_utilisateur_statement, get_professeur_statement, get_professeur_statement_extended
+from src.services.user_service import *
 import src.services.permision as perm
 import psycopg2
 from psycopg2 import errorcodes
@@ -619,7 +619,7 @@ def add_utilisateur():
             
             if json_datas['role'] == "professeur":
                 if(user['info']['isManager'] ):
-                    query = f"Insert into edt.manager (IdProf) values ({returnStatement}) returning IdUtilisateur"
+                    query = f"Insert into edt.manager (IdProf, idGroupe) values ('{returnStatement}' , '{user['info']['idgroupe']}') returning IdUtilisateur"
                     returnStatement = connect_pg.execute_commands(conn, query)
                 
                 
@@ -834,6 +834,43 @@ def delete_utilisateur(id):
     return jsonify({'success': 'utilisateur supprimé'}), 200
 
         
+@user.route('/utilisateurs/getManagerGroupe/<idGroupe>', methods=['GET','POST'])
+@jwt_required()
+def get_manager_groupe(idGroupe):
+    """Renvoit le manage d'un groupe via la route /utilisateurs/getManagerGroupe/<idGroupe>
+
+    :raises PermissionManquanteException: Si pas assez de droit pour effectuer un get/id dans la table manager
+    :raises AucuneDonneeTrouverException: Une aucune donnée n'a été trouvé dans la table manager
+    
+    :return: un manager
+    :rtype: json
+    """
+    
+    if (not idGroupe.isdigit()):
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idGroupe", "numérique"))}), 400
+    
+    #check if the user is admin
+    conn = connect_pg.connect()
+    
+    if not perm.permissionCheck(get_jwt_identity() , 0 , conn):
+        return jsonify({'erreur': str(apiException.PermissionManquanteException())}), 403
+    
+    query = f"select * from edt.manager where idGroupe = {idGroupe} order by idManager asc"
+    
+    returnStatement = {}
+    try:
+        rows = connect_pg.get_query(conn, query)
+        if rows == []:
+            return jsonify({'erreur': str(apiException.DonneeIntrouvableException("Manager"))}), 400
+        for row in rows:
+            returnStatement = get_manager_statement(rows[0])
+    except Exception as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("Manager", "récupérer"))}), 500
+
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)
+
+    
 #TODO : DEBUG ROUTE TO DELETE 
 @user.route('/utilisateurs/getPermission', methods=['GET','POST'])
 @jwt_required()
