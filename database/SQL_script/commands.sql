@@ -1,22 +1,22 @@
 -- Drop tables if they exist
-DROP TABLE IF EXISTS Accuellir cascade;
-DROP TABLE IF EXISTS Enseigner cascade;
-DROP TABLE IF EXISTS Equiper cascade;
-DROP TABLE IF EXISTS Etudier cascade;
-DROP TABLE IF EXISTS Responsable cascade;
-DROP TABLE IF EXISTS Cours cascade;
-DROP TABLE IF EXISTS Eleve cascade;
-DROP TABLE IF EXISTS Professeur cascade;
-DROP TABLE IF EXISTS Admin cascade;
-DROP TABLE IF EXISTS Token cascade;
-DROP TABLE IF EXISTS Action cascade;
-DROP TABLE IF EXISTS Manager cascade;
-DROP TABLE IF EXISTS Utilisateur cascade;
-DROP TABLE IF EXISTS Ressource cascade;
-DROP TABLE IF EXISTS Semestre cascade;
-DROP TABLE IF EXISTS Equipement cascade;
-DROP TABLE IF EXISTS Salle cascade;
-DROP TABLE IF EXISTS Groupe cascade;
+DROP TABLE IF EXISTS edt.Accuellir cascade;
+DROP TABLE IF EXISTS edt.Enseigner cascade;
+DROP TABLE IF EXISTS edt.Equiper cascade;
+DROP TABLE IF EXISTS edt.Etudier cascade;
+DROP TABLE IF EXISTS edt.Responsable cascade;
+DROP TABLE IF EXISTS edt.Cours cascade;
+DROP TABLE IF EXISTS edt.Eleve cascade;
+DROP TABLE IF EXISTS edt.Professeur cascade;
+DROP TABLE IF EXISTS edt.Admin cascade;
+DROP TABLE IF EXISTS edt.Token cascade;
+DROP TABLE IF EXISTS edt.Action cascade;
+DROP TABLE IF EXISTS edt.Manager cascade;
+DROP TABLE IF EXISTS edt.Utilisateur cascade;
+DROP TABLE IF EXISTS edt.Ressource cascade;
+DROP TABLE IF EXISTS edt.Semestre cascade;
+DROP TABLE IF EXISTS edt.Equipement cascade;
+DROP TABLE IF EXISTS edt.Salle cascade;
+DROP TABLE IF EXISTS edt.Groupe cascade;
 DROP SCHEMA IF EXISTS EDT;
 
 CREATE SCHEMA EDT;
@@ -27,7 +27,7 @@ CREATE TABLE Groupe(
    idGroupe SERIAL,
    Nom VARCHAR(50) ,
    AnneeScolaire INTEGER,
-   Annee INTEGER,
+   Annee VARCHAR(50),
    idGroupe_parent INTEGER,
    PRIMARY KEY(idGroupe),
    FOREIGN KEY(idGroupe_parent) REFERENCES Groupe(idGroupe) ON DELETE CASCADE
@@ -57,7 +57,7 @@ CREATE TABLE Ressource(
    idRessource SERIAL,
    Titre VARCHAR(50) ,
    Numero VARCHAR(50) ,
-   NbrHeureSemestre INTEGER,
+   NbrHeureSemestre TIME,
    CodeCouleur VARCHAR(50) ,
    idSemestre INTEGER NOT NULL,
    PRIMARY KEY(idRessource),
@@ -127,8 +127,8 @@ CREATE TABLE Eleve(
 CREATE TABLE Cours(
    idCours SERIAL,
    HeureDebut TIME,
-   NombreHeure INTEGER,
-   Jour TIMESTAMP,
+   NombreHeure TIME,
+   Jour DATE,
    idRessource INTEGER NOT NULL,
    PRIMARY KEY(idCours),
    FOREIGN KEY(idRessource) REFERENCES Ressource(idRessource)
@@ -163,7 +163,7 @@ CREATE TABLE Enseigner(
    idCours INTEGER,
    PRIMARY KEY(idProf, idCours),
    FOREIGN KEY(idProf) REFERENCES Professeur(idProf),
-   FOREIGN KEY(idCours) REFERENCES Cours(idCours)
+   FOREIGN KEY(idCours) REFERENCES Cours(idCours) 
 );
 
 CREATE TABLE Responsable(
@@ -179,6 +179,6 @@ CREATE TABLE Etudier(
    idCours INTEGER,
    PRIMARY KEY(idGroupe, idCours),
    FOREIGN KEY(idGroupe) REFERENCES Groupe(idGroupe),
-   FOREIGN KEY(idCours) REFERENCES Cours(idCours)
+   FOREIGN KEY(idCours) REFERENCES Cours(idCours) 
 );
 

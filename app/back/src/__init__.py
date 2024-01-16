@@ -1,2 +1,2 @@
 # __init__.py
-print('Initializing package...')
+print('Initialisation du package src')

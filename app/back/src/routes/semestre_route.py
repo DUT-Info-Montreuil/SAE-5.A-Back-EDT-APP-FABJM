@@ -16,7 +16,7 @@ from psycopg2 import OperationalError, Error
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity
 
 semestre = Blueprint('semestre', __name__)
-
+# TODO: Finir semestre et refactor
 
 @semestre.route('/semestre/getAll')
 @jwt_required()
@@ -58,7 +58,7 @@ def add_semestre():
     
     :raises PermissionManquanteException: Si l'utilisateur n'a pas assez de droit pour ajouter des données dans la table semestre
     :raises DonneeExistanteException: Les données entrée existe déjà dans la table semestre
-    :raises InsertionImpossibleException: Impossible d'ajouter le semestre spécifié dans la table semestre
+    :raises ActionImpossibleException: Impossible d'ajouter le semestre spécifié dans la table semestre
     :raises ParamètreBodyManquantException: Le body requis n'a pas pu être trouvé
     
     :return: l'id du semestre crée
@@ -87,7 +87,7 @@ def add_semestre():
                 apiException.DonneeExistanteException(json_datas['Numero'], "Numero", "semestre"))}), 400
         else:
             # Erreur inconnue
-            return jsonify({'error': str(apiException.InsertionImpossibleException("semestre"))}), 500
+            return jsonify({'error': str(apiException.ActionImpossibleException("semestre"))}), 500
 
     return jsonify({"success" : "semestre was added"}), 200
 
@@ -127,7 +127,7 @@ def get_one_semestre(numeroSemestre):
     except TypeError as e:
         return jsonify({'error': str(apiException.DonneeIntrouvableException("semestre", numeroSemestre))}), 404
     connect_pg.disconnect(conn)
-    return jsonify("success"), 200
+    return jsonify(returnStatement), 200
 
 
 @semestre.route('/semestre/update/<idSemestre>', methods=['PUT','GET'])
@@ -175,3 +175,43 @@ def upadateSemestre(idSemestre):
             return jsonify({'error': str(apiException.InsertionImpossibleException("semestre"))}), 500
 
     return jsonify({"success" : "semestre was updated"}), 200
+
+
+
+
+@semestre.route('/semestre/delete/<idSemestre>', methods=['DELETE'])
+@jwt_required()
+def deleteSemestre(idSemestre):
+
+    """Permet de supprimer un semestre via la route /semestre/delete/<idSemestre>
+
+    :param idSemestre: id d'un semestre présent dans la base de donnée
+    :type idSemestre: int
+
+    :raises PermissionManquanteException: Si l'utilisateur n'a pas assez de droit pour supprimer un semestre présents dans la table semestre
+    :raises DonneeIntrouvableException: Impossible de trouver le semestre spécifié dans la table semestre
+    :raises ParamètreTypeInvalideException: Le type de l'id de semestre est invalide, un int est attendue
+    :raises InsertionImpossibleException: Impossible de supprimer le semestre spécifié dans la table semestre
+
+    :return: le semestre qui correspond au numéro entré en paramètre
+    :rtype: json
+    """
+
+    conn = connect_pg.connect()
+    if not perm.permissionCheck(get_jwt_identity() , 1 , conn):
+        return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
+
+    query = f"delete from edt.semestre where IdSemestre='{idSemestre}'"
+    conn = connect_pg.connect()
+    try:
+        returnStatement = connect_pg.execute_commands(conn, query)
+    except psycopg2.IntegrityError as e:
+        if e.pgcode == errorcodes.UNIQUE_VIOLATION:
+            # Erreur violation de contrainte unique
+            return jsonify({'error': str(
+                apiException.DonneeExistanteException(idSemestre, "idSemestre", "semestre"))}), 400
+        else:
+            # Erreur inconnue
+            return jsonify({'error': str(apiException.InsertionImpossibleException("semestre"))}), 500
+
+    return jsonify({"success" : "semestre was deleted"}), 200

@@ -6,14 +6,83 @@ import src.apiException as apiException
 
 from src.config import config
 from src.services.salle_service import get_salle_statement
+from src.services.equipement_service import get_equipement_statement
+
+import src.services.permision as perm
+import src.services.verification as verif 
 
 import psycopg2
 from psycopg2 import errorcodes
 from psycopg2 import OperationalError, Error
 
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity  
+import datetime
 salle = Blueprint('salle', __name__)
 
+# TODO: Update salle
+
+@salle.route('/salle/getDispo', methods=['GET', 'POST'])
+@jwt_required()
+def get_salle_dispo():
+    """Renvoit toutes les salles disponible sur une période via la route /salle/getDispo
+
+    :param HeureDebut: date du début de la période au format time(hh:mm:ss) spécifié dans le body
+    :type HeureDebut: str 
+
+    :param NombreHeure: durée de la période spécifié dans le body
+    :type NombreHeure: int
+
+    :param Jour: date de la journée où la disponibilité des salles doit être vérifer au format DATE(yyyy-mm-dd)
+    :type Jour: str
+
+    :raises AucuneDonneeTrouverException: Si aucune donnée n'a été trouvé dans la table groupe, etudier ou cours
+    :raises ParamètreBodyManquantException: Si un paramètre est manquant
+    :raises ParamètreInvalideException: Si un des paramètres est invalide
+    :raises ActionImpossibleException: Si une erreur est survenue lors de la récupération des données
+    
+    :return: toutes les salles disponibles
+    :rtype: flask.wrappers.Response(json)
+    """
+    json_datas = request.get_json()
+    if not json_datas:
+        return jsonify({'error ': 'missing json body'}), 400
+    
+    if 'HeureDebut' not in json_datas or 'Jour' not in json_datas or 'NombreHeure' not in json_datas :
+        return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
+
+    if not verif.estDeTypeTime(json_datas['HeureDebut']) or not verif.estDeTypeDate(json_datas['Jour']) or not verif.estDeTypeTime(json_datas['NombreHeure']):
+        return jsonify({'error': str(apiException.ParamètreInvalideException("HeureDebut, NombreHeure ou Jour"))}), 404
+
+    HeureDebut = json_datas['HeureDebut']
+    NombreHeure = json_datas['NombreHeure']
+    HeureDebut = datetime.timedelta(hours = int(HeureDebut[:2]),minutes = int(HeureDebut[3:5]), seconds = int(HeureDebut[6:8]))
+    NombreHeure = datetime.timedelta(hours = int(NombreHeure[:2]),minutes = int(NombreHeure[3:5]))
+    HeureFin = HeureDebut + NombreHeure
+
+    heure_ouverture_iut = datetime.timedelta(hours = 8)
+    heure_fermeture_iut = datetime.timedelta(hours = 19)
+
+    if HeureDebut < heure_ouverture_iut or HeureFin > heure_fermeture_iut:
+        return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "L'iut est fermé durant la période spécifié"))}), 404
+
+    query = f""" select edt.salle.* from edt.salle full join edt.accuellir using(idSalle) full join edt.cours
+    using(idCours) where (idSalle is not null) and ( '{json_datas['HeureDebut']}' <  HeureDebut 
+    and  '{str(HeureFin)}' <= HeureDebut or '{json_datas['HeureDebut']}'::time >=  (HeureDebut + NombreHeure::interval))  
+    or (HeureDebut is null) order by idSalle asc
+    """
+    conn = connect_pg.connect()
+    returnStatement = []
+    try:
+        rows = connect_pg.get_query(conn, query)
+        if rows == []:
+            return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "Aucune salle disponible n'a été trouvé l'horaire spécifié"))}), 400
+        
+        for row in rows:
+            returnStatement.append(get_salle_statement(row))
+    except Exception as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("Salle, Etudier ou Cours", "récupérer"))}), 500
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)
 
 @salle.route('/salle/getAll')
 @jwt_required()
@@ -67,7 +136,31 @@ def get_one_salle(idSalle):
     connect_pg.disconnect(conn)
     return jsonify(returnStatement), 200
 
-
+@salle.route('/salle/getSalleCours/<idCours>', methods=['GET','POST'])
+@jwt_required()
+def get_salle_cours(idCours):
+    """Renvoit la salle dans lequel se déroule le cours via la route /cours/getSalle/<idCours>
+    
+    :param idCours: id du cours à rechercher
+    :type idCours: int
+    
+    :raises DonneeIntrouvableException: Aucune donnée n'a pas être trouvé correspondant aux critères
+    
+    :return: l'id de la salle dans lequel se déroule cours
+    :rtype: json
+    """
+    query = f"select edt.salle.* from edt.salle inner join edt.accuellir  using(idSalle) inner join edt.cours using(idCours) where idCours={idCours} "
+    returnStatement = []
+    conn = connect_pg.connect()
+    try:
+        rows = connect_pg.get_query(conn, query)
+        for row in rows:
+            returnStatement.append(get_salle_statement(row))
+    except IndexError:
+        return jsonify({'error': str(apiException.DonneeIntrouvableException("Accuellir", idCours))}), 400
+        
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)
 
 
 @salle.route('/salle/delete/<idSalle>', methods=['DELETE'])
@@ -78,7 +171,7 @@ def delete_salle(idSalle):
     :param idSalle: id de la salle à supprimer
     :type idSalle: int
 
-    :raises InsertionImpossibleException: Impossible de supprimer la salle spécifié dans la table salle
+    :raises ActionImpossibleException: Impossible de supprimer la salle spécifié dans la table salle
     
     :return: message de succès
     :rtype: str
@@ -88,7 +181,7 @@ def delete_salle(idSalle):
     try:
         returnStatement = connect_pg.execute_commands(conn, query)
     except psycopg2.IntegrityError as e:
-        return jsonify({'error': str(apiException.InsertionImpossibleException("salle","supprimé"))}), 500
+        return jsonify({'error': str(apiException.ActionImpossibleException("salle","supprimé"))}), 500
     
     return jsonify({'success': 'salle supprimé'}), 200
 
@@ -100,7 +193,7 @@ def add_salle():
     :param salle: salle à ajouter, spécifié dans le body
     :type salle: json
 
-    :raises InsertionImpossibleException: Impossible d'ajouter la salle spécifié dans la table salle
+    :raises ActionImpossibleException: Impossible d'ajouter la salle spécifié dans la table salle
     :raises DonneeExistanteException: Cette salle existe déjà
     
     :return: l'id de l'utilisateur crée
@@ -122,9 +215,81 @@ def add_salle():
                 apiException.DonneeExistanteException(json_datas['Numero'], "Numero", "salle"))}), 400
         else:
             # Erreur inconnue
-            return jsonify({'error': str(apiException.InsertionImpossibleException("salle"))}), 500
+            return jsonify({'error': str(apiException.ActionImpossibleException("salle"))}), 500
 
     return jsonify({"success" : "la salle a été ajouté"}), 200
+
+
+
+##################    Equipement de Salle    ####################
+# TODO: Delete
+@salle.route('/salle/get/equipement/<idSalle>', methods=['GET'])
+@jwt_required()
+def get_equipements_of_salle(idSalle):
+    """Renvoit tous les salles au quel l'equipement(avec l'idEquipement) est lié via la route /salle/get/equipement/<idSalle>
+
+    :param idSalle: l'id d'un groupe présent dans la base de donnée
+    :type idSalle: str
+
+    :raises PermissionManquanteException: L'utilisatuer n'a pas les droits pour avoir accés à cette route
+    
+    :return: tous les equipements d'une salle
+    :rtype: json
+    """
+    conn = connect_pg.connect()
+    permision = perm.getUserPermission(get_jwt_identity() , conn)
+
+    if(permision == 3):
+        return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
+
+    query = f"SELECT equipement.* from edt.equiper AS e NATURAL JOIN edt.equipement AS equipement WHERE e.idSalle={idSalle}"
+
+    equipements = connect_pg.get_query(conn, query)
+    returnStatement = []
+    try:
+        for row in equipements:
+            returnStatement.append(get_equipement_statement(row))
+    except(TypeError) as e:
+        return jsonify({'error': str(apiException.AucuneDonneeTrouverException("equiper"))}), 404
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)
+
+@salle.route('/salle/add/equipement/<idSalle>', methods=['POST'])
+@jwt_required()
+def add_equipements_of_salle(idSalle):
+    """Permet d'ajouter une ou plusieurs salles a un équipement via la route /equipement/add/salle/<idEquipement>
+
+    :param idSalle: l'id d'un groupe présent dans la base de donnée
+    :type idSalle: str
+
+    :raises PermissionManquanteException: L'utilisatuer n'a pas les droits pour avoir accés à cette route
+
+    :return: un tableau d'id d'equipement crééent
+    :rtype: json
+    """
+    json_datas = request.get_json()
+    if not json_datas:
+        return jsonify({'error ': 'missing json body'}), 400
+
+    conn = connect_pg.connect()
+    permision = perm.getUserPermission(get_jwt_identity() , conn)
+
+    if(permision != 0):
+        return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
+    query = "INSERT INTO edt.equiper (idSalle, idEquipement) VALUES "
+    value_query = []
+    for data in json_datas['data']:
+        value_query.append(f"({idSalle},'{data['idEquipement']}')")
+    query += ",".join(value_query) + " returning idEquipement"
+
+    # TODO: find why only one id is return when multiple one are inserted
+    returnStatement = connect_pg.execute_commands(conn, query)
+    # TODO: handle error pair of key already exist
+    connect_pg.disconnect(conn)
+    return jsonify({"success": f"The equipements with the ids {returnStatement} were successfully created"}), 200    #{', '.join(tabIdEquipement)}
+
+
+
 
 
 
@@ -152,3 +317,4 @@ def update_salle():
     except psycopg2.IntegrityError as e:
         return jsonify({'error': str(apiException.InsertionImpossibleException("salle"))}), 500
     return jsonify({'success': 'salle modifié'}), 200
+
