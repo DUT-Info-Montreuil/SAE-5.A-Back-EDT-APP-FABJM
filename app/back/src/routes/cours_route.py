@@ -5,7 +5,7 @@ import src.connect_pg as connect_pg
 import src.apiException as apiException
 
 from src.config import config
-from src.services.cours_service import get_cours_statement, getCoursProf, getCoursGroupeService
+from src.services.cours_service import *
 from src.services.user_service import get_professeur_statement
 
 from src.routes.groupe_route import get_groupe_cours 
@@ -189,6 +189,43 @@ def get_cours_groupe(idGroupe):
             returnStatement.append(get_cours_statement(row))
     except Exception as e:
         return jsonify({'error': str(apiException.ActionImpossibleException("Cours, Etudier et Groupe", "récupérer"))}), 500
+        
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)
+
+@cours.route('/cours/getCoursGroupeExtended/<idGroupe>', methods=['GET','POST'])
+#@jwt_required()
+def get_cours_groupe_extended(idGroupe):
+    """Renvoit les cours d'un groupe via la route /cours/getSalle/<idCours>
+    
+    :param idGroupe: id du groupe à rechercher
+    :type idGroupe: int
+    
+    :raises DonneeIntrouvableException: Aucune donnée n'a pas être trouvé correspondant aux critères
+    :raises ActionImpossibleException: Si une erreur inconnue survient durant la récupération des données
+    
+    :return: l'id de la salle dans lequel se déroule cours
+    :rtype: json
+    """
+    returnStatement = []
+    conn = connect_pg.connect()
+    query = f"""Select s1.idSalle, s1.nom as nomSalle, s1.capacite, edt.cours.*,edt.ressource.*, g1.idGroupe, g1.nom as nomGroupe, g1.idGroupeParent ,
+    e1.idProf, e1.initiale, e1.idSalle, e1.idUtilisateur from edt.cours inner join edt.accuellir using (idCours) inner join edt.salle as s1 using(idSalle) 
+    inner join edt.ressource using(idRessource) inner join edt.enseigner using(idCours) inner join edt.etudier using(idCours) 
+    inner join edt.groupe as g1 using(idGroupe) inner join edt.professeur as e1 using(idProf) where idGroupe = 1
+    """
+
+    try:
+        rows = connect_pg.get_query(conn , query)
+        if rows == []:
+            return jsonify({'erreur': str(apiException.DonneeIntrouvableException("Etudier",idGroupe))}), 400
+        print(rows)
+        for row in rows:
+            returnStatement.append(get_cours_groupe_extended_statement(row))
+    except Exception as e:
+        print(row)
+        print(e)
+        return jsonify({'error': str(apiException.ActionImpossibleException("Cours", "récupérer"))}), 500
         
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
