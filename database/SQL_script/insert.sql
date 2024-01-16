@@ -14,8 +14,8 @@ INSERT INTO Admin (idUtilisateur) values (2);
 INSERT INTO Semestre (Numero) values (3);
 
 -- Ressource(idRessource, Titre, Numero, NbrHeureSemestre, CodeCouleur, idSemestre)
-INSERT INTO Ressource (Titre, Numero, NbrHeureSemestre, idSemestre) values ('Dev', 'R3-04', '10:00:00', '1');
-INSERT INTO Ressource (Titre, Numero, NbrHeureSemestre, idSemestre) values ('Math', 'R3-12', '08:00:00', '1');
+INSERT INTO Ressource (Titre, Numero, NbrHeureSemestre, idSemestre) values ('Dev', 'R3-04', 36000, '1');
+INSERT INTO Ressource (Titre, Numero, NbrHeureSemestre, idSemestre) values ('Math', 'R3-12', 28800, '1');
 
 
 -- Cours (idCours, HeureDebut, NombreHeure, Jour, idRessource)

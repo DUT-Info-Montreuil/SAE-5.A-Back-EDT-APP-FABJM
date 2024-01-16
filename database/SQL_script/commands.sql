@@ -57,7 +57,7 @@ CREATE TABLE Ressource(
    idRessource SERIAL,
    Titre VARCHAR(50) ,
    Numero VARCHAR(50) ,
-   NbrHeureSemestre TIME,
+   NbrHeureSemestre INTEGER NOT NULL,
    CodeCouleur VARCHAR(50) ,
    idSemestre INTEGER NOT NULL,
    PRIMARY KEY(idRessource),
