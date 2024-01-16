@@ -1,10 +1,10 @@
 SET SEARCH_PATH TO EDT;
 
--- Utilisateur (IdUtilisateur, firstName, lastName, username, passWord, firstLogin)
-INSERT INTO Utilisateur (firstName, lastName, username, passWord) values ('Junko', 'Enoshima', 'monokuma', 'despair'); -- élève
-INSERT INTO Utilisateur (firstName, lastName, username, passWord) values ('Gilgamesh', 'Elish', 'Uruk', 'Enkidu'); -- admin
-INSERT INTO Utilisateur (firstName, lastName, username, passWord) values ('Aya', 'Rindo', 'detective', 'immortal'); -- professeur
-INSERT INTO Utilisateur (firstName, lastName, username, passWord) values ('Tsugaru ', 'Shinuchi', 'assistant', 'OniKiller'); -- manager
+-- Utilisateur (IdUtilisateur, FirstName, LastName, Username, PassWord, FirstLogin)
+INSERT INTO Utilisateur (FirstName, LastName, Username, PassWord) values ('Junko', 'Enoshima', 'monokuma', 'b654d98118d491d60f80cc28e3ac67ef'); -- élève
+INSERT INTO Utilisateur (FirstName, LastName, Username, PassWord) values ('Gilgamesh', 'Elish', 'Uruk', 'b654d98118d491d60f80cc28e3ac67ef'); -- admin
+INSERT INTO Utilisateur (FirstName, LastName, Username, PassWord) values ('Aya', 'Rindo', 'detective', 'b654d98118d491d60f80cc28e3ac67ef'); -- professeur
+INSERT INTO Utilisateur (FirstName, LastName, Username, PassWord) values ('Tsugaru ', 'Shinuchi', 'assistant', 'b654d98118d491d60f80cc28e3ac67ef');
 
 
 -- Admin (idAdmin, idUtilisateur)

@@ -8,6 +8,8 @@ from src.config import config
 from src.services.equipement_service import get_equipement_statement
 from src.services.salle_service import get_salle_statement
 
+from src.utilitary import update
+
 import psycopg2
 from psycopg2 import errorcodes
 from psycopg2 import OperationalError, Error
@@ -90,7 +92,6 @@ def get_equipement(filtre):
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 
-# TODO: test route bellow
 @equipement.route('/equipement/add', methods=['POST'])
 @jwt_required()
 def add_equipement():
@@ -102,8 +103,8 @@ def add_equipement():
     :return: un tableau d'id d'equipement crééent
     :rtype: json
     """
-    json_datas = request.get_json()
-    if not json_datas:
+    json_data = request.get_json()
+    if not json_data:
         return jsonify({'error ': 'missing json body'}), 400
 
 
@@ -114,7 +115,7 @@ def add_equipement():
         return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
     query = "INSERT INTO edt.equipement (Nom) VALUES "
     value_query = []
-    for data in json_datas['data']:
+    for data in json_data['data']:
         value_query.append(f"('{data['Nom']}')")
     query += ",".join(value_query) + " returning idEquipement"
 
@@ -142,25 +143,24 @@ def update_equipement(idEquipement):
     :return: success
     :rtype: json
     """
-    json_datas = request.get_json()
-    if not json_datas:
+    json_data = request.get_json()
+    if not json_data:
         return jsonify({'error ': 'missing json body'}), 400
+    table_name = "Equipement"
     keys = ["Nom"]
-    tab_info = []
-    for key in json_datas.keys():
-        if key not in keys:
-            return jsonify({'error': "missing or invalid key"}), 400
-        tab_info.append(f"{key}='{json_datas[key]}'")
+    
+    query = update("Equipement", f"idEquipement={idEquipement}", json_data, keys)
+    # Si query update return une error
+    if type(query) == tuple:
+        return query
 
     conn = connect_pg.connect()
     permision = perm.getUserPermission(get_jwt_identity() , conn)
     if(permision != 0):
         return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
     
-    query = "UPDATE edt.equipement SET " + ", ".join(tab_info) + f" WHERE idEquipement={idEquipement} RETURNING *"
-
     try:
-        connect_pg.execute_commands(conn, query)
+        connect_pg.execute_commands(conn, query[0], query[1])
     except Exception as e:
         return jsonify({'error': str(apiException.ActionImpossibleException("equipement", "mise à jour"))}), 500
     connect_pg.disconnect(conn)
@@ -237,8 +237,8 @@ def add_salle_of_equipement(idEquipement):
     :return: un tableau d'id d'equipement crééent
     :rtype: json
     """
-    json_datas = request.get_json()
-    if not json_datas:
+    json_data = request.get_json()
+    if not json_data:
         return jsonify({'error ': 'missing json body'}), 400
 
     conn = connect_pg.connect()
@@ -248,7 +248,7 @@ def add_salle_of_equipement(idEquipement):
         return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
     query = "INSERT INTO edt.equiper (idEquipement, idSalle) VALUES "
     value_query = []
-    for data in json_datas['data']:
+    for data in json_data['data']:
         value_query.append(f"({idEquipement},'{data['idSalle']}')")
     query += ",".join(value_query) + " returning idSalle"
 

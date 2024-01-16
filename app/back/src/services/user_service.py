@@ -17,6 +17,23 @@ def get_utilisateur_statement(row):
         'FirstLogin':row[5]
     }
 
+def get_utilisateur_protected_statement(row):
+    """ 
+    Fonction de mappage de la table utilisateur
+    
+    :param row: donnée représentant un utilisateur
+    :type row: tableau
+    
+    :return: les données représentant un utilisateur
+    :rtype: dictionnaire
+    """
+    return {
+        'IdUtilisateur':row[0],
+        'FirstName':row[1],
+        'LastName':row[2],
+        'Username':row[3],
+    }
+
 def get_professeur_statement(row):
     """ 
     Fonction de mappage de la table professeur

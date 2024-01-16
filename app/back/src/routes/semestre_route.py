@@ -36,7 +36,7 @@ def get_semestre():
     if not perm.permissionCheck(get_jwt_identity() , 3 , conn):
         return jsonify({'erreur': str(apiException.PermissionManquanteException())}), 403
         
-    query = "select * from edt.semestre order by idsemestre asc"
+    query = "SELECT * from edt.semestre order by idsemestre asc"
     conn = connect_pg.connect()
     
     returnStatement = []
@@ -75,11 +75,11 @@ def add_semestre():
         return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
 
 
-    json_datas = request.get_json()
-    if not json_datas:
+    json_data = request.get_json()
+    if not json_data:
         return jsonify({'error ': str(apiException.ParamètreBodyManquantException())}), 400
 
-    query = f"Insert into edt.semestre (numero) values ('{json_datas['Numero']}') returning idsemestre"
+    query = f"Insert into edt.semestre (numero) values ('{json_data['Numero']}') returning idsemestre"
     conn = connect_pg.connect()
     try:
         returnStatement = connect_pg.execute_commands(conn, query)
@@ -88,7 +88,7 @@ def add_semestre():
         if e.pgcode == errorcodes.UNIQUE_VIOLATION:
             # Erreur violation de contrainte unique
             return jsonify({'error': str(
-                apiException.DonneeExistanteException(json_datas['Numero'], "Numero", "semestre"))}), 400
+                apiException.DonneeExistanteException(json_data['Numero'], "Numero", "semestre"))}), 400
         else:
             # Erreur inconnue
             return jsonify({'error': str(apiException.ActionImpossibleException("semestre"))}), 500
@@ -118,7 +118,7 @@ def get_one_semestre(numeroSemestre):
         return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
 
 
-    query = f"select * from edt.semestre where numero='{numeroSemestre}'"
+    query = f"SELECT * from edt.semestre where numero='{numeroSemestre}'"
 
     conn = connect_pg.connect()
     

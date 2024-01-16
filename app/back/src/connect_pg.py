@@ -55,7 +55,7 @@ def disconnect(conn):
         print('Database connection closed.')
 
 
-def execute_commands(conn, commands):
+def execute_commands(conn, commands, param):
     """Execute la commande sql
 
     :param conn: objet représentant la connection à la base de donnée
@@ -81,9 +81,9 @@ def execute_commands(conn, commands):
             return cur.lastrowid
 
     else:
-        cur.execute(commands)
+        cur.execute(commands, param)
         if " returning " in commands.lower():
-            returningValue = cur.fetchone()[0]
+            returningValue = cur.fetchone()[0] # TODO: change to permit multiple value return
             # commit the changes
         conn.commit()
         # close communication with the PostgreSQL database server
@@ -92,7 +92,7 @@ def execute_commands(conn, commands):
             return returningValue
 
 
-def get_query(conn, query):
+def get_query(conn, query, param=""):
     """Récupère les données dans la base de donnée
 
     :param conn: objet représentant la connection à la base de donnée
@@ -112,7 +112,10 @@ def get_query(conn, query):
 
     try:
         cur = conn.cursor()
-        cur.execute(query)
+        if param != "":
+            cur.execute(query, param)
+        else:
+            cur.execute(query)
         rows = cur.fetchall()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:

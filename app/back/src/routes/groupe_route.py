@@ -25,7 +25,7 @@ import datetime
 import json
 
 groupe = Blueprint('groupe', __name__)
-
+# TODO: fix route get and test other
 
 @groupe.route('/groupe/getAll', methods=['GET'])
 @jwt_required()
@@ -52,9 +52,9 @@ def get_groupe():
         connect_pg.disconnect(conn)
         return jsonify(returnStatement)
 
-    query = "select * from edt.groupe order by IdGroupe asc"
-
+    query = "SELECT * from edt.groupe order by IdGroupe asc"
     
+    rows = connect_pg.get_query(conn, query)
     returnStatement = []
     try:
         rows = connect_pg.get_query(conn, query)
@@ -327,7 +327,7 @@ def get_one_groupe(idGroupe):
     if (not idGroupe.isdigit()):
         return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idGroupe", "numérique"))}), 400
     
-    query = f"select * from edt.groupe where idGroupe='{idGroupe}'"
+    query = f"SELECT * from edt.groupe where idGroupe='{idGroupe}'"
     conn = connect_pg.connect()
     result = getGroupeProf(get_jwt_identity(), conn)
     verification = False
@@ -336,8 +336,9 @@ def get_one_groupe(idGroupe):
             verification = True
 
     if not verification:
-        return jsonify({'error': str(apiException.PermissionManquanteException())}), 404
-
+        return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
+        
+    rows = connect_pg.get_query(conn, query)
     returnStatement = {}
     try:
         rows = connect_pg.get_query(conn, query)
@@ -368,7 +369,7 @@ def get_parent_groupe(idGroupe):
     if (not idGroupe.isdigit()):
         return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idGroupe", "numérique"))}), 400
     
-    query = f"select * from edt.groupe where idGroupe=(select idGroupe_parent from edt.groupe where idGroupe = '{idGroupe}')"
+    query = f"SELECT * from edt.groupe where idGroupe=(SELECT idGroupe_parent from edt.groupe where idGroupe = '{idGroupe}')"
 
     conn = connect_pg.connect()
     
@@ -402,7 +403,7 @@ def get_all_children(idGroupe):
     if (not idGroupe.isdigit()):
         return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idGroupe", "numérique"))}), 400
     
-    query = f"select * from edt.groupe where idGroupe_parent={idGroupe}"
+    query = f"SELECT * from edt.groupe where idGroupe_parent={idGroupe}"
 
     conn = connect_pg.connect()
     
@@ -431,14 +432,14 @@ def add_groupe():
     :return: l'id du groupe créé
     :rtype: json
     """
-    json_datas = request.get_json()
-    if not json_datas:
+    json_data = request.get_json()
+    if not json_data:
         return jsonify({'error ': 'missing json body'}), 400
     query_start = "Insert into edt.groupe (Nom, AnneeScolaire, Annee"
-    query_values = f"values ('{json_datas['Nom']}', '{json_datas['AnneeScolaire']}', '{json_datas['Annee']}'"
-    if "idGroupe_parent" in json_datas.keys():
+    query_values = f"values ('{json_data['Nom']}', '{json_data['AnneeScolaire']}', '{json_data['Annee']}'"
+    if "idGroupe_parent" in json_data.keys():
         query_start += ", idGroupe_parent"
-        query_values += f", {json_datas['idGroupe_parent']}"
+        query_values += f", {json_data['idGroupe_parent']}"
     query_start += ") "
     query_values += ") returning idGroupe"
     query = query_start + query_values
@@ -450,7 +451,7 @@ def add_groupe():
         if e.pgcode == errorcodes.UNIQUE_VIOLATION:
             # Erreur violation de contrainte unique
             return jsonify({'error': str(
-                apiException.DonneeExistanteException(json_datas['Nom'], "Nom", "groupe"))}), 400
+                apiException.DonneeExistanteException(json_data['Nom'], "Nom", "groupe"))}), 400
         else:
             # Erreur inconnue
             return jsonify({'error': str(apiException.ActionImpossibleException("groupe"))}), 500
@@ -509,16 +510,16 @@ def update_groupe(idGroupe):
     if (not idGroupe.isdigit()):
         return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idGroupe", "numérique"))}), 400
     
-    json_datas = request.get_json()
-    if not json_datas:
+    json_data = request.get_json()
+    if not json_data:
         return jsonify({'error ': 'missing json body'}), 400
     key = ["Nom", "AnneeScolaire", "Annee", "idGroupe_parent"]
-    for k in json_datas.keys():
+    for k in json_data.keys():
         if k not in key:
             return jsonify({'error': "missing or invalid key"}), 400
     req = "UPDATE edt.groupe SET "
-    for k in json_datas.keys():
-        req += f"{k}='{json_datas[k]}', "
+    for k in json_data.keys():
+        req += f"{k}='{json_data[k]}', "
 
     if req[-2:] == ", ":
         req = req[:-2]

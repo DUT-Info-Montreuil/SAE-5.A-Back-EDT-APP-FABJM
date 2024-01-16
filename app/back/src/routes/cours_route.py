@@ -632,12 +632,15 @@ def attribuerSalle(idCours):
     :return: id du cours supprimer si présent
     :rtype: json
     """
-    json_datas = request.get_json()
-
-    if 'idSalle' not in json_datas :
+    json_data = request.get_json()
+    if (not idCours.isdigit() or type(json_data['idSalle']) != int   ):
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idCours ou idSalle", "numérique"))}), 400
+    
+    
+    if 'idSalle' not in json_data :
         return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
 
-    if (not idCours.isdigit() or type(json_datas['idSalle']) != int   ):
+    if (not idCours.isdigit() or type(json_data['idSalle']) != int   ):
         return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idCours ou idSalle", "numérique"))}), 400
     
     conn = connect_pg.connect()
@@ -652,25 +655,25 @@ def attribuerSalle(idCours):
         NombreHeure = datetime.timedelta(hours = int(NombreHeure[:2]),minutes = int(NombreHeure[3:5]), seconds = 00)
         HeureFin = str(HeureDebut + NombreHeure)
 
-        if not verif.salleEstDispo(json_datas['idSalle'], HeureDebut, HeureFin, coursSalle['Jour'], conn):
+        if not verif.salleEstDispo(json_data['idSalle'], HeureDebut, HeureFin, coursSalle['Jour'], conn):
             return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "Cette salle n'est pas disponible durant la nouvelle période de cours spécifié"))}), 400
     
         
     
     returnStatement = {}
-    query = f"Insert into edt.accuellir (idSalle, idCours) values ('{json_datas['idSalle']}', '{idCours}') returning idCours"
+    query = f"Insert into edt.accuellir (idSalle, idCours) values ('{json_data['idSalle']}', '{idCours}') returning idCours"
     conn = connect_pg.connect()
     try:
         returnStatement = connect_pg.execute_commands(conn, query)
     except Exception as e:
         if e.pgcode == "23503":# violation contrainte clée étrangère
             if "salle" in str(e):
-                return jsonify({'error': str(apiException.DonneeIntrouvableException("Salle ", json_datas['idSalle']))}), 400
+                return jsonify({'error': str(apiException.DonneeIntrouvableException("Salle ", json_data['idSalle']))}), 400
             else:
                 return jsonify({'error': str(apiException.DonneeIntrouvableException("Cours ", idCours))}), 400
         
         elif e.pgcode == "23505": # si existe déjà
-            messageId = f"idCours = {idCours} et idSalle = {json_datas['idSalle']}"
+            messageId = f"idCours = {idCours} et idSalle = {json_data['idSalle']}"
             messageColonne = f"idCours et idSalle"
             return jsonify({'error': str(apiException.DonneeExistanteException(messageId, messageColonne, "accuellir"))}), 400
         
@@ -703,21 +706,21 @@ def changer_salle(idCours):
     """
 
     conn = connect_pg.connect()
-    json_datas = request.get_json()
+    json_data = request.get_json()
 
-    if 'idSalle' not in json_datas :
+    if 'idSalle' not in json_data :
         return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
     
-    if (not idCours.isdigit() or type(json_datas['idSalle']) != int   ):
+    if (not idCours.isdigit() or type(json_data['idSalle']) != int   ):
         return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idCours ou idSalle", "numérique"))}), 400
     
     cour = get_cours(idCours)
     if type(cour) != tuple:
         cour = json.loads(cour.data)
-        if not verif.salleEstDispo(json_datas['idSalle'], cour['HeureDebut'] ,cour['HeureFin'] , cour['Jour'], conn):
+        if not verif.salleEstDispo(json_data['idSalle'], cour['HeureDebut'] ,cour['HeureFin'] , cour['Jour'], conn):
             return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "Cette salle n'est pas disponible durant la nouvelle période de cours spécifié"))}), 400
         
-    query = f"update edt.accuellir set idSalle = {json_datas['idSalle']}  where idCours={idCours}"
+    query = f"update edt.accuellir set idSalle = {json_data['idSalle']}  where idCours={idCours}"
     
     
     try:
@@ -725,18 +728,18 @@ def changer_salle(idCours):
     except Exception as e:
         if e.pgcode == "23503":# violation contrainte clée étrangère
             if "salle" in str(e):
-                return jsonify({'error': str(apiException.DonneeIntrouvableException("Salle ", json_datas['idSalle']))}), 400
+                return jsonify({'error': str(apiException.DonneeIntrouvableException("Salle ", json_data['idSalle']))}), 400
             else:
                 return jsonify({'error': str(apiException.DonneeIntrouvableException("Cours ", idCours))}), 400
         elif e.pgcode == "23505": # si existe déjà
-            messageId = f"idCours = {idCours} et idSalle = {json_datas['idSalle']}"
+            messageId = f"idCours = {idCours} et idSalle = {json_data['idSalle']}"
             messageColonne = f"idCours et idSalle"
             return jsonify({'error': str(apiException.DonneeExistanteException(messageId, messageColonne, "accuellir"))}), 400
         
         else:
             # Erreur inconnue
-            return jsonify({'error': str(apiException.ActionImpossibleException("accuellir", "mise à jour"))}), 500
-    
+            return jsonify({'error': str(apiException.ActionImpossibleException("accuellir"))}), 500
+
     connect_pg.disconnect(conn)
     return jsonify(idCours)
 
