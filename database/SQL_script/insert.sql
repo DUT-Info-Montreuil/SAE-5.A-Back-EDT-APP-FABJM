@@ -22,14 +22,14 @@ INSERT INTO Ressource (titre, numero, nbrHeureSemestre, idSemestre) values ('Mat
 
 INSERT INTO Cours (HeureDebut, NombreHeure, Jour, idRessource) values ('20:18:06 ', '02:00:00', '2023-12-06', '1');
 INSERT INTO Cours (HeureDebut, NombreHeure, Jour, idRessource) values ('16:49:49 ', '02:00:00', '2023-10-06', '1');
-INSERT INTO Cours (HeureDebut, NombreHeure, Jour, idRessource)
+INSERT INTO Cours (HeureDebut, NombreHeure, Jour, idRessource, TypeCours)
 VALUES 
-  ('10:00:00', '02:30:00', '2024-01-05', '1'),
-  ('14:30:00', '03:00:00', '2024-01-10', '1'),
-  ('09:15:00', '02:30:00', '2024-01-15', '1'),
-  ('13:45:00', '02:00:00', '2024-01-20', '1'),
-  ('11:30:00', '03:00:00', '2024-01-25', '1'),
-  ('15:00:00', '02:30:00', '2024-01-30', '1');
+  ('10:00:00', '02:30:00', '2024-01-05', '1', 'Td'),
+  ('14:30:00', '03:00:00', '2024-01-10', '1', 'Td'),
+  ('09:15:00', '02:30:00', '2024-01-15', '1', 'Amphi'),
+  ('13:45:00', '02:00:00', '2024-01-20', '1', 'Sae'),
+  ('11:30:00', '03:00:00', '2024-01-25', '1', 'Tp'),
+  ('15:00:00', '02:30:00', '2024-01-30', '1', 'Amphi');
 
 
 

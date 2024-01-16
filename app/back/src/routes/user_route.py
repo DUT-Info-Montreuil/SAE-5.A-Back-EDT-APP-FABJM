@@ -345,13 +345,13 @@ def get_prof_heure_travailler_mois(idProf):
         return jsonify({'erreur': str(apiException.ActionImpossibleException("cours", "récupérer"))}), 500
 
 
-    totalHours = rows[0][0]
+    totalHours = str(rows[0][0])[:-3]
     
     #get workedHours by SAE type
     query = f"""
     SELECT SUM(nombreheure) AS workedHours
     FROM edt.cours inner join edt.enseigner on edt.cours.idCours = edt.enseigner.idCours
-    where idProf = {idProf} and TypeCours = SAE"""
+    where idProf = {idProf} and TypeCours = 'Sae'"""
     
     try:
         rows = connect_pg.get_query(conn, query + timeLimit)
@@ -361,13 +361,14 @@ def get_prof_heure_travailler_mois(idProf):
     except Exception as e:
         return jsonify({'erreur': str(apiException.ActionImpossibleException("cours", "récupérer"))}), 500
     
-    SAEHours = rows[0][0]
+    SAEHours = str(rows[0][0])[:-3]
+    ppnTotalHours = rows[0][0]
     
     #get workedHours by TD/TP type
     query = f"""
     SELECT SUM(nombreheure) AS workedHours
     FROM edt.cours inner join edt.enseigner on edt.cours.idCours = edt.enseigner.idCours
-    where idProf = {idProf} and (TypeCours = TD or TypeCours = TP)"""
+    where idProf = {idProf} and (TypeCours = 'Td' or TypeCours = 'Tp')"""
     
     try:
         rows = connect_pg.get_query(conn, query + timeLimit)
@@ -376,13 +377,14 @@ def get_prof_heure_travailler_mois(idProf):
     except Exception as e:
         return jsonify({'erreur': str(apiException.ActionImpossibleException("cours", "récupérer"))}), 500
     
-    TDTPHours = rows[0][0]
+    TDTPHours = str(rows[0][0])[:-3]
+    ppnTotalHours += rows[0][0]
     
     #get workedHours by AMPHI type
     query = f"""
     SELECT SUM(nombreheure) AS workedHours
     FROM edt.cours inner join edt.enseigner on edt.cours.idCours = edt.enseigner.idCours
-    where idProf = {idProf} and TypeCours = AMPHI"""
+    where idProf = {idProf} and TypeCours = 'Amphi'"""
     
     try:
         rows = connect_pg.get_query(conn, query + timeLimit)
@@ -391,16 +393,18 @@ def get_prof_heure_travailler_mois(idProf):
     except Exception as e:
         return jsonify({'erreur': str(apiException.ActionImpossibleException("cours", "récupérer"))}), 500
     
-    AMPHIHours = rows[0][0]
+    AMPHIHours = str(rows[0][0])[:-3]
+    ppnTotalHours += (rows[0][0] * 1.5)
+    
     
     workedHours = {
         "total": totalHours,
         "SAE": SAEHours,
         "TDTP": TDTPHours,
-        "AMPHI": AMPHIHours
+        "AMPHI": AMPHIHours,
+        "ppnTotal": str(ppnTotalHours)[:-3]
     }
-    
-
+    print(workedHours)
     #getnomber of hours of SAE worked in the current month
     connect_pg.disconnect(conn)
     return jsonify(workedHours)
@@ -544,7 +548,7 @@ def get_logged_user():
         connect_pg.disconnect(conn)
         return jsonify(user)
     
-    role_query = f"SELECT p.idProf, p.Initiale, s.Numero FROM edt.professeur as p JOIN edt.salle as s ON p.idSalle = s.idSalle WHERE p.idUtilisateur = {user_id}"
+    role_query = f"SELECT p.idProf, p.initiale, s.nom FROM edt.professeur as p JOIN edt.salle as s ON p.idSalle = s.idSalle WHERE p.idUtilisateur = {user_id}"
     role_rows = connect_pg.get_query(conn, role_query)
 
     if role_rows:
