@@ -360,21 +360,25 @@ def modifier_cours(idCours):
             HeureDebut = datetime.timedelta(hours = int(cour['HeureDebut'][:2]),minutes = int(cour['HeureDebut'][3:5]), seconds = 00)
             HeureActuelle = str(datetime.datetime.now())
             HeureActuelle = datetime.timedelta(hours = int(HeureActuelle[11:13]),minutes = int(HeureActuelle[14:16]), seconds = 00)
-            
+            newNombreHeure = (datetime.timedelta(hours = int(json_datas['NombreHeure'][:2]),minutes = int(json_datas['NombreHeure'][3:5]), seconds = 00)).total_seconds()
+            oldNombreHeure = (datetime.timedelta(hours = int(cour['NombreHeure'][:2]),minutes = int(cour['NombreHeure'][3:5]), seconds = 00)).total_seconds()
+
             if( jourCours > aujourdhui  or (jourCours == aujourdhui and HeureDebut > HeureActuelle)):
                 if ('NombreHeure' in json_datas and json_datas['NombreHeure'] != cour['NombreHeure']) and ('idRessource' not in json_datas or json_datas['idRessource'] == cour['idRessource']): # Si le nombreHeure a changé mais toujours dans la même ressource
-                    query = f"update edt.ressource set nbrheuresemestre =  ((nbrheuresemestre + '{cour['NombreHeure']}') - '{json_datas['NombreHeure']}' )  where idRessource = {cour['idRessource']}" # pour mettre à jour le nombre d'heures
-                
+                    query = f"update edt.ressource set nbrheuresemestre =  ((nbrheuresemestre + {oldNombreHeure}) - {newNombreHeure} )  where idRessource = {cour['idRessource']}" # pour mettre à jour le nombre d'heures
+                    
+
                 elif ('NombreHeure' not in json_datas or json_datas['NombreHeure'] == cour['NombreHeure']) and ('idRessource' in json_datas and json_datas['idRessource'] != cour['idRessource']): # Si le nombreHeure est inchangé mais que ce n'est plus la même ressource
-                    query = f"update edt.ressource set nbrheuresemestre =  (nbrheuresemestre + '{cour['NombreHeure']}')  where idRessource = {cour['idRessource']}" 
-                    query2 = f"update edt.ressource set nbrheuresemestre =  (nbrheuresemestre - '{cour['NombreHeure']}')  where idRessource = {json_datas['idRessource']}" 
+                    query = f"update edt.ressource set nbrheuresemestre =  (nbrheuresemestre + {oldNombreHeure})  where idRessource = {cour['idRessource']}" 
+                    query2 = f"update edt.ressource set nbrheuresemestre =  (nbrheuresemestre - {oldNombreHeure})  where idRessource = {json_datas['idRessource']}" 
                     connect_pg.execute_commands(conn, query2)
+                    
                 
                 elif ('NombreHeure' in json_datas and json_datas['NombreHeure'] != cour['NombreHeure']) and  ('idRessource' in json_datas and json_datas['idRessource'] != cour['idRessource']): # Si le nombreHeure a changé et que ce n'est plus la même ressource
-                    query = f"update edt.ressource set nbrheuresemestre =  (nbrheuresemestre + '{cour['NombreHeure']}')  where idRessource = {cour['idRessource']}" 
-                    query2 = f"update edt.ressource set nbrheuresemestre =  (nbrheuresemestre - '{json_datas['NombreHeure']}')  where idRessource = {json_datas['idRessource']}" 
+                    query = f"update edt.ressource set nbrheuresemestre =  (nbrheuresemestre + {oldNombreHeure})  where idRessource = {cour['idRessource']}" 
+                    query2 = f"update edt.ressource set nbrheuresemestre =  (nbrheuresemestre - {newNombreHeure})  where idRessource = {json_datas['idRessource']}" 
                     connect_pg.execute_commands(conn, query2)
-
+                    
                 try:
                     connect_pg.execute_commands(conn, query)
                 except psycopg2.IntegrityError as e:
