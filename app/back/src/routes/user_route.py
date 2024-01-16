@@ -20,7 +20,7 @@ user = Blueprint('user', __name__)
 
 # TODO: refactor user
 
-@user.route('/user/getProfDispo', methods=['GET', 'POST'])
+@user.route('/user/getProfDispo', methods=['GET','POST'])
 @jwt_required()
 def get_prof_dispo():
     """Renvoit tous les professeurs disponible sur une période via la route /user/getProfDispo
@@ -49,7 +49,7 @@ def get_prof_dispo():
     if 'HeureDebut' not in json_datas or 'Jour' not in json_datas or 'NombreHeure' not in json_datas :
         return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
 
-    if not verif.estDeTypeTime(json_datas['HeureDebut']) or not verif.estDeTypeTimeStamp(json_datas['Jour']) or not verif.estDeTypeTime(json_datas['NombreHeure']):
+    if not verif.estDeTypeTime(json_datas['HeureDebut']) or not verif.estDeTypeDate(json_datas['Jour']) or not verif.estDeTypeTime(json_datas['NombreHeure']):
         return jsonify({'error': str(apiException.ParamètreInvalideException("HeureDebut, NombreHeure ou Jour"))}), 404
 
     HeureDebut = json_datas['HeureDebut']
