@@ -664,9 +664,10 @@ def supprimer_cours(idCours):
         HeureDebut = datetime.timedelta(hours = int(cour['HeureDebut'][:2]),minutes = int(cour['HeureDebut'][3:5]), seconds = 00)
         HeureActuelle = str(datetime.datetime.now())
         HeureActuelle = datetime.timedelta(hours = int(HeureActuelle[11:13]),minutes = int(HeureActuelle[14:16]), seconds = 00)
+        NombreHeure = (datetime.timedelta(hours = int(cour['NombreHeure'][:2]),minutes = int(cour['NombreHeure'][3:5]), seconds = 00)).total_seconds()
 
         if( jourCours > aujourdhui  or (jourCours == aujourdhui and HeureDebut > HeureActuelle)):
-            query = f"update edt.ressource set nbrheuresemestre =  (nbrheuresemestre + '{cour['NombreHeure']}')  where idRessource = {cour['idRessource']}" # pour mettre à jour le nombre d'heures
+            query = f"update edt.ressource set nbrheuresemestre =  (nbrheuresemestre + {NombreHeure})  where idRessource = {cour['idRessource']}" # pour mettre à jour le nombre d'heures
             try:
                 connect_pg.execute_commands(conn, query)
             except psycopg2.IntegrityError as e:
@@ -677,20 +678,11 @@ def supprimer_cours(idCours):
                     # Erreur inconnue
                     return jsonify({'error': str(apiException.ActionImpossibleException("ressource", "mettre à jour"))}), 500
     
-    query = f"delete from edt.cours where idCours = {idCours}"
-    try:
-        connect_pg.execute_commands(conn, query)
-
-    except psycopg2.IntegrityError as e:
-        if e.pgcode == '23503':
-            # Erreur violation de contrainte clée étrangère de la table Ressources
-            return jsonify({'error': str(apiException.DonneeIntrouvableException("Cours", idCours))}), 400
-        else:
-            # Erreur inconnue
-            return jsonify({'error': str(apiException.ActionImpossibleException("Cours", "supprimer"))}), 500
+    
     query = f"delete  from edt.cours where idCours={idCours}"
     query2 = f"delete  from edt.enseigner where idCours={idCours}"
     query3 = f"delete  from edt.etudier where idCours={idCours}"
+    query3 = f"delete  from edt.accuellir where idCours={idCours}"
     conn = connect_pg.connect()
     try:
         connect_pg.execute_commands(conn, query3)
@@ -698,7 +690,7 @@ def supprimer_cours(idCours):
         connect_pg.execute_commands(conn, query)
     except psycopg2.IntegrityError as e:
         print(e)
-        return jsonify({'error': str(apiException.InsertionImpossibleException("cours","supprimé"))}), 500
+        return jsonify({'error': str(apiException.ActionImpossibleException("cours","supprimé"))}), 500
     connect_pg.disconnect(conn)
     return jsonify(idCours)
     

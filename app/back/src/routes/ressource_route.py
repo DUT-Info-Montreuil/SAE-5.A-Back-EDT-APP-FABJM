@@ -408,7 +408,7 @@ def supprimer_ressource(idRessource):
     try:
         returnStatement = connect_pg.get_query(conn, query)
     except psycopg2.IntegrityError as e:
-        return jsonify({'error': str(apiException.InsertionImpossibleException("cours","récupérer"))}), 500
+        return jsonify({'error': str(apiException.ActionImpossibleException("cours","récupérer"))}), 500
     
     for k in range(len(returnStatement)):
         for i in range(len(returnStatement[k])):
@@ -422,7 +422,7 @@ def supprimer_ressource(idRessource):
         returnStatement = connect_pg.execute_commands(conn, query2)
         returnStatement = connect_pg.execute_commands(conn, query)
     except Exception as e:
-        return jsonify({'error': str(apiException.InsertionImpossibleException("ressource","supprimé"))}), 500
+        return jsonify({'error': str(apiException.ActionImpossibleException("ressource","supprimé"))}), 500
     
     connect_pg.disconnect(conn)
     return jsonify(idRessource)

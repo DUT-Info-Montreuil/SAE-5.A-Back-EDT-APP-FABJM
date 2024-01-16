@@ -140,7 +140,7 @@ def get_prof_etendue():
         for row in rows:
                 returnStatement.append(get_professeur_statement_extended(row))
     except(Exception) as e:
-        return jsonify({'erreur': str(apiException.InsertionImpossibleException("professeur", "récupérer"))}), 500
+        return jsonify({'erreur': str(apiException.ActionImpossibleException("professeur", "récupérer"))}), 500
     
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)

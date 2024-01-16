@@ -138,7 +138,7 @@ def supprimer_semestre(idSemestre):
     :param idSemestre: id du semestre à supprimer
     :type idSemestre: int
 
-    :raises InsertionImpossibleException: Impossible de supprimer le semestre spécifié dans la table semestre
+    :raises ActionImpossibleException: Impossible de supprimer le semestre spécifié dans la table semestre
     
     :return: message de succès
     :rtype: str
@@ -148,7 +148,7 @@ def supprimer_semestre(idSemestre):
     try:
         returnStatement = connect_pg.get_query(conn, query)
     except psycopg2.IntegrityError as e:
-        return jsonify({'error': str(apiException.InsertionImpossibleException("ressource","récupérer"))}), 500
+        return jsonify({'error': str(apiException.ActionImpossibleException("ressource","récupérer"))}), 500
     
     for k in range(len(returnStatement)):
         for i in range(len(returnStatement[k])):
@@ -161,7 +161,7 @@ def supprimer_semestre(idSemestre):
         connect_pg.execute_commands(conn, query2)
         connect_pg.execute_commands(conn, query)
     except psycopg2.IntegrityError as e:
-        return jsonify({'error': str(apiException.InsertionImpossibleException("semestre","supprimé"))}), 500
+        return jsonify({'error': str(apiException.ActionImpossibleException("semestre","supprimé"))}), 500
     
     return jsonify({'success': 'semestre supprimé'}), 200
 
