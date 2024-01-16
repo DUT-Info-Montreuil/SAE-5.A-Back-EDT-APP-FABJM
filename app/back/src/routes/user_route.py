@@ -291,10 +291,11 @@ def get_prof_heure_prevue(idProf):
     return jsonify(result)
 
 
-@user.route('/utilisateurs/getProfHeureTravaillerMois/<idProf>', methods=['GET','POST'])
+@user.route('/utilisateurs/getTeacherHoursInMonth/<idProf>', methods=['GET','POST'])
 @jwt_required()
 def get_prof_heure_travailler_mois(idProf):
-    """Renvoit toutes les heures faites par un prof lors d'un mois via la route /utilisateurs/getProfHeureTravaillerMois/<idProf>
+    
+    """Renvoie le nombre total d'heures travaillées par un professeur pour le mois spécifié, incluant les heures travaillées jusqu'à la date actuelle, via la route /utilisateurs/getTeacherHoursInMonth/<idProf>
 
     :param idProf: id d'un professeur présent dans la base de donnée
     :type idProf: int
@@ -302,20 +303,25 @@ def get_prof_heure_travailler_mois(idProf):
     :param mois: mois à calculer au format YYYY-MM (ex : 2023-12) à spécifié dans le body
     :type mois: str
 
+<<<<<<< HEAD
     :param pasSae: boolean pour savoir si les sae doivent être prise en compte spécifié via le body
     :type pasSae: bool(optionnel)
+=======
+    :param currentDay: jour actuel au format YYYY-MM-DD (ex : 2023-12-31) à spécifié dans le body
+    :type currentDay: str(optionnel)
+>>>>>>> 880fd4002d35f64f00c845bfff0ebbe4107e5362
 
-    :raises PermissionManquanteException: Si pas assez de droit pour effectuer un getAll dans la table professeur
+    :raises PermissionManquanteException: Si pas assez de droit pour effectuer la requête
     :raises AucuneDonneeTrouverException: Une aucune donnée n'a été trouvé dans la table professeur
     
-    :return:  tous les professeurs
-    :rtype: json
+    :return: le nombre d'heures travaillées par le professeur pour le mois spécifié
     """
 
     if (not idProf.isdigit()):
         return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idProf", "numérique"))}), 400
     
     conn = connect_pg.connect()
+<<<<<<< HEAD
     querySae = ""
     try:
         json_datas = request.get_json()
@@ -338,17 +344,100 @@ def get_prof_heure_travailler_mois(idProf):
     and ((TO_CHAR(jour, 'YYYY-MM')) = '{json_datas['mois']}')
     """
     returnStatement = []
+=======
+
+    json_datas = request.get_json()
+    if not json_datas:
+        return jsonify({'error ': 'missing json body'}), 400
+    if 'mois' not in json_datas:
+        return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
+    
+    mois = json_datas['mois']
+    
+    
+    query = f"""
+    SELECT SUM(nombreheure) AS workedHours
+    FROM edt.cours
+    INNER JOIN edt.enseigner ON edt.cours.idCours = edt.enseigner.idCours
+    INNER JOIN edt.ressource ON edt.cours.idRessource = edt.ressource.idRessource
+    WHERE idProf = {idProf}
+    """
+
+    timeLimit = None
+
+    if 'currentDay' in json_datas:
+        timeLimit = f" AND Jour >= '{mois}-01' AND Jour <= '{json_datas['currentDay']}';"
+    else:
+        timeLimit = f" AND Jour >= '{mois}-01' AND Jour <= '{mois}-31';"
+
+>>>>>>> 880fd4002d35f64f00c845bfff0ebbe4107e5362
     try:
-        rows = connect_pg.get_query(conn, query)
-        result = str(rows[0][0])
-        if result == "None":
+        rows = connect_pg.get_query(conn, query + timeLimit)
+        if not rows:
             return jsonify({'erreur': str(apiException.DonneeIntrouvableException("enseigner"))}), 404
-        
-    except(Exception) as e:
+    except Exception as e:
+        return jsonify({'erreur': str(apiException.ActionImpossibleException("cours", "récupérer"))}), 500
+
+
+    totalHours = rows[0][0]
+    
+    #get workedHours by SAE type
+    query = f"""
+    SELECT SUM(nombreheure) AS workedHours
+    FROM edt.cours inner join edt.enseigner on edt.cours.idCours = edt.enseigner.idCours
+    where idProf = {idProf} and TypeCours = SAE"""
+    
+    try:
+        rows = connect_pg.get_query(conn, query + timeLimit)
+        if not rows:
+            return jsonify({'erreur': str(apiException.DonneeIntrouvableException("enseigner"))}), 404
+
+    except Exception as e:
         return jsonify({'erreur': str(apiException.ActionImpossibleException("cours", "récupérer"))}), 500
     
+    SAEHours = rows[0][0]
+    
+    #get workedHours by TD/TP type
+    query = f"""
+    SELECT SUM(nombreheure) AS workedHours
+    FROM edt.cours inner join edt.enseigner on edt.cours.idCours = edt.enseigner.idCours
+    where idProf = {idProf} and (TypeCours = TD or TypeCours = TP)"""
+    
+    try:
+        rows = connect_pg.get_query(conn, query + timeLimit)
+        if not rows:
+            return jsonify({'erreur': str(apiException.DonneeIntrouvableException("enseigner"))}), 404
+    except Exception as e:
+        return jsonify({'erreur': str(apiException.ActionImpossibleException("cours", "récupérer"))}), 500
+    
+    TDTPHours = rows[0][0]
+    
+    #get workedHours by AMPHI type
+    query = f"""
+    SELECT SUM(nombreheure) AS workedHours
+    FROM edt.cours inner join edt.enseigner on edt.cours.idCours = edt.enseigner.idCours
+    where idProf = {idProf} and TypeCours = AMPHI"""
+    
+    try:
+        rows = connect_pg.get_query(conn, query + timeLimit)
+        if not rows:
+            return jsonify({'erreur': str(apiException.DonneeIntrouvableException("enseigner"))}), 404
+    except Exception as e:
+        return jsonify({'erreur': str(apiException.ActionImpossibleException("cours", "récupérer"))}), 500
+    
+    AMPHIHours = rows[0][0]
+    
+    workedHours = {
+        "total": totalHours,
+        "SAE": SAEHours,
+        "TDTP": TDTPHours,
+        "AMPHI": AMPHIHours
+    }
+    
+
+    #getnomber of hours of SAE worked in the current month
     connect_pg.disconnect(conn)
-    return jsonify(result)
+    return jsonify(workedHours)
 
 
 @user.route('/utilisateurs/getProfParInitiale/<initialeProf>', methods=['GET','POST'])
@@ -711,6 +800,7 @@ def update_utilisateur_password():
     except:
         return jsonify({'error': str(apiException.ActionImpossibleException("utilisateur"))}), 500
     connect_pg.disconnect(conn)
+<<<<<<< HEAD
     return jsonify({'success': 'mot de passe modifié'}), 200
 
 
@@ -753,6 +843,9 @@ def changer_groupe_manager(idManager):
     
     
         
+=======
+     
+>>>>>>> 880fd4002d35f64f00c845bfff0ebbe4107e5362
     
 @user.route('/utilisateurs/update/<id>', methods=['PUT','GET'])
 @jwt_required()
@@ -1005,12 +1098,3 @@ def getPermission():
     user_id = get_jwt_identity()
     conn = connect_pg.connect()
     return jsonify(perm.getUserPermission(user_id , conn))
-
-
-
-
-
-
-    
-
-
