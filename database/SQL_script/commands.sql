@@ -1,23 +1,6 @@
 -- Drop tables if they exist
-DROP TABLE IF EXISTS Accuellir cascade;
-DROP TABLE IF EXISTS Enseigner cascade;
-DROP TABLE IF EXISTS Equiper cascade;
-DROP TABLE IF EXISTS Etudier cascade;
-DROP TABLE IF EXISTS Responsable cascade;
-DROP TABLE IF EXISTS Cours cascade;
-DROP TABLE IF EXISTS Eleve cascade;
-DROP TABLE IF EXISTS Professeur cascade;
-DROP TABLE IF EXISTS Admin cascade;
-DROP TABLE IF EXISTS Token cascade;
-DROP TABLE IF EXISTS Action cascade;
-DROP TABLE IF EXISTS Manager cascade;
-DROP TABLE IF EXISTS Utilisateur cascade;
-DROP TABLE IF EXISTS Ressource cascade;
-DROP TABLE IF EXISTS Semestre cascade;
-DROP TABLE IF EXISTS Equipement cascade;
-DROP TABLE IF EXISTS Salle cascade;
-DROP TABLE IF EXISTS Groupe cascade;
-DROP SCHEMA IF EXISTS EDT;
+
+DROP SCHEMA IF EXISTS EDT cascade;
 
 CREATE SCHEMA EDT;
 SET SEARCH_PATH TO EDT;
@@ -25,91 +8,72 @@ SET SEARCH_PATH TO EDT;
 -- Create tables
 CREATE TABLE Groupe(
    idGroupe SERIAL,
-   Nom VARCHAR(50) ,
-   AnneeScolaire INTEGER,
-   Annee VARCHAR(50),
-   idGroupe_parent INTEGER,
+   nom VARCHAR(50) not null,
+   idGroupeParent INTEGER,
    PRIMARY KEY(idGroupe),
-   FOREIGN KEY(idGroupe_parent) REFERENCES Groupe(idGroupe) ON DELETE CASCADE
+   FOREIGN KEY(idGroupeParent) REFERENCES Groupe(idGroupe) ON DELETE CASCADE
 );
 
 CREATE TABLE Salle(
    idSalle SERIAL,
-   Numero VARCHAR(50) ,
-   Capacite INTEGER,
+   nom VARCHAR(50) not null ,
+   capacite INTEGER,
    PRIMARY KEY(idSalle),
-   UNIQUE(Numero)
+   UNIQUE(nom)
 );
 
 CREATE TABLE Equipement(
    idEquipement SERIAL,
-   Nom VARCHAR(50) ,
+   nom VARCHAR(50) not null ,
+   Unique(nom),
    PRIMARY KEY(idEquipement)
 );
 
 CREATE TABLE Semestre(
    idSemestre SERIAL,
-   Numero INTEGER,
+   numero INTEGER ,
    PRIMARY KEY(idSemestre)
 );
 
 CREATE TABLE Ressource(
    idRessource SERIAL,
-   Titre VARCHAR(50) ,
-   Numero VARCHAR(50) ,
-   NbrHeureSemestre TIME,
-   CodeCouleur VARCHAR(50) ,
+   titre VARCHAR(50) not null ,
+   numero VARCHAR(50) not null ,
+   nbrHeureSemestre TIME ,
+   codeCouleur VARCHAR(50) ,
    idSemestre INTEGER NOT NULL,
    PRIMARY KEY(idRessource),
-   UNIQUE(Numero),
+   UNIQUE(numero),
    FOREIGN KEY(idSemestre) REFERENCES Semestre(idSemestre)
 );
 
 CREATE TABLE Utilisateur(
    idUtilisateur SERIAL,
-   FirstName VARCHAR(50) ,
-   LastName VARCHAR(50) ,
-   Username VARCHAR(50) ,
-   PassWord VARCHAR(50) ,
-   FirstLogin BOOLEAN DEFAULT true,
+   firstName VARCHAR(50) not null ,
+   lastName VARCHAR(50) not null,
+   username VARCHAR(50) not null ,
+   password VARCHAR(50) not null,
+   firstLogin BOOLEAN DEFAULT true,
    PRIMARY KEY(idUtilisateur),
-   UNIQUE(Username)
-);
-
-CREATE TABLE Action(
-   idAction SERIAL,
-   ActionName VARCHAR(50) ,
-   TimeAction TIMESTAMP,
-   idUtilisateur INTEGER NOT NULL,
-   PRIMARY KEY(idAction),
-   FOREIGN KEY(idUtilisateur) REFERENCES Utilisateur(idUtilisateur)
-);
-
-CREATE TABLE Token(
-   idToken SERIAL,
-   CodeToken VARCHAR(50) ,
-   TimeCreation TIME,
-   idUtilisateur INTEGER NOT NULL,
-   PRIMARY KEY(idToken),
-   FOREIGN KEY(idUtilisateur) REFERENCES Utilisateur(idUtilisateur)
+   UNIQUE(username)
 );
 
 CREATE TABLE Admin(
-   IDAdmin SERIAL,
+   idAdmin SERIAL,
    idUtilisateur INTEGER NOT NULL,
-   PRIMARY KEY(IDAdmin),
+   PRIMARY KEY(idAdmin),
    UNIQUE(idUtilisateur),
    FOREIGN KEY(idUtilisateur) REFERENCES Utilisateur(idUtilisateur)
 );
 
 CREATE TABLE Professeur(
    idProf SERIAL,
-   Initiale VARCHAR(50) ,
+   initiale VARCHAR(50) ,
    idSalle INTEGER NOT NULL,
    idUtilisateur INTEGER NOT NULL,
    PRIMARY KEY(idProf),
    UNIQUE(idUtilisateur),
-   UNIQUE(Initiale),
+   UNIQUE(initiale),
    FOREIGN KEY(idSalle) REFERENCES Salle(idSalle),
    FOREIGN KEY(idUtilisateur) REFERENCES Utilisateur(idUtilisateur)
 );
@@ -124,21 +88,30 @@ CREATE TABLE Eleve(
    FOREIGN KEY(idUtilisateur) REFERENCES Utilisateur(idUtilisateur)
 );
 
+Create type TypeCours as ENUM ('Amphi', 'Td', 'Tp', 'Sae');
+
 CREATE TABLE Cours(
    idCours SERIAL,
-   HeureDebut TIME,
-   NombreHeure TIME,
-   Jour DATE,
+   heureDebut TIME ,
+   nombreHeure TIME,
+   jour DATE,
    idRessource INTEGER NOT NULL,
+   typeCours TypeCours,
    PRIMARY KEY(idCours),
    FOREIGN KEY(idRessource) REFERENCES Ressource(idRessource)
 );
 
+
+
+
 CREATE TABLE Manager(
    idManager SERIAL,
    idProf INTEGER NOT NULL,
+   idGroupe INTEGER NOT NULL,
    PRIMARY KEY(idManager),
    UNIQUE(idProf),
+   UNIQUE(idGroupe),
+   FOREIGN KEY(idProf) REFERENCES Professeur(idProf),
    FOREIGN KEY(idProf) REFERENCES Professeur(idProf)
 );
 

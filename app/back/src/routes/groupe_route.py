@@ -414,8 +414,12 @@ def delete_groupe(idGroupe):
     :rtype: json
     """
     conn = connect_pg.connect()
-    query = f"DELETE from edt.groupe WHERE idgroupe={idGroupe} RETURNING *"
+    query = f"DELETE from edt.groupe WHERE idgroupe={idGroupe}"
+    query2 = f"DELETE from edt.etudier WHERE idgroupe={idGroupe}"
+    query3 = f"DELETE from edt.eleve WHERE idgroupe={idGroupe}"
     try:
+        returnStatement = connect_pg.execute_commands(conn, query3)
+        returnStatement = connect_pg.execute_commands(conn, query2)
         returnStatement = connect_pg.execute_commands(conn, query)
     except(TypeError) as e:
         return jsonify({'error': str(apiException.DonneeIntrouvableException("groupe", idGroupe))}), 404

@@ -177,9 +177,12 @@ def delete_salle(idSalle):
     :rtype: str
     """
     query = f"delete from edt.salle where idSalle={idSalle}"
+    query2 = f"delete from edt.accuellir where idSalle={idSalle}"
     conn = connect_pg.connect()
     try:
+        returnStatement = connect_pg.execute_commands(conn, query2)
         returnStatement = connect_pg.execute_commands(conn, query)
+        
     except psycopg2.IntegrityError as e:
         return jsonify({'error': str(apiException.ActionImpossibleException("salle","supprimé"))}), 500
     
