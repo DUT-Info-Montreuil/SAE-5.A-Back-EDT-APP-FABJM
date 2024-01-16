@@ -178,7 +178,7 @@ def getRessourceEleve(idUtilisateur , conn):
     
     return result
 
-@ressource.route('/ressource/getAll')
+@ressource.route('/ressource/getAll', methods=['GET', 'POST'])
 @jwt_required()
 def getAll_ressource():
     """Renvoit toutes les ressources via la route /ressource/getAll
