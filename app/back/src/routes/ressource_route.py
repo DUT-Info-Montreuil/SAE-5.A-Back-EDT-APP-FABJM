@@ -7,6 +7,7 @@ import src.apiException as apiException
 
 from src.config import config
 from src.services.ressource_service import get_ressource_statement
+from src.routes.cours_route import supprimer_cours
 import src.services.permision as perm
 
 import psycopg2
@@ -380,3 +381,48 @@ def UpdateRessource(id) :
         return jsonify({'error': e}), 500
     
     return jsonify({'success': 'ressource updated'}), 200 
+
+
+@ressource.route('/ressource/supprimer/<idRessource>', methods=['DELETE'])
+@jwt_required()
+def supprimer_ressource(idRessource):
+    """Permet de supprimer une ressource via la route /ressource/supprimer/<idRessource>
+    
+    :param idRessource: id du cours à supprimer
+    :type idRessource: int
+
+    :raises ParamètreTypeInvalideException: Le type de idRessource est invalide, une valeur numérique est attendue
+
+    :return: id du cours supprimer si présent
+    :rtype: json
+    """
+    
+
+    if (not idRessource.isdigit()):
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idCours", "numérique"))}), 400
+    
+    conn = connect_pg.connect()
+
+    query = f"select idCours from edt.cours where idRessource={idRessource}"
+
+    try:
+        returnStatement = connect_pg.get_query(conn, query)
+    except psycopg2.IntegrityError as e:
+        return jsonify({'error': str(apiException.InsertionImpossibleException("cours","récupérer"))}), 500
+    
+    for k in range(len(returnStatement)):
+        for i in range(len(returnStatement[k])):
+            supprimer_cours(str(returnStatement[k][i]))
+
+    
+    query = f"delete  from edt.ressource where idRessource={idRessource}"
+    query2 = f"delete  from edt.responsable where idRessource={idRessource}"
+    
+    try:
+        returnStatement = connect_pg.execute_commands(conn, query2)
+        returnStatement = connect_pg.execute_commands(conn, query)
+    except Exception as e:
+        return jsonify({'error': str(apiException.InsertionImpossibleException("ressource","supprimé"))}), 500
+    
+    connect_pg.disconnect(conn)
+    return jsonify(idRessource)

@@ -215,7 +215,7 @@ def get_prof_heure_travailler(idProf):
 
     query = f"""select sum(nombreheure) as nombreheureTravailler from edt.cours inner join edt.enseigner 
     using(idCours)  where idProf = {idProf} and ((jour < '{dateAujourdhui}') or (jour = '{dateAujourdhui}' 
-    and (HeureDebut + NombreHeure::interval) < '{heureActuelle}'::time)){querySae};
+    and (HeureDebut + NombreHeure::interval) < '{heureActuelle}'::time)){querySae}
     """
     
     returnStatement = []
@@ -323,29 +323,91 @@ def get_prof_heure_travailler_mois(idProf):
     
     
     query = f"""
-        select nombreheure, titre from edt.cours inner join edt.enseigner on edt.cours.idCours = edt.enseigner.idCours inner join edt.ressource  on edt.cours.idRessource = edt.ressource.idRessource where idProf = {idProf}"""
-    
-    timeLimit = None;
+    SELECT SUM(nombreheure) AS workedHours
+    FROM edt.cours
+    INNER JOIN edt.enseigner ON edt.cours.idCours = edt.enseigner.idCours
+    INNER JOIN edt.ressource ON edt.cours.idRessource = edt.ressource.idRessource
+    WHERE idProf = {idProf}
+    """
+
+    timeLimit = None
 
     if 'currentDay' in json_datas:
-        timeLimit = f" and Jour >= '{mois}-01' and Jour <= '{json_datas['currentDay']}';"
+        timeLimit = f" AND Jour >= '{mois}-01' AND Jour <= '{json_datas['currentDay']}';"
     else:
-        timeLimit = f" and Jour >= '{mois}-01' and Jour <= '{mois}-31';"
+        timeLimit = f" AND Jour >= '{mois}-01' AND Jour <= '{mois}-31';"
 
     try:
         rows = connect_pg.get_query(conn, query + timeLimit)
-        if rows == []:
+        if not rows:
             return jsonify({'erreur': str(apiException.DonneeIntrouvableException("enseigner"))}), 404
-    except(Exception) as e:
+    except Exception as e:
+        return jsonify({'erreur': str(apiException.ActionImpossibleException("cours", "récupérer"))}), 500
+
+
+    totalHours = str(rows[0][0])[:-3]
+    
+    #get workedHours by SAE type
+    query = f"""
+    SELECT SUM(nombreheure) AS workedHours
+    FROM edt.cours inner join edt.enseigner on edt.cours.idCours = edt.enseigner.idCours
+    where idProf = {idProf} and TypeCours = 'Sae'"""
+    
+    try:
+        rows = connect_pg.get_query(conn, query + timeLimit)
+        if not rows:
+            return jsonify({'erreur': str(apiException.DonneeIntrouvableException("enseigner"))}), 404
+
+    except Exception as e:
         return jsonify({'erreur': str(apiException.ActionImpossibleException("cours", "récupérer"))}), 500
     
+    SAEHours = str(rows[0][0])[:-3]
+    ppnTotalHours = rows[0][0]
+    
+    #get workedHours by TD/TP type
+    query = f"""
+    SELECT SUM(nombreheure) AS workedHours
+    FROM edt.cours inner join edt.enseigner on edt.cours.idCours = edt.enseigner.idCours
+    where idProf = {idProf} and (TypeCours = 'Td' or TypeCours = 'Tp')"""
+    
+    try:
+        rows = connect_pg.get_query(conn, query + timeLimit)
+        if not rows:
+            return jsonify({'erreur': str(apiException.DonneeIntrouvableException("enseigner"))}), 404
+    except Exception as e:
+        return jsonify({'erreur': str(apiException.ActionImpossibleException("cours", "récupérer"))}), 500
+    
+    TDTPHours = str(rows[0][0])[:-3]
+    ppnTotalHours += rows[0][0]
+    
+    #get workedHours by AMPHI type
+    query = f"""
+    SELECT SUM(nombreheure) AS workedHours
+    FROM edt.cours inner join edt.enseigner on edt.cours.idCours = edt.enseigner.idCours
+    where idProf = {idProf} and TypeCours = 'Amphi'"""
+    
+    try:
+        rows = connect_pg.get_query(conn, query + timeLimit)
+        if not rows:
+            return jsonify({'erreur': str(apiException.DonneeIntrouvableException("enseigner"))}), 404
+    except Exception as e:
+        return jsonify({'erreur': str(apiException.ActionImpossibleException("cours", "récupérer"))}), 500
+    
+    AMPHIHours = str(rows[0][0])[:-3]
+    ppnTotalHours += (rows[0][0] * 1.5)
+    
+    
+    workedHours = {
+        "total": totalHours,
+        "SAE": SAEHours,
+        "TDTP": TDTPHours,
+        "AMPHI": AMPHIHours,
+        "ppnTotal": str(ppnTotalHours)[:-3]
+    }
+    print(workedHours)
     #getnomber of hours of SAE worked in the current month
     connect_pg.disconnect(conn)
-    return jsonify(rows)
-
-    
-    
-    
+    return jsonify(workedHours)
 
 
 @user.route('/utilisateurs/getProfParInitiale/<initialeProf>', methods=['GET','POST'])
@@ -486,7 +548,7 @@ def get_logged_user():
         connect_pg.disconnect(conn)
         return jsonify(user)
     
-    role_query = f"SELECT p.idProf, p.Initiale, s.Numero FROM edt.professeur as p JOIN edt.salle as s ON p.idSalle = s.idSalle WHERE p.idUtilisateur = {user_id}"
+    role_query = f"SELECT p.idProf, p.initiale, s.nom FROM edt.professeur as p JOIN edt.salle as s ON p.idSalle = s.idSalle WHERE p.idUtilisateur = {user_id}"
     role_rows = connect_pg.get_query(conn, role_query)
 
     if role_rows:
@@ -772,7 +834,7 @@ def update_utilisateur(id):
     return jsonify({'success': 'utilisateur modifié'}), 200
 
 
-@user.route('/utilisateurs/delete/<id>', methods=['GET','POST'])
+@user.route('/utilisateurs/delete/<id>', methods=['DELETE'])
 @jwt_required()
 def delete_utilisateur(id):
     """Permet de supprimer un utilisateur via la route /utilisateurs/delete
@@ -787,18 +849,49 @@ def delete_utilisateur(id):
 
     #check if the user is admin
     conn = connect_pg.connect()
+    """
     if not perm.permissionCheck(get_jwt_identity() , 0 , conn):
         return jsonify({'error': 'not enough permission'}), 403
+    """
     
     json_datas = request.get_json()
+    tabQuery = []
     query = f"delete from edt.utilisateur where idutilisateur={id}"
+    tabQuery.append(query)
     conn = connect_pg.connect()
+
+    permission = perm.getUserPermission(id, conn)
+    
+    if(permission[0] == 0):
+        query2 = f"delete from edt.admin where idutilisateur={id}"
+        tabQuery.append(query2)
+
+    elif(permission[0] == 1):
+        query2 = f"delete from edt.professeur where idutilisateur={id}"
+        query3 = f"delete from edt.manager where idProf={permission[1][0][1]}"
+        tabQuery.append(query2)
+        tabQuery.append(query3)
+
+    elif(permission[0] == 2):
+        query2 = f"delete from edt.professeur where idutilisateur={id}" 
+        query3 = f"delete from edt.enseigner where idProf={permission[1][0][0]}"
+        query4 = f"delete from edt.responsable where idProf={permission[1][0][0]}"
+        tabQuery.append(query2)
+        tabQuery.append(query3)
+        tabQuery.append(query4)
+    
+    elif(permission[0] == 3):
+        query2 = f"delete from edt.eleve where idutilisateur={id}"
+        tabQuery.append(query2)
+
     try:
-        returnStatement = connect_pg.execute_commands(conn, query)
+        for k in range(len(tabQuery) - 1, -1 , -1): # fonctionnement en pile
+            connect_pg.execute_commands(conn, tabQuery[k])
+
     except psycopg2.IntegrityError as e:
         
        
-        return jsonify({'error': str(apiException.ActionImpossibleException("utilisateur"))}), 500
+        return jsonify({'error': str(apiException.ActionImpossibleException("utilisateur","supprimer"))}), 500
     
     return jsonify({'success': 'utilisateur supprimé'}), 200
 
