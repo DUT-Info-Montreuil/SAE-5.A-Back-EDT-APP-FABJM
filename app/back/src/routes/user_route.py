@@ -303,13 +303,8 @@ def get_prof_heure_travailler_mois(idProf):
     :param mois: mois à calculer au format YYYY-MM (ex : 2023-12) à spécifié dans le body
     :type mois: str
 
-<<<<<<< HEAD
-    :param pasSae: boolean pour savoir si les sae doivent être prise en compte spécifié via le body
-    :type pasSae: bool(optionnel)
-=======
     :param currentDay: jour actuel au format YYYY-MM-DD (ex : 2023-12-31) à spécifié dans le body
     :type currentDay: str(optionnel)
->>>>>>> 880fd4002d35f64f00c845bfff0ebbe4107e5362
 
     :raises PermissionManquanteException: Si pas assez de droit pour effectuer la requête
     :raises AucuneDonneeTrouverException: Une aucune donnée n'a été trouvé dans la table professeur
@@ -321,30 +316,6 @@ def get_prof_heure_travailler_mois(idProf):
         return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idProf", "numérique"))}), 400
     
     conn = connect_pg.connect()
-<<<<<<< HEAD
-    querySae = ""
-    try:
-        json_datas = request.get_json()
-        if 'pasSae' in json_datas:
-            if type(json_datas['pasSae']) == bool:
-                if json_datas['pasSae'] :
-                    querySae += f" and (TypeCours != 'Sae') "
-            else:
-                return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idProf", "bool"))}), 400
-
-    except(Exception) as e: # Si aucune pasSae n'es fournie
-        pass
-
-    dateAujourdhui = str(datetime.date.today())
-    heureActuelle = str(datetime.datetime.now())
-
-    query = f"""select sum(nombreheure) as nombreheureTravailler from edt.cours inner join edt.enseigner 
-    using(idCours)  where idProf = {idProf} and ((jour < '{dateAujourdhui}') or (jour = '{dateAujourdhui}' 
-    and (HeureDebut + NombreHeure::interval) < '{heureActuelle}'::time)){querySae} 
-    and ((TO_CHAR(jour, 'YYYY-MM')) = '{json_datas['mois']}')
-    """
-    returnStatement = []
-=======
 
     json_datas = request.get_json()
     if not json_datas:
@@ -370,7 +341,6 @@ def get_prof_heure_travailler_mois(idProf):
     else:
         timeLimit = f" AND Jour >= '{mois}-01' AND Jour <= '{mois}-31';"
 
->>>>>>> 880fd4002d35f64f00c845bfff0ebbe4107e5362
     try:
         rows = connect_pg.get_query(conn, query + timeLimit)
         if not rows:
@@ -800,7 +770,6 @@ def update_utilisateur_password():
     except:
         return jsonify({'error': str(apiException.ActionImpossibleException("utilisateur"))}), 500
     connect_pg.disconnect(conn)
-<<<<<<< HEAD
     return jsonify({'success': 'mot de passe modifié'}), 200
 
 
@@ -843,9 +812,6 @@ def changer_groupe_manager(idManager):
     
     
         
-=======
-     
->>>>>>> 880fd4002d35f64f00c845bfff0ebbe4107e5362
     
 @user.route('/utilisateurs/update/<id>', methods=['PUT','GET'])
 @jwt_required()

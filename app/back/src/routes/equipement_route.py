@@ -22,7 +22,9 @@ equipement = Blueprint('equipement', __name__)
 def get_all_equipement():
     """Renvoit tous les equipements via la route /equipement/getAll
 
-    :raises PermissionManquanteException: L'utilisatuer n'a pas les droits pour avoir accés à cette route
+    :raises PermissionManquanteException: L'utilisateur n'a pas les droits pour avoir accés à cette route
+    :raises AucuneDonneeTrouverException: Si aucune données remplisssant les critères n'a été trouvé 
+    :raises ActionImpossibleException: Si une erreur inconnue est survenue lors de la récupération des données dans la table équipements
     
     :return:  tous les equipements
     :rtype: json
@@ -35,13 +37,16 @@ def get_all_equipement():
 
     query = f"SELECT * from edt.equipement"
 
-    equipements = connect_pg.get_query(conn, query)
+    
     returnStatement = []
     try:
+        equipements = connect_pg.get_query(conn, query)
+        if equipements == []:
+            return jsonify({'error': str(apiException.AucuneDonneeTrouverException("equipement"))}), 404
         for row in equipements:
             returnStatement.append(get_equipement_statement(row))
-    except(TypeError) as e:
-        return jsonify({'error': str(apiException.AucuneDonneeTrouverException("equipement"))}), 404
+    except Exception as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("equipement", "récupérer"))}), 500
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 
@@ -55,6 +60,7 @@ def get_equipement(filtre):
     
     :raises AucuneDonneeTrouverException: Aucune donnée n'a pas être trouvé correspont aux critère
     :raises PermissionManquanteException: L'utilisatuer n'a pas les droits pour avoir accés à cette route
+    :raises ActionImpossibleException: Si une erreur inconnue est survenue lors de la récupération des données dans la table équipements
     
     :return: Les équipements filtrés
     :rtype: json
@@ -71,13 +77,16 @@ def get_equipement(filtre):
     else:
         query = f"SELECT * from edt.equipement where Nom LIKE '%{filtre}%'"
 
-    equipements = connect_pg.get_query(conn, query)
+    
     returnStatement = []
     try:
+        equipements = connect_pg.get_query(conn, query)
+        if equipements == []:
+            return jsonify({'error': str(apiException.AucuneDonneeTrouverException("equipement"))}), 404
         for row in equipements:
             returnStatement.append(get_equipement_statement(row))
-    except(TypeError) as e:
-        return jsonify({'error': str(apiException.AucuneDonneeTrouverException("equipement"))}), 404
+    except Exception as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("equipement", "récupérer"))}), 500
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 
@@ -109,7 +118,10 @@ def add_equipement():
     query += ",".join(value_query) + " returning idEquipement"
 
     # TODO: find why only one id is return when multiple one are inserted
-    returnStatement = connect_pg.execute_commands(conn, query)
+    try:
+        returnStatement = connect_pg.execute_commands(conn, query)
+    except Exception as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("equipement", "récupérer"))}), 500
 
     connect_pg.disconnect(conn)
     return jsonify({"success": f"The equipements with the ids {returnStatement} were successfully created"}), 200    #{', '.join(tabIdEquipement)}
