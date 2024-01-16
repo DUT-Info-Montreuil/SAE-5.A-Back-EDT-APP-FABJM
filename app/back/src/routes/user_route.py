@@ -28,7 +28,7 @@ def get_prof_dispo():
     :param HeureDebut: date du début de la période au format time(hh:mm:ss) spécifié dans le body
     :type HeureDebut: str 
 
-    :param NombreHeure: durée de la période spécifié dans le body
+    :param NombreHeure: durée de la périodeau format TIME(hh:mm:ss) à spécifié dans le body
     :type NombreHeure: int
 
     :param Jour: date de la journée où la disponibilité des professeurs doit être vérifer au format DATE(yyyy-mm-dd)

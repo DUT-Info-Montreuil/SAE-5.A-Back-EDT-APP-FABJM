@@ -704,8 +704,20 @@ def supprimer_cours(idCours):
 def add_cours():
     """Permet d'ajouter un cours via la route /cours/add
     
-    :param cours: donnée représentant un cours spécifié dans le body
-    :type cours: json
+    :param HeureDebut: date du début du cours spécifié au format TIME(hh:mm:ss) dans le body
+    :type HeureDebut: str
+
+    :param NombreHeure: durée du cours spécifié au format TIME(hh:mm:ss) dans le body
+    :type NombreHeure: str
+
+    :param Jour: date du cours au format DATE(yyyy-mm-dd) spécifié dans le body
+    :type Jour: str
+
+    :param idRessource: l'id d'une ressource présente dans la base de donnée spécifié dans le body
+    :type idRessource: int
+
+    :param typeCours: type du cours prenant une des  valeurs suivantes ['Amphi', 'Td', 'Tp', 'Sae'] spécifié dans le body
+    :type typeCours: str
     
     :raises ActionImpossibleException: Impossible d'ajouter le cours spécifié dans la table cours
     :raises DonneeIntrouvableException: La valeur de la clée étrangère idRessource n'a pas pu être trouvé
@@ -713,16 +725,18 @@ def add_cours():
     :raises ParamètreInvalideException: Si ou plusieurs paramètres sont incohérent ou invalide
     
     
-    :return: le cours qui vient d'être créé
-    :rtype: json
+    :return: l'id du cours qui vient d'être créé
+    :rtype: int
     """
     json_datas = request.get_json()
-    if 'HeureDebut' not in json_datas or 'NombreHeure' not in json_datas or 'Jour' not in json_datas or 'idRessource' not in json_datas:
+    if 'HeureDebut' not in json_datas or 'NombreHeure' not in json_datas or 'Jour' not in json_datas or 'idRessource' not in json_datas or 'typeCours' not in json_datas:
         return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
     
-    if not verif.estDeTypeTime(json_datas['HeureDebut']) or not verif.estDeTypeDate(json_datas['Jour']) or not verif.estDeTypeTime(json_datas['NombreHeure']) or type(json_datas['NombreHeure']) == int:
+    if not verif.estDeTypeTime(json_datas['HeureDebut']) or not verif.estDeTypeDate(json_datas['Jour']) or not verif.estDeTypeTime(json_datas['NombreHeure']) or type(json_datas['idRessource']) != int:
         return jsonify({'error': str(apiException.ParamètreInvalideException("HeureDebut, NombreHeure, idRessource ou Jour"))}), 404
 
+    if type(json_datas['typeCours']) != str or json_datas['typeCours'] not in ['Amphi', 'Td', 'Tp', 'Sae']:
+        return jsonify({'error': str(apiException.ParamètreInvalideException("typeCours"))}), 404
 
     HeureDebut = json_datas['HeureDebut']
     NombreHeure = json_datas['NombreHeure']

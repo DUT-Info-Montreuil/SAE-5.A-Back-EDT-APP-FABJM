@@ -233,10 +233,10 @@ def enlever_Cours(idCours):
 def get_groupe_dispo():
     """Renvoit tous les groupes disponible sur une période via la route /groupe/getGroupeDispo
 
-    :param HeureDebut: date du début de la période au format time(hh:mm:ss) spécifié dans le body
+    :param HeureDebut: date du début de la période au format time(hh:mm:ss) à spécifié dans le body
     :type HeureDebut: str 
 
-    :param NombreHeure: durée de la période spécifié dans le body
+    :param NombreHeure: durée de la période au format TIME(hh:mm:ss) à spécifié dans le body
     :type NombreHeure: int
 
     :param Jour: date de la journée où la disponibilité des groupes doit être vérifer au format DATE(yyyy-mm-dd)
