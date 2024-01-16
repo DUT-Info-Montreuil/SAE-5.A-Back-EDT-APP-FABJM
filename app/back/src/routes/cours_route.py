@@ -194,25 +194,54 @@ def get_cours_groupe(idGroupe):
     return jsonify(returnStatement)
 
 @cours.route('/cours/getCoursGroupeExtended/<idGroupe>', methods=['GET','POST'])
-#@jwt_required()
+@jwt_required()
 def get_cours_groupe_extended(idGroupe):
     """Renvoit les cours d'un groupe via la route /cours/getSalle/<idCours>
     
     :param idGroupe: id du groupe à rechercher
     :type idGroupe: int
-    
+
+    :param intervalleDebut: date de debut de l'intervalle au format DATE(yyyy-mm-dd)
+    :type intervalleDebut: str
+
+    :param intervalleFin: date de fin de l'intervalle au format DATE(yyyy-mm-dd)
+    :type intervalleFin: str
+
     :raises DonneeIntrouvableException: Aucune donnée n'a pas être trouvé correspondant aux critères
     :raises ActionImpossibleException: Si une erreur inconnue survient durant la récupération des données
+    :raises ParamètreBodyManquantException: Si un paramètre est manquant
+    :raises ParamètreTypeInvalideException: Si un paramètre n'est pas au format DATE(yyyy-mm-dd)
     
     :return: l'id de la salle dans lequel se déroule cours
     :rtype: json
     """
+    json_datas = request.get_json()
     returnStatement = []
     conn = connect_pg.connect()
+    
+    if (not idGroupe.isdigit()):
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idCours", "numérique"))}), 400
+    
+    if 'intervalleDebut' not in json_datas  or 'intervalleFin' not in json_datas :
+        return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
+    
+    if not verif.estDeTypeDate(json_datas['intervalleDebut']) or not verif.estDeTypeDate(json_datas['intervalleFin']):
+        return jsonify({'error': str(apiException.ParamètreInvalideException("intervalleDebut, intervalleFin"))}), 404
+    
+    intervalleDebut = json_datas['intervalleDebut']
+    intervalleFin = json_datas['intervalleFin']
+    intervalleDebut = date(int(intervalleDebut[:4]), int(intervalleDebut[5:7]), int(intervalleDebut[8:10]))
+    intervalleFin = date(int(intervalleFin[:4]), int(intervalleFin[5:7]), int(intervalleFin[8:10]))
+
+    
+    if intervalleDebut > intervalleFin:
+        return jsonify({'error': str(apiException.ParamètreInvalideException("HeureDebut, NombreHeure"))}), 404
+
     query = f"""Select s1.idSalle, s1.nom as nomSalle, s1.capacite, edt.cours.*,edt.ressource.*, g1.idGroupe, g1.nom as nomGroupe, g1.idGroupeParent ,
-    e1.idProf, e1.initiale, e1.idSalle, e1.idUtilisateur from edt.cours inner join edt.accuellir using (idCours) inner join edt.salle as s1 using(idSalle) 
-    inner join edt.ressource using(idRessource) inner join edt.enseigner using(idCours) inner join edt.etudier using(idCours) 
-    inner join edt.groupe as g1 using(idGroupe) inner join edt.professeur as e1 using(idProf) where idGroupe = 1
+    e1.idProf, e1.initiale, e1.idSalle, e1.idUtilisateur from edt.cours full join edt.accuellir using (idCours) full join edt.salle as s1 using(idSalle) 
+    full join edt.ressource using(idRessource) full join edt.enseigner using(idCours) full join edt.etudier as e2 using(idCours) 
+    full join edt.groupe as g1 using(idGroupe) full join edt.professeur as e1 using(idProf) where e2.idGroupe = {idGroupe} 
+    and ( jour >= '{json_datas["intervalleDebut"]}' and  jour <= '{json_datas["intervalleFin"]}')
     """
 
     try:
