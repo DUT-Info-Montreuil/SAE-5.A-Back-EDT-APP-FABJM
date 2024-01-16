@@ -74,7 +74,7 @@ def getAll_cours_prof():
         for row in rows:
             returnStatement.append(get_cours_statement(row))
     except(Exception) as e:
-        return jsonify({'error': str(apiException.ActionImpossibleException("cours", "récuperer"))}), 404
+        return jsonify({'error': str(apiException.ActionImpossibleException("cours", "récuperer"))}), 500
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 

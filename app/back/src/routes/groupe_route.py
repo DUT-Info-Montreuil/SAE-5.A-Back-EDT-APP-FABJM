@@ -32,30 +32,36 @@ groupe = Blueprint('groupe', __name__)
 def get_groupe():
     """Renvoit tous les groupes via la route /groupe/getAll
 
+    :raises DonneeIntrouvableException: Aucune donnée n'a pas être trouvé correspondant aux critères
+    :raises ActionImpossibleException: Si une erreur inconnue survient durant la récupération des données
+
     :return:  tous les groupes
     :rtype: json
     """
     conn = connect_pg.connect()
     if (perm.getUserPermission(get_jwt_identity(), conn) == 2):
-        groupes = getGroupeProf(get_jwt_identity(), conn)
         returnStatement = []
         try:
+            groupes = getGroupeProf(get_jwt_identity(), conn)
+            if groupes == []:
+                return jsonify({'error': str(apiException.AucuneDonneeTrouverException("groupes"))}), 404
             for row in groupes:
                 returnStatement.append(get_groupe_statement(row))
-        except(TypeError) as e:
-            return jsonify({'error': str(apiException.AucuneDonneeTrouverException("groupe"))}), 404
+        except Exception as e:
+            return jsonify({'error': str(apiException.ActionImpossibleException("groupe", "récupérer"))}), 500
         connect_pg.disconnect(conn)
         return jsonify(returnStatement)
 
     query = "select * from edt.groupe order by IdGroupe asc"
 
-    rows = connect_pg.get_query(conn, query)
+    
     returnStatement = []
     try:
+        rows = connect_pg.get_query(conn, query)
         for row in rows:
             returnStatement.append(get_groupe_statement(row))
-    except(TypeError) as e:
-        return jsonify({'error': str(apiException.AucuneDonneeTrouverException("groupe"))}), 404
+    except Exception as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("groupe", "récupérer"))}), 500
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 
@@ -71,10 +77,15 @@ def get_groupe_cours(idCours):
     
     :raises DonneeIntrouvableException: Aucune donnée n'a pas être trouvé correspondant aux critères
     :raises ActionImpossibleException: Si une erreur inconnue survient durant la récupération des données
+    :raises ParamètreTypeInvalideException: Si le paramètre idCours n'est pas une valeur numérique
     
     :return: le groupe
     :rtype: flask.wrappers.Response
     """
+
+    if (not idCours.isdigit()):
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idCours", "numérique"))}), 400
+
     returnStatement = []
     conn = connect_pg.connect()
     query = f"Select edt.groupe.* from edt.groupe inner join edt.etudier using(idGroupe)  inner join edt.cours as e1 using (idCours) where e1.idCours = {idCours} order by idGroupe asc"
@@ -104,6 +115,10 @@ def get_groupe_manager(idManager):
     :return: le groupe
     :rtype: flask.wrappers.Response
     """
+
+    if (not idManager.isdigit()):
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idManager", "numérique"))}), 400
+
     returnStatement = {}
     conn = connect_pg.connect()
     query = f"Select edt.groupe.*  from edt.groupe inner join edt.manager using(idGroupe) where idManager = {idManager} order by idManager asc"
@@ -143,34 +158,34 @@ def ajouter_cours(idGroupe):
     from src.routes.cours_route import get_cours
     conn = connect_pg.connect()
     json_datas = request.get_json()
-    if (not idGroupe.isdigit() or type(json_datas['idCours']) != int   ):
-        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idCours ou idGroupe", "numérique"))}), 400
-    
-    
+
     if 'idCours' not in json_datas :
         return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
 
-
+    if (not idGroupe.isdigit() or type(json_datas['idCours']) != int   ):
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idCours ou idGroupe", "numérique"))}), 400
     
     courGroupe = get_cours(str(json_datas['idCours']))
-    if type(courGroupe) != tuple :
-        courGroupe = json.loads(get_cours(str(json_datas['idCours'])).data) 
-        HeureDebut = courGroupe[0]['HeureDebut']
-        NombreHeure = courGroupe[0]['NombreHeure']
-        HeureDebut = datetime.timedelta(hours = int(HeureDebut[:2]),minutes = int(HeureDebut[3:5]), seconds = 00)
-        NombreHeure = datetime.timedelta(hours = int(NombreHeure[:2]),minutes = int(NombreHeure[3:5]), seconds = 00)
-        HeureFin = str(HeureDebut + NombreHeure)
+    if type(courGroupe) == tuple :
+        return jsonify({'error': str(apiException.ActionImpossibleException("cours"))}), 500
 
-        query = f"""SELECT edt.cours.* FROM edt.cours inner join edt.etudier using(idCours)  where idGroupe = {idGroupe}
-        and ((HeureDebut <= '{courGroupe[0]['HeureDebut']}' and '{courGroupe[0]['HeureDebut']}'::time <=  (HeureDebut + NombreHeure::interval))
-        or ( HeureDebut <= '{HeureFin}' and '{HeureFin}'::time <= (HeureDebut + NombreHeure::interval)))
-        and ('{courGroupe[0]['Jour']}' = Jour and idCours is not null) order by idCours asc
-        """
+    courGroupe = json.loads(get_cours(str(json_datas['idCours'])).data) 
+    HeureDebut = courGroupe[0]['HeureDebut']
+    NombreHeure = courGroupe[0]['NombreHeure']
+    HeureDebut = datetime.timedelta(hours = int(HeureDebut[:2]),minutes = int(HeureDebut[3:5]), seconds = 00)
+    NombreHeure = datetime.timedelta(hours = int(NombreHeure[:2]),minutes = int(NombreHeure[3:5]), seconds = 00)
+    HeureFin = str(HeureDebut + NombreHeure)
 
-        result = connect_pg.get_query(conn , query)
-        
-        if result != []:
-            return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "Ce groupe n'est pas disponible à la période spécifié"))}), 400
+    query = f"""SELECT edt.cours.* FROM edt.cours inner join edt.etudier using(idCours)  where idGroupe = {idGroupe}
+    and ((HeureDebut <= '{courGroupe[0]['HeureDebut']}' and '{courGroupe[0]['HeureDebut']}'::time <=  (HeureDebut + NombreHeure::interval))
+    or ( HeureDebut <= '{HeureFin}' and '{HeureFin}'::time <= (HeureDebut + NombreHeure::interval)))
+    and ('{courGroupe[0]['Jour']}' = Jour and idCours is not null) order by idCours asc
+    """
+
+    result = connect_pg.get_query(conn , query)
+    
+    if result != []:
+        return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "Ce groupe n'est pas disponible à la période spécifié"))}), 400
     
     returnStatement = {}
     query = f"Insert into edt.etudier (idGroupe, idCours) values ('{idGroupe}', '{json_datas['idCours']}') returning idGroupe"
@@ -213,6 +228,7 @@ def enlever_Cours(idCours):
     """
     if (not idCours.isdigit()):
         return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idCours", "numérique"))}), 400
+    
     query = f"delete from edt.etudier where idCours={idCours}"
     conn = connect_pg.connect()
     try:
@@ -303,11 +319,14 @@ def get_one_groupe(idGroupe):
     :type idGroupe: str
 
     :raises DonneeIntrouvableException: Impossible de trouver l'idGroupe spécifié dans la table groupe
+    :raises ActionImpossibleException: Si une erreur est survenue lors de la récupération des données
 
     :return:  le groupe a qui appartient cet id
     :rtype: json
     """
-
+    if (not idGroupe.isdigit()):
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idGroupe", "numérique"))}), 400
+    
     query = f"select * from edt.groupe where idGroupe='{idGroupe}'"
     conn = connect_pg.connect()
     result = getGroupeProf(get_jwt_identity(), conn)
@@ -319,13 +338,14 @@ def get_one_groupe(idGroupe):
     if not verification:
         return jsonify({'error': str(apiException.PermissionManquanteException())}), 404
 
-    rows = connect_pg.get_query(conn, query)
     returnStatement = {}
     try:
-        if len(rows) > 0:
-            returnStatement = get_groupe_statement(rows[0])
-    except(TypeError) as e:
-        return jsonify({'error': str(apiException.DonneeIntrouvableException("groupe", idGroupe))}), 404
+        rows = connect_pg.get_query(conn, query)
+        if len(rows) == 0:
+            return jsonify({'error': str(apiException.DonneeIntrouvableException("groupe", idGroupe))}), 404
+        returnStatement = get_groupe_statement(rows[0])
+    except(Exception) as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("groupe", "récuperer"))}), 500
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 
@@ -339,21 +359,27 @@ def get_parent_groupe(idGroupe):
     :type idGroupe: str
 
     :raises DonneeIntrouvableException: Impossible de trouver le groupe spécifié dans la table groupe
+    :raises ActionImpossibleException: Si une erreur est survenue lors de la récupération des données
 
     :return:  le parent du groupe a qui appartient cet id
     :rtype: json
     """
 
+    if (not idGroupe.isdigit()):
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idGroupe", "numérique"))}), 400
+    
     query = f"select * from edt.groupe where idGroupe=(select idGroupe_parent from edt.groupe where idGroupe = '{idGroupe}')"
 
     conn = connect_pg.connect()
-    rows = connect_pg.get_query(conn, query)
+    
     returnStatement = {}
     try:
-        if len(rows) > 0:
-            returnStatement = get_groupe_statement(rows[0])
-    except TypeError as e:
-        return jsonify({'error': str(apiException.DonneeIntrouvableException("groupe", idGroupe))}), 404
+        rows = connect_pg.get_query(conn, query)
+        if len(rows) == 0:
+            return jsonify({'error': str(apiException.DonneeIntrouvableException("groupe", idGroupe))}), 404
+        returnStatement = get_groupe_statement(rows[0])
+    except(Exception) as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("groupe", "récuperer"))}), 500
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 
@@ -367,23 +393,29 @@ def get_all_children(idGroupe):
     :type idGroupe: str
 
     :raises DonneeIntrouvableException: Impossible de trouver le groupe spécifié dans la table groupe
+    :raises ActionImpossibleException: Si une erreur est survenue lors de la récupération des données
 
     :return:  le parent du groupe a qui appartient cet id
     :rtype: json
     """
 
+    if (not idGroupe.isdigit()):
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idGroupe", "numérique"))}), 400
+    
     query = f"select * from edt.groupe where idGroupe_parent={idGroupe}"
 
     conn = connect_pg.connect()
-    rows = connect_pg.get_query(conn, query)
+    
     returnStatement = {}
     try:
-        if len(rows) > 0:
-            returnStatement = ""
-            for row in rows:
-                returnStatement += f"{get_groupe_statement(row)}"
-    except TypeError as e:
-        return jsonify({'error': str(apiException.DonneeIntrouvableException("groupe", idGroupe))}), 404
+        rows = connect_pg.get_query(conn, query)
+        if len(rows) == 0:
+            return jsonify({'error': str(apiException.DonneeIntrouvableException("groupe", idGroupe))}), 404
+        returnStatement = ""
+        for row in rows:
+            returnStatement += f"{get_groupe_statement(row)}"
+    except(Exception) as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("groupe", "récuperer"))}), 500
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 
@@ -394,6 +426,7 @@ def add_groupe():
     """Permet d'ajouter un groupe via la route /groupe/add
 
     :raises ActionImpossibleException: Impossible d'ajouter le groupe spécifié dans la table groupe
+    :raises DonneeExistanteException: Si un groupe présent dans la bdd possède le même que celui spécifier
 
     :return: l'id du groupe créé
     :rtype: json
@@ -440,6 +473,10 @@ def delete_groupe(idGroupe):
     :return:  le parent du groupe a qui appartient cet id
     :rtype: json
     """
+
+    if (not idGroupe.isdigit()):
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idGroupe", "numérique"))}), 400
+    
     conn = connect_pg.connect()
     query = f"DELETE from edt.groupe WHERE idgroupe={idGroupe}"
     query2 = f"DELETE from edt.etudier WHERE idgroupe={idGroupe}"
@@ -448,8 +485,8 @@ def delete_groupe(idGroupe):
         returnStatement = connect_pg.execute_commands(conn, query3)
         returnStatement = connect_pg.execute_commands(conn, query2)
         returnStatement = connect_pg.execute_commands(conn, query)
-    except(TypeError) as e:
-        return jsonify({'error': str(apiException.DonneeIntrouvableException("groupe", idGroupe))}), 404
+    except(Exception) as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("groupe", "supprimer"))}), 500
     connect_pg.disconnect(conn)
     return jsonify(
         {"success": f"The group with id {idGroupe} and all subgroups from this group were successfully removed"}), 200
@@ -469,6 +506,9 @@ def update_groupe(idGroupe):
     :return: success
     :rtype: json
     """
+    if (not idGroupe.isdigit()):
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idGroupe", "numérique"))}), 400
+    
     json_datas = request.get_json()
     if not json_datas:
         return jsonify({'error ': 'missing json body'}), 400
@@ -487,8 +527,8 @@ def update_groupe(idGroupe):
     conn = connect_pg.connect()
     try:
         connect_pg.execute_commands(conn, req)
-    except TypeError as e:
-        return jsonify({'error': str(apiException.DonneeIntrouvableException("groupe", idGroupe))}), 404
+    except(Exception) as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("groupe", "mettre à jour"))}), 500
     connect_pg.disconnect(conn)
     return jsonify({"success": f"the group with id {idGroupe} was successfully updated"}), 200
 
@@ -506,16 +546,21 @@ def get_cours_groupe(idGroupe):
     :return:  la liste des cours du groupe a qui appartient cet id
     :rtype: json
     """
-
+    if (not idGroupe.isdigit()):
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idGroupe", "numérique"))}), 400
+    
     query = f"select edt.cours.* from edt.groupe inner join edt.etudier using(idGroupe) inner join edt.cours using(idCours) where idGroupe={idGroupe}"
 
     conn = connect_pg.connect()
-    rows = connect_pg.get_query(conn, query)
+    
     returnStatement = []
     try:
+        rows = connect_pg.get_query(conn, query)
+        if rows == []:
+            return jsonify({'error': str(apiException.AucuneDonneeTrouverException("etudier"))}), 404
         for row in rows:
             returnStatement.append(get_cours_statement(row))
-    except(TypeError) as e:
-        return jsonify({'erreur': str(apiException.DonneeIntrouvableException("groupe", idGroupe))}), 404
+    except(Exception) as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("groupe", "récuperer"))}), 500
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
