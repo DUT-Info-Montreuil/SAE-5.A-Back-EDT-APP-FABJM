@@ -245,7 +245,7 @@ def get_ressource_dispo():
         return jsonify({'erreur': str(apiException.PermissionManquanteException())}), 403
     
 
-    query = "select * from edt.ressource where NbrHeureSemestre > '00:00' order by idRessource asc"
+    query = "select * from edt.ressource where NbrHeureSemestre > 0 order by idRessource asc"
     conn = connect_pg.connect()
     rows = connect_pg.get_query(conn, query)
     returnStatement = []
