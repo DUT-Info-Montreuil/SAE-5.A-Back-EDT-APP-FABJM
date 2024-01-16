@@ -744,10 +744,10 @@ def add_cours():
     query = f"select NbrHeureSemestre from edt.ressource where idRessource = {json_datas['idRessource']}" # vérifier si il reste assez d'heures
     try:
         NbrHeureSemestre = str(connect_pg.get_query(conn, query)[0][0])
-        if(NbrHeureSemestre == '00:00:00'):
+        if(NbrHeureSemestre == '0'):
             return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "Plus aucune heures est disponible pour la ressource spécifié"))}), 400
         
-        NbrHeureSemestre = datetime.timedelta(hours = int(NbrHeureSemestre[:2]),minutes = int(NbrHeureSemestre[3:5]))
+        NbrHeureSemestre = datetime.timedelta(seconds = int(NbrHeureSemestre) )
         NombreHeure = datetime.timedelta(hours = int(json_datas['NombreHeure'][:2]),minutes = int(json_datas['NombreHeure'][3:5]))
 
         if (NbrHeureSemestre - NombreHeure) < datetime.timedelta(hours = 00,minutes = 00)  :
@@ -761,7 +761,7 @@ def add_cours():
             return jsonify({'error': str(apiException.ActionImpossibleException("ressource", "récupérer"))}), 500
 
 
-    query = f"Insert into edt.cours (HeureDebut, NombreHeure, Jour, idRessource) values ('{json_datas['HeureDebut']}', '{json_datas['NombreHeure']}', '{json_datas['Jour']}', '{json_datas['idRessource']}') returning idCours"
+    query = f"Insert into edt.cours (HeureDebut, NombreHeure, Jour, idRessource, typeCours) values ('{json_datas['HeureDebut']}', '{json_datas['NombreHeure']}', '{json_datas['Jour']}', '{json_datas['idRessource']}', '{json_datas['typeCours']}') returning idCours"
     
     try:
         returnStatement = connect_pg.execute_commands(conn, query)
@@ -772,8 +772,7 @@ def add_cours():
         else:
             # Erreur inconnue
             return jsonify({'error': str(apiException.ActionImpossibleException("cours"))}), 500
-
-    query = f"update edt.ressource set nbrheuresemestre = '{str(NbrHeureSemestre - NombreHeure)}'  where idRessource = {json_datas['idRessource']}" # pour mettre à jour le nombre d'heures
+    query = f"update edt.ressource set nbrheuresemestre = '{(int((NbrHeureSemestre - NombreHeure).total_seconds()))}'   where idRessource = {json_datas['idRessource']}" # pour mettre à jour le nombre d'heures
     
     try:
         connect_pg.execute_commands(conn, query)
