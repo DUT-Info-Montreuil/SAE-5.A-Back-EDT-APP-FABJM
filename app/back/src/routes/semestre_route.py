@@ -38,13 +38,16 @@ def get_semestre():
         
     query = "select * from edt.semestre order by idsemestre asc"
     conn = connect_pg.connect()
-    rows = connect_pg.get_query(conn, query)
+    
     returnStatement = []
     try:
+        rows = connect_pg.get_query(conn, query)
+        if rows == []:
+            return jsonify({'error': str(apiException.AucuneDonneeTrouverException("semestre"))}), 404
         for row in rows:
             returnStatement.append(get_semestre_statement(row))
-    except TypeError as e:
-        return jsonify({'error': str(apiException.AucuneDonneeTrouverException("semestre"))}), 404
+    except(Exception) as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("semestre", "récuperer"))}), 500
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 
@@ -81,7 +84,7 @@ def add_semestre():
     try:
         returnStatement = connect_pg.execute_commands(conn, query)
         idSemestre = returnStatement
-    except psycopg2.IntegrityError as e:
+    except Exception as e:
         if e.pgcode == errorcodes.UNIQUE_VIOLATION:
             # Erreur violation de contrainte unique
             return jsonify({'error': str(
@@ -118,15 +121,17 @@ def get_one_semestre(numeroSemestre):
     query = f"select * from edt.semestre where numero='{numeroSemestre}'"
 
     conn = connect_pg.connect()
-    rows = connect_pg.get_query(conn, query)
+    
     returnStatement = {}
     if not numeroSemestre.isdigit() or type(numeroSemestre) is not str:
         return jsonify({'error': str(apiException.ParamètreTypeInvalideException("numeroSemestre", "string"))}), 400
     try:
-        if len(rows) > 0:
-            returnStatement = get_semestre_statement(rows[0])
-    except TypeError as e:
-        return jsonify({'error': str(apiException.DonneeIntrouvableException("semestre", numeroSemestre))}), 404
+        rows = connect_pg.get_query(conn, query)
+        if len(rows) == 0:
+            return jsonify({'error': str(apiException.AucuneDonneeTrouverException("etudier"))}), 404
+        returnStatement = get_semestre_statement(rows[0])
+    except(Exception) as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("groupe", "récuperer"))}), 500
     connect_pg.disconnect(conn)
     return jsonify(returnStatement), 200
 
@@ -147,7 +152,7 @@ def supprimer_semestre(idSemestre):
     query = f"select idRessource from edt.ressource where idSemestre={idSemestre}"
     try:
         returnStatement = connect_pg.get_query(conn, query)
-    except psycopg2.IntegrityError as e:
+    except Exception as e:
         return jsonify({'error': str(apiException.ActionImpossibleException("ressource","récupérer"))}), 500
     
     for k in range(len(returnStatement)):
@@ -160,7 +165,7 @@ def supprimer_semestre(idSemestre):
     try:
         connect_pg.execute_commands(conn, query2)
         connect_pg.execute_commands(conn, query)
-    except psycopg2.IntegrityError as e:
+    except Exception as e:
         return jsonify({'error': str(apiException.ActionImpossibleException("semestre","supprimé"))}), 500
     
     return jsonify({'success': 'semestre supprimé'}), 200

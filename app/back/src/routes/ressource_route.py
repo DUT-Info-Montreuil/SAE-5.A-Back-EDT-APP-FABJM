@@ -245,7 +245,7 @@ def getAll_ressource():
             return jsonify({'error': str(apiException.AucuneDonneeTrouverException("ressource"))}), 404
         for row in rows:
             returnStatement.append(get_ressource_statement(row))
-     except(Exception) as e:
+    except(Exception) as e:
             return jsonify({'error': str(apiException.ActionImpossibleException("ressource", "récuperer"))}), 500
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
