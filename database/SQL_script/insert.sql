@@ -14,8 +14,8 @@ INSERT INTO Admin (idUtilisateur) values (2);
 INSERT INTO Semestre (Numero) values (3);
 
 -- Ressource(idRessource, titre, numero, nbrHeureSemestre, codeCouleur, idSemestre)
-INSERT INTO Ressource (titre, numero, nbrHeureSemestre, idSemestre) values ('Dev', 'R3-04', '10:00:00', '1');
-INSERT INTO Ressource (titre, numero, nbrHeureSemestre, idSemestre) values ('Math', 'R3-12', '08:00:00', '1');
+INSERT INTO Ressource (titre, numero, nbrHeureSemestre, idSemestre) values ('Dev', 'R3-04', 360000, '1');
+INSERT INTO Ressource (titre, numero, nbrHeureSemestre, idSemestre) values ('Math', 'R3-12', 360000, '1');
 
 
 -- Cours (idCours, HeureDebut, NombreHeure, Jour, idRessource, TypeCours)
@@ -41,7 +41,7 @@ INSERT INTO Salle (nom, capacite) values ('A2-05', 35);
 INSERT INTO Salle (nom, capacite) values ('A1-01', 20);
 
 -- Groupe(idGroupe ,nom,idGroupeParent)
-INSERT INTO Groupe(nom) values ('Groupe A1');
+INSERT INTO Groupe(nom) values ('A1');
 
 -- Professeur(idProf, initiale, idSalle, idUtilisateur)
 INSERT INTO Professeur( initiale, idSalle, idUtilisateur) values ('AR', 1, 3);

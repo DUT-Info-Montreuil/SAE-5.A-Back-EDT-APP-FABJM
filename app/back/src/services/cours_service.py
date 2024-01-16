@@ -15,7 +15,8 @@ def get_cours_statement(row):
         'HeureDebut':str(row[1]),
         'NombreHeure':str(row[2]),
         'Jour':str(row[3]),
-        'idRessource':row[4]
+        'idRessource':row[4],
+        'typeCours':str(row[5])
     }
 
 def get_cours_groupe_extended_statement(row):

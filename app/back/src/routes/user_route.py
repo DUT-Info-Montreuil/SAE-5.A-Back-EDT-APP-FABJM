@@ -20,7 +20,6 @@ user = Blueprint('user', __name__)
 
 # TODO: refactor user
 
-
 @user.route('/utilisateurs/getProfDispo', methods=['GET', 'POST'])
 @jwt_required()
 def get_prof_dispo():
@@ -65,7 +64,7 @@ def get_prof_dispo():
     if HeureDebut < heure_ouverture_iut or HeureFin > heure_fermeture_iut:
         return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "L'iut est fermé durant la période spécifié"))}), 404
 
-    query = f""" select idprof,initiale, idsalle,firstname, lastname,idutilisateur 
+    query = f""" select distinct idprof,initiale, idsalle,firstname, lastname,idutilisateur 
     from edt.professeur full join edt.enseigner using(idProf) full join edt.cours
     using(idCours) inner join edt.utilisateur using(idUtilisateur)
      where (idProf is not null) and ( '{json_datas['HeureDebut']}' <  HeureDebut 
@@ -106,13 +105,16 @@ def get_utilisateur():
         return jsonify({'erreur': str(apiException.PermissionManquanteException())}), 403
     
     query = "select * from edt.utilisateur order by IdUtilisateur asc"
-    rows = connect_pg.get_query(conn, query)
+    
     returnStatement = []
     try:
+        rows = connect_pg.get_query(conn, query)
+        if rows == []:
+            return jsonify({'error': str(apiException.AucuneDonneeTrouverException("utilisateur"))}), 404
         for row in rows:
             returnStatement.append(get_utilisateur_statement(row))
-    except(TypeError) as e:
-        return jsonify({'erreur': str(apiException.AucuneDonneeTrouverException("utilisateur"))}), 404
+    except(Exception) as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("utilisateur", "récuperer"))}), 500
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 
@@ -624,15 +626,17 @@ def get_one_utilisateur(userName):
     query = f"select * from edt.utilisateur where Username='{userName}'"
 
     conn = connect_pg.connect()
-    rows = connect_pg.get_query(conn, query)
+    
     returnStatement = {}
     if (userName.isdigit() or type(userName) != str):
         return jsonify({'error': str(apiException.ParamètreTypeInvalideException("userName", "string"))}), 400
     try:
-        if len(rows) > 0:
-            returnStatement = get_utilisateur_statement(rows[0])
-    except(TypeError) as e:
-        return jsonify({'error': str(apiException.DonneeIntrouvableException("utilisateur", userName))}), 404
+        rows = connect_pg.get_query(conn, query)
+        if len(rows) == 0:
+            return jsonify({'error': str(apiException.DonneeIntrouvableException("utilisateur", userName))}), 404
+        returnStatement = get_utilisateur_statement(rows[0])
+    except(Exception) as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("utilisateur", "récuperer"))}), 500
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 
@@ -684,7 +688,7 @@ def add_utilisateur():
         try:
             returnStatement = connect_pg.execute_commands(conn, query)
             idUser = returnStatement
-        except psycopg2.IntegrityError as e:
+        except Exception as e:
             if e.pgcode == errorcodes.UNIQUE_VIOLATION:
                 # Erreur violation de contrainte unique
                 return jsonify({'error': str(apiException.DonneeExistanteException(user['Username'], "Username", "utilisateur"))}), 400
@@ -750,7 +754,12 @@ def auth_utilisateur():
     password = json_datas['Password']
     query = f"select Password, FirstLogin , idutilisateur from edt.utilisateur where Username='{username}'"
     conn = connect_pg.connect()
-    rows = connect_pg.get_query(conn, query)
+
+    try:
+        rows = connect_pg.get_query(conn, query)
+    except(Exception) as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("utilisateur", "récuperer"))}), 500
+    
     if (type(username) != str):
         return jsonify({'error': str(apiException.ParamètreTypeInvalideException("username", "string"))}), 400
     if (not rows):
@@ -794,7 +803,6 @@ def update_utilisateur_password():
     except:
         return jsonify({'error': str(apiException.ActionImpossibleException("utilisateur"))}), 500
     connect_pg.disconnect(conn)
-
     return jsonify({'success': 'mot de passe modifié'}), 200
 
 
@@ -835,9 +843,7 @@ def changer_groupe_manager(idManager):
     connect_pg.disconnect(conn)
     return jsonify({'success': 'groupe modifié'}), 200
     
-    
         
-
     
 @user.route('/utilisateurs/update/<id>', methods=['PUT','GET'])
 @jwt_required()
@@ -891,7 +897,7 @@ def update_utilisateur(id):
     conn = connect_pg.connect()
     try:
         returnStatement = connect_pg.execute_commands(conn, req)
-    except psycopg2.IntegrityError as e:
+    except Exception as e:
         if e.pgcode == errorcodes.UNIQUE_VIOLATION:
            
             return jsonify({'error': str(apiException.DonneeExistanteException(json_datas['Username'], "Username", "utilisateur"))}), 400
@@ -917,10 +923,10 @@ def delete_utilisateur(id):
 
     #check if the user is admin
     conn = connect_pg.connect()
-    """
+
     if not perm.permissionCheck(get_jwt_identity() , 0 , conn):
         return jsonify({'error': 'not enough permission'}), 403
-    """
+    
     
     json_datas = request.get_json()
     tabQuery = []
@@ -956,9 +962,7 @@ def delete_utilisateur(id):
         for k in range(len(tabQuery) - 1, -1 , -1): # fonctionnement en pile
             connect_pg.execute_commands(conn, tabQuery[k])
 
-    except psycopg2.IntegrityError as e:
-        
-       
+    except Exception as e:
         return jsonify({'error': str(apiException.ActionImpossibleException("utilisateur","supprimer"))}), 500
     
     return jsonify({'success': 'utilisateur supprimé'}), 200
