@@ -18,7 +18,7 @@ from flask_jwt_extended import JWTManager, jwt_required, create_access_token, ge
 ressource = Blueprint('ressource', __name__)
 
 
-
+# TODO: refactor and add method
 
 
 @ressource.route('/ressource/attribuerResponsable/<idRessource>', methods=['POST', 'PUT'])
@@ -35,7 +35,7 @@ def attribuerResponsable(idRessource):
     :raises ParamètreBodyManquantException: Si aucun paramètre d'entrée attendu n'est spécifié dans le body
     :raises ParamètreTypeInvalideException: Le type de idRessource est invalide, une valeur numérique est attendue
     :raises DonneeIntrouvableException: Une des clées n'a pas pu être trouvé
-    :raises InsertionImpossibleException: Impossible de réaliser l'insertion
+    :raises ActionImpossibleException: Impossible de réaliser l'insertion
 
     :return: id de la ressource
     :rtype: int
@@ -57,7 +57,7 @@ def attribuerResponsable(idRessource):
             if "prof" in str(e):
                 return jsonify({'error': str(apiException.DonneeIntrouvableException("Professeur ", json_datas['idProf']))}), 400
             else:
-                return jsonify({'error': str(apiException.DonneeIntrouvableException("Cours ", idRessource))}), 400
+                return jsonify({'error': str(apiException.DonneeIntrouvableException("Ressource ", idRessource))}), 400
         
         elif e.pgcode == "23505": # si existe déjà
             messageId = f"idRessource = {idRessource} et idProf = {json_datas['idProf']}"
@@ -66,13 +66,86 @@ def attribuerResponsable(idRessource):
         
         else:
             # Erreur inconnue
-            return jsonify({'error': str(apiException.InsertionImpossibleException("responsable"))}), 500
+            return jsonify({'error': str(apiException.ActionImpossibleException("responsable"))}), 500
 
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 
 
-def getEnseignantRessource(idUtilisateur , conn):
+@ressource.route('/ressource/getResponsable/<idRessource>', methods=['GET','POST'])
+@jwt_required()
+def get_responsable(idRessource):
+    """Renvoit le responsable de la ressource via la route /ressource/getResponsable/<idRessource>
+    
+    :param idRessource: id de la ressouce 
+    :type idRessource: int
+    
+    :raises ParamètreTypeInvalideException: Le type de idRessource est invalide, une valeur numérique est attendue
+    :raises DonneeIntrouvableException: Si Aucune donnée n'a pas être trouvé correspondant aux critères
+    :raises ActionImpossibleException: Si une erreur est survenue lors de la récupération des données
+    
+    :return: l'id de la salle dans lequel se déroule cours
+    :rtype: json
+    """
+
+    if (not idRessource.isdigit()):
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idRessource", "numérique"))}), 400
+    
+
+    query = f"Select edt.professeur.* from edt.professeur inner join edt.responsable  using(idProf)  inner join edt.ressource as e1 using (idRessource) where e1.idRessource = {idRessource} order by idProf asc"
+    returnStatement = []
+    conn = connect_pg.connect()
+    rows = connect_pg.get_query(conn, query)
+    if rows == []:
+        return jsonify({'error': str(apiException.DonneeIntrouvableException("Responsable"))}), 400
+    try:
+        for row in rows:
+            returnStatement.append(get_ressource_statement(row))
+    except Exception as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("Responsable", "récupérer"))}), 500
+        
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)
+
+@ressource.route('/cours/supprimerResponsable/<idRessource>', methods=['DELETE'])
+@jwt_required()
+def supprimer_responsable(idRessource):
+    """Permet de supprimer un responsable assigner à une ressouces via la route /cours/supprimerResponsable/<idRessource>
+    
+    :param idRessource: id de la ressources
+    :type idRessource: int
+
+    :param idProf: id du professeur à supprimer spécifié dans le body
+    :type idProf: int
+
+    :raises ParamètreTypeInvalideException: Si le type de idRessource est invalide, une valeur numérique est attendue
+    :raises DonneeIntrouvableException: Si la clée idRessource ou idProf n'a pas pu être trouvé
+    :raises ActionImpossibleException: Si une erreur inconnue est survenue lors de l'insertion
+
+    :return: id de la ressource
+    :rtype: json
+    """
+    json_datas = request.get_json()
+    if (not idRessource.isdigit() or type(json_datas['idProf']) != int):
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idRessource", "numérique"))}), 400
+    else:
+        query = f"delete from edt.responsable where idRessource={idCours} and idProf = {json_datas['idProf']}"
+        conn = connect_pg.connect()
+        try:
+            returnStatement = connect_pg.execute_commands(conn, query)
+        except Exception as e:
+            if e.pgcode == "23503":# violation contrainte clée étrangère
+                if "prof" in str(e):
+                    return jsonify({'error': str(apiException.DonneeIntrouvableException("Professeur ", json_datas['idProf']))}), 400
+                else:
+                    return jsonify({'error': str(apiException.DonneeIntrouvableException("Ressource ", idRessource))}), 400
+            else:
+                # Erreur inconnue
+                return jsonify({'error': str(apiException.ActionImpossibleException("responsable", "supprimer"))}), 500
+        connect_pg.disconnect(conn)
+        return jsonify(idRessource)
+
+def getRessourceProf(idUtilisateur , conn):
     """ Renvoie les ressources au quelle enseigne un professeur
     
     :param idUtilisateur: idUtilisateur du professeur
@@ -89,7 +162,7 @@ def getEnseignantRessource(idUtilisateur , conn):
     
     return result
 
-def getEleveRessource(idUtilisateur , conn):
+def getRessourceEleve(idUtilisateur , conn):
     """ Renvoie les ressources qu'un élève étudie
     
     :param idUtilisateur: idUtilisateur du professeur
@@ -119,9 +192,59 @@ def getAll_ressource():
     conn = connect_pg.connect()
     if not perm.permissionCheck(get_jwt_identity() , 3 , conn):
         return jsonify({'erreur': str(apiException.PermissionManquanteException())}), 403
+
+    if(perm.getUserPermission(get_jwt_identity() , conn) == 2):
+        cours = getRessourceProf(get_jwt_identity() , conn)
+        returnStatement = []
+        try:
+            for row in cours:
+                returnStatement.append(get_ressource_statement(row))
+        except(TypeError) as e:
+            return jsonify({'error': str(apiException.AucuneDonneeTrouverException("ressource"))}), 404
+        connect_pg.disconnect(conn)
+        return jsonify(returnStatement)
+    
+    elif(perm.getUserPermission(get_jwt_identity() , conn) == 3):
+        cours = getRessourceEleve(get_jwt_identity() , conn)
+        returnStatement = []
+        try:
+            for row in cours:
+                returnStatement.append(get_ressource_statement(row))
+        except(TypeError) as e:
+            return jsonify({'error': str(apiException.AucuneDonneeTrouverException("ressource"))}), 404
+        connect_pg.disconnect(conn)
+        return jsonify(returnStatement)
     
 
     query = "select * from edt.ressource order by idressource asc"
+    conn = connect_pg.connect()
+    rows = connect_pg.get_query(conn, query)
+    returnStatement = []
+    try:
+        for row in rows:
+            returnStatement.append(get_ressource_statement(row))
+    except TypeError as e:
+        return jsonify({'error': str(apiException.AucuneDonneeTrouverException("ressource"))}), 404
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)
+
+@ressource.route('/ressource/getDispo')
+@jwt_required()
+def get_ressource_dispo():
+    """Renvoit toutes les ressources disponible, c'est à dire celles dont toutes les heures n'ont pas encore été allouées via la route /ressource/getDispo
+
+    :raises PermissionManquanteException: Si pas assez de droit pour récupérer toutes les données présentes dans la table ressource
+    :raises AucuneDonneeTrouverException: Une aucune donnée n'a été trouvé dans la table ressource
+    
+    :return:  toutes les resources
+    :rtype: json
+    """
+    conn = connect_pg.connect()
+    if not perm.permissionCheck(get_jwt_identity() , 3 , conn):
+        return jsonify({'erreur': str(apiException.PermissionManquanteException())}), 403
+    
+
+    query = "select * from edt.ressource where NbrHeureSemestre > '00:00' order by idRessource asc"
     conn = connect_pg.connect()
     rows = connect_pg.get_query(conn, query)
     returnStatement = []
@@ -235,7 +358,6 @@ def UpdateRessource(id) :
         return jsonify({'erreur': str(apiException.PermissionManquanteException())}), 403
     
     datas = request.get_json()
-    print(datas.keys())
     if not datas:
         return jsonify({'erreur': str(apiException.ParamètreBodyManquantException())}), 400
     key = ["Titre", "NbrHeureSemestre", "CodeCouleur", "IdSemestre", "Numero"]

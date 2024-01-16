@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # apiException.py
 
-class AucuneDonneeTrouverException(Exception): # get
+class AucuneDonneeTrouverException(Exception): 
     """Lever si aucune donnée n'a été trouvé dans la table spécifié
     
     :param table: nom de la table spécifié
@@ -11,7 +11,7 @@ class AucuneDonneeTrouverException(Exception): # get
         self.message = f"Aucune donnee dans la table {table} n'a été trouver"
         super().__init__(self.message)
 
-class DonneeIntrouvableException(Exception): # get(id)
+class DonneeIntrouvableException(Exception): 
     """Lever si aucune donnée correspondant aux critère n'a été trouvé  dans la table spécifié
 
     :param table: nom de la table spécifié
@@ -19,11 +19,14 @@ class DonneeIntrouvableException(Exception): # get(id)
     :param id: l'id recherché
     :type id: String
     """
-    def __init__(self, table, id):
-        self.message = f" Aucune donnée avec l'ID {id} n'a pu être trouvé dans la table {table} "
+    def __init__(self, table, id = -1):
+        if id != -1:
+            self.message = f" Aucune donnée avec l'ID {id} n'a pu être trouvé dans la table {table} "
+        else:
+            self.message = f" Aucune donnée répondant aux critères n'a pu être trouvé dans la table {table} "
         super().__init__(self.message)
         
-class InsertionImpossibleException(Exception): # post(...)
+class ActionImpossibleException(Exception): 
     """Lever si une erreur est survenue durant l'insertion
     
     :param table: nom de la table spécifié
@@ -33,7 +36,7 @@ class InsertionImpossibleException(Exception): # post(...)
         self.message = f" La donnée n'a pas pu être {action} dans la table {table}"
         super().__init__(self.message)
 
-class DonneeExistanteException(Exception): # post(...)
+class DonneeExistanteException(Exception): 
     """Lever si une donnée existe déjà sur une clé unique
     
     :param table: nom de la table spécifié
@@ -66,9 +69,15 @@ class ParamètreInvalideException(Exception):
     
     :param paramètre: le nom du paramètre spécifié
     :type paramètre: String
+
+    :param message: message d'erreur personnalisé qui vas écraser celui par défaut
+    :type message: String(optionnel)
 	"""
-    def __init__(self, paramètre):
-        self.message = f" La valeur spécifié pour le paramètre {paramètre} est invalide"
+    def __init__(self, paramètre, message = None):
+        if message != None:
+            self.message = message
+        else:
+            self.message = f" La valeur spécifié pour le paramètre {paramètre} est invalide"
         super().__init__(self.message)
         
 class LoginOuMotDePasseInvalideException(Exception): 
