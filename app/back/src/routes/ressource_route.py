@@ -179,7 +179,7 @@ def getRessourceEleve(idUtilisateur , conn):
     
     return result
 
-@ressource.route('/ressource/getAll')
+@ressource.route('/ressource/getAll', methods=['GET'])
 @jwt_required()
 def getAll_ressource():
     """Renvoit toutes les ressources via la route /ressource/getAll
@@ -229,7 +229,7 @@ def getAll_ressource():
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 
-@ressource.route('/ressource/getDispo')
+@ressource.route('/ressource/getDispo', methods=['GET'])
 @jwt_required()
 def get_ressource_dispo():
     """Renvoit toutes les ressources disponible, c'est à dire celles dont toutes les heures n'ont pas encore été allouées via la route /ressource/getDispo

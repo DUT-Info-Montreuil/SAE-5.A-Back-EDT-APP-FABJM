@@ -632,7 +632,6 @@ def add_utilisateur():
             
             
         except Exception as e :
-            print(e)
             connect_pg.disconnect(conn)
             conn = connect_pg.connect()
             query =f'delete from edt.utilisateur where idutilisateur = {idUser}'
@@ -662,7 +661,7 @@ def auth_utilisateur():
     try:
         json_datas = request.get_json()
     except (Exception) as error:
-        print(error)
+        pass
     json_datas = request.get_json()
     username = json_datas['Username']
     password = json_datas['Password']

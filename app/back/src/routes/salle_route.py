@@ -84,7 +84,7 @@ def get_salle_dispo():
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 
-@salle.route('/salle/getAll')
+@salle.route('/salle/getAll', methods=['GET'])
 @jwt_required()
 def get_salle():
     """Renvoit toutes les salles via la route /salle/getAll

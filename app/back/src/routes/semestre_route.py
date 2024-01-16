@@ -19,7 +19,7 @@ from flask_jwt_extended import JWTManager, jwt_required, create_access_token, ge
 semestre = Blueprint('semestre', __name__)
 # TODO: Finir semestre et refactor
 
-@semestre.route('/semestre/getAll')
+@semestre.route('/semestre/getAll', methods=['GET'])
 @jwt_required()
 def get_semestre():
     """Renvoit tous les semestre via la route /semestre/getAll

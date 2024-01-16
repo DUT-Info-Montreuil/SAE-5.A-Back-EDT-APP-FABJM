@@ -383,7 +383,6 @@ def get_all_children(idGroupe):
             for row in rows:
                 returnStatement += f"{get_groupe_statement(row)}"
     except TypeError as e:
-        print(f"ERRRRRRRRRRRRRRRRRRRROR : {e}")
         return jsonify({'error': str(apiException.DonneeIntrouvableException("groupe", idGroupe))}), 404
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
@@ -420,7 +419,6 @@ def add_groupe():
             return jsonify({'error': str(
                 apiException.DonneeExistanteException(json_datas['Nom'], "Nom", "groupe"))}), 400
         else:
-            print("ERROR : " + e.pgcode)
             # Erreur inconnue
             return jsonify({'error': str(apiException.ActionImpossibleException("groupe"))}), 500
 

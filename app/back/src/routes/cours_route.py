@@ -24,7 +24,7 @@ import datetime
 cours = Blueprint('cours', __name__)
 
 
-@cours.route('/cours/getAll')
+@cours.route('/cours/getAll', methods=['GET'])
 @jwt_required()
 def getAll_cours():
     """Renvoit toutes les cours via la route /cours/getAll
@@ -52,7 +52,7 @@ def getAll_cours():
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 
-@cours.route('/cours/getAllCourProf')
+@cours.route('/cours/getAllCourProf', methods=['GET'])
 @jwt_required()
 def getAll_cours_prof():
     """Renvoit toutes les cours auquel ont été assigné des professeurs via la route /cours/getAll
@@ -693,7 +693,6 @@ def supprimer_cours(idCours):
         connect_pg.execute_commands(conn, query2)
         connect_pg.execute_commands(conn, query)
     except psycopg2.IntegrityError as e:
-        print(e)
         return jsonify({'error': str(apiException.ActionImpossibleException("cours","supprimé"))}), 500
     connect_pg.disconnect(conn)
     return jsonify(idCours)
