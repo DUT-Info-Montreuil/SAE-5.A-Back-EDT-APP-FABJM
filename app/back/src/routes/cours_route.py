@@ -52,6 +52,34 @@ def getAll_cours():
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 
+@cours.route('/cours/getAllCourProf')
+@jwt_required()
+def getAll_cours_prof():
+    """Renvoit toutes les cours auquel ont été assigné des professeurs via la route /cours/getAll
+
+    :raises PermissionManquanteException: Si pas assez de droit pour récupérer toutes les données présentes dans la table cours
+    :raises AucuneDonneeTrouverException: Une aucune donnée n'a été trouvé dans la table cours
+    
+    :return: toutes les cours ayant au moin un enseignant
+    :rtype: json
+    """
+    conn = connect_pg.connect()
+    
+    query = "select distinct edt.cours.* from edt.cours inner join edt.enseigner using(idCours) order by idCours asc"
+    conn = connect_pg.connect()
+    rows = connect_pg.get_query(conn, query)
+    returnStatement = []
+    try:
+        rows = connect_pg.get_query(conn, query)
+        if rows == []:
+            return jsonify({'error': str(apiException.AucuneDonneeTrouverException("enseigner"))}), 404
+        for row in rows:
+            returnStatement.append(get_cours_statement(row))
+    except(Exception) as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("cours", "récuperer"))}), 404
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)
+
 
 @cours.route('/cours/get/<idCours>', methods=['GET'])
 @jwt_required()
