@@ -96,7 +96,8 @@ def get_equipement(filtre):
 def add_equipement():
     """Permet d'ajouter un ou plusieurs equipements via la route /equipement/add
 
-    :raises PermissionManquanteException: L'utilisatuer n'a pas les droits pour avoir accés à cette route
+    :raises PermissionManquanteException: L'utilisateur n'a pas les droits pour avoir accés à cette route
+    :raises ActionImpossibleException: Si une erreur inconnue est survenue lors de la récupération des données dans la table équipements
 
     :return: un tableau d'id d'equipement crééent
     :rtype: json
@@ -121,7 +122,7 @@ def add_equipement():
     try:
         returnStatement = connect_pg.execute_commands(conn, query)
     except Exception as e:
-        return jsonify({'error': str(apiException.ActionImpossibleException("equipement", "récupérer"))}), 500
+        return jsonify({'error': str(apiException.ActionImpossibleException("equipement", "ajouter"))}), 500
 
     connect_pg.disconnect(conn)
     return jsonify({"success": f"The equipements with the ids {returnStatement} were successfully created"}), 200    #{', '.join(tabIdEquipement)}
@@ -135,7 +136,8 @@ def update_equipement(idEquipement):
     :param idEquipement: l'id d'un equipement présent dans la base de donnée
     :type idEquipement: str
 
-    :raises DonneeIntrouvableException: Impossible de trouver le equipement spécifié dans la table equipement
+    :raises PermissionManquanteException: L'utilisateur n'a pas les droits pour avoir accés à cette route
+    :raises ActionImpossibleException: Si une erreur est survenue lors de la suppression
 
     :return: success
     :rtype: json
@@ -159,8 +161,8 @@ def update_equipement(idEquipement):
 
     try:
         connect_pg.execute_commands(conn, query)
-    except TypeError as e:
-        return jsonify({'error': str(apiException.DonneeIntrouvableException("equipement", idEquipement))}), 404
+    except Exception as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("equipement", "mise à jour"))}), 500
     connect_pg.disconnect(conn)
     return jsonify({"success": f"the equipement with id {idEquipement} was successfully updated"}), 200
 
@@ -173,7 +175,7 @@ def delete_equipement(idEquipement):
     :param idEquipement: l'id d'un groupe présent dans la base de donnée
     :type idEquipement: str
 
-    :raises DonneeIntrouvableException: Impossible de trouver le groupe spécifié dans la table groupe
+    :raises ActionImpossibleException: Si une erreur est survenue lors de la suppression
 
     :return:  le parent du groupe a qui appartient cet id
     :rtype: json
@@ -182,8 +184,8 @@ def delete_equipement(idEquipement):
     query = f"DELETE FROM edt.Equipement WHERE idEquipement={idEquipement} RETURNING *"
     try:
         returnStatement = connect_pg.execute_commands(conn, query)
-    except(TypeError) as e:
-        return jsonify({'error': str(apiException.DonneeIntrouvableException("Equipement", idEquipement))}), 404
+    except Exception as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("equipement", "supprimer"))}), 500
     connect_pg.disconnect(conn)
     return jsonify({"success": f"The equipement with id {idEquipement} was successfully removed"}), 200
 
@@ -198,7 +200,8 @@ def get_salles_of_equipement(idEquipement):
     :param idEquipement: l'id d'un groupe présent dans la base de donnée
     :type idEquipement: str
 
-    :raises PermissionManquanteException: L'utilisatuer n'a pas les droits pour avoir accés à cette route
+    :raises PermissionManquanteException: L'utilisateur n'a pas les droits pour avoir accés à cette route
+    :raises ActionImpossibleException: Si une erreur est survenue lors de la récupération des données
     
     :return:  tous les equipements
     :rtype: json
@@ -216,8 +219,8 @@ def get_salles_of_equipement(idEquipement):
     try:
         for row in equipements:
             returnStatement.append(get_salle_statement(row))
-    except(TypeError) as e:
-        return jsonify({'error': str(apiException.AucuneDonneeTrouverException("equiper"))}), 404
+    except Exception as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("equipement", "récupérer"))}), 500
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 
@@ -250,7 +253,11 @@ def add_salle_of_equipement(idEquipement):
     query += ",".join(value_query) + " returning idSalle"
 
     # TODO: find why only one id is return when multiple one are inserted
-    returnStatement = connect_pg.execute_commands(conn, query)
+    try:
+        returnStatement = connect_pg.execute_commands(conn, query)
+    except Exception as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("equipement", "récupérer"))}), 500
+    
     # TODO: handle error pair of key already exist
     connect_pg.disconnect(conn)
     return jsonify({"success": f"The equipements with the ids {returnStatement} were successfully created"}), 200    #{', '.join(tabIdEquipement)}

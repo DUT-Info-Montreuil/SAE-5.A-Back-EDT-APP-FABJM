@@ -31,6 +31,8 @@ def getAll_cours():
 
     
     :raises AucuneDonneeTrouverException: Une aucune donnée n'a été trouvé dans la table cours
+    :raises ActionImpossibleException: Si une erreur inconnue est survenue lors de la récupération des données dans la table cours
+    
     
     :return: toutes les cours
     :rtype: json
