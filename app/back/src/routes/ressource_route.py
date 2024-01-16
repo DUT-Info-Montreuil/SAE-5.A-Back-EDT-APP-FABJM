@@ -258,3 +258,32 @@ def UpdateRessource(id) :
         return jsonify({'error': e}), 500
     
     return jsonify({'success': 'ressource updated'}), 200 
+
+@ressource.route('/ressource/delete/<id>', methods=['DELETE'])
+@jwt_required()
+def deleteRessource(id):
+    """Supprime une ressource spécifié par son id via la route /ressource/delete/<id>
+    
+    :param id: id de la ressource à supprimer
+    :type id: str
+    
+    :raises PermissionManquanteException: Si l'utilisateur n'a pas assez de droit pour récupérer les données présents dans la table ressource
+    :raises AucuneDonneeTrouverException: Si aucune donnée n'a été trouvé dans la table ressource
+    
+    :return:  la ressource a qui appartient cette userNidame
+    :rtype: json
+    """
+    conn = connect_pg.connect()
+    if not perm.permissionCheck(get_jwt_identity() , 1 , conn):
+        return jsonify({'erreur': str(apiException.PermissionManquanteException())}), 403
+    
+    query = f"DELETE FROM edt.ressource WHERE idressource = {id}"
+    conn = connect_pg.connect()
+    try:
+        connect_pg.execute_commands(conn, query)
+    except Exception as e:
+        return jsonify({'error': e}), 500
+    connect_pg.disconnect(conn)
+    return jsonify({'success': 'ressource deleted'}), 200
+
+
