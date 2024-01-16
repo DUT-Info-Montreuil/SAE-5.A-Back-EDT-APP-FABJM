@@ -10,13 +10,6 @@ INSERT INTO Utilisateur (FirstName, LastName, Username, PassWord) values ('Tsuga
 INSERT INTO Admin (idUtilisateur) values (2);
 
 
-
-INSERT INTO Admin (idUtilisateur) values (2);
-
-
-
--- Admin (idAdmin, idUtilisateur)
-INSERT INTO Admin (idUtilisateur) values (2);
 -- Semestre(idSemestre, Numero)
 INSERT INTO Semestre (Numero) values (3);
 

@@ -129,7 +129,7 @@ def supprimer_responsable(idRessource):
     if (not idRessource.isdigit() or type(json_datas['idProf']) != int):
         return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idRessource", "numérique"))}), 400
     else:
-        query = f"delete from edt.responsable where idRessource={idCours} and idProf = {json_datas['idProf']}"
+        query = f"delete from edt.responsable where idRessource={idRessource} and idProf = {json_datas['idProf']}"
         conn = connect_pg.connect()
         try:
             returnStatement = connect_pg.execute_commands(conn, query)
@@ -366,6 +366,7 @@ def UpdateRessource(id) :
             return jsonify({'erreur': str(apiException.ParamètreInvalideException(k))}), 400
     req = "UPDATE edt.ressource SET "
     for key in datas.keys():
+        
         req += f"{key} = '{datas[key]}', "    
     
     #remove last comma
