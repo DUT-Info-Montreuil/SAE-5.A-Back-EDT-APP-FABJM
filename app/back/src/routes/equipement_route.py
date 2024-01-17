@@ -32,9 +32,8 @@ def get_all_equipement():
     :rtype: json
     """
     conn = connect_pg.connect()
-    permision = perm.getUserPermission(get_jwt_identity() , conn)
-
-    if(permision == 3):
+    
+    if not (perm.permissionCheck(get_jwt_identity() , 3 , conn)):
         return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
 
     query = f"SELECT * from edt.equipement"
@@ -69,9 +68,9 @@ def get_equipement(filtre):
     """
 
     conn = connect_pg.connect()
-    permision = perm.getUserPermission(get_jwt_identity() , conn)
+  
 
-    if(permision == 3):
+    if not (perm.permissionCheck(get_jwt_identity() , 3 , conn)):
         return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
 
     if filtre.isdigit():
@@ -224,9 +223,9 @@ def get_salles_of_equipement(idEquipement):
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 
-@equipement.route('/equipement/add/salle/<idEquipement>', methods=['POST'])
+@equipement.route('/equipement/add/salle/<idSalle>', methods=['POST'])
 @jwt_required()
-def add_salle_of_equipement(idEquipement):
+def add_salle_of_equipement(idSalle):
     """Permet d'ajouter une ou plusieurs salles a un équipement via la route /equipement/add/salle/<idEquipement>
 
     :param idEquipement: l'id d'un groupe présent dans la base de donnée
@@ -246,18 +245,20 @@ def add_salle_of_equipement(idEquipement):
 
     if(permision != 0):
         return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
-    query = "INSERT INTO edt.equiper (idEquipement, idSalle) VALUES "
-    value_query = []
-    for data in json_data['data']:
-        value_query.append(f"({idEquipement},'{data['idSalle']}')")
-    query += ",".join(value_query) + " returning idSalle"
 
-    # TODO: find why only one id is return when multiple one are inserted
-    try:
-        returnStatement = connect_pg.execute_commands(conn, query)
-    except Exception as e:
-        return jsonify({'error': str(apiException.ActionImpossibleException("equipement", "récupérer"))}), 500
-    
-    # TODO: handle error pair of key already exist
+    StartQuery = "INSERT INTO edt.equiper (idEquipement, idSalle) VALUES "
+    result = []
+    #add multiple equipement 
+    for data in json_datas['data']:
+        
+        query = StartQuery + ","+f"({json_datas["idEquipements"]},'{idSalle}')"+" returning idEquipement"
+        try : 
+          result.append(connect_pg.execute_commands(conn, query))
+        except Exception as e:
+          return jsonify({'error': str(apiException.ActionImpossibleException("equipement", "récupérer"))}), 500
+        query = ""
+
+
+
     connect_pg.disconnect(conn)
-    return jsonify({"success": f"The equipements with the ids {returnStatement} were successfully created"}), 200    #{', '.join(tabIdEquipement)}
+    return jsonify({"success": f"The equipements with the ids {result} were successfully created"}), 200    #{', '.join(tabIdEquipement)}

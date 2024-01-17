@@ -134,6 +134,7 @@ def supprimer_responsable(idRessource):
     json_datas = request.get_json()
     if (not idRessource.isdigit() ):
         return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idRessource", "numérique"))}), 400
+
     
     
     if 'idProf' not in json_datas :
@@ -150,6 +151,7 @@ def supprimer_responsable(idRessource):
         if e.pgcode == "23503":# violation contrainte clée étrangère
             if "prof" in str(e):
                 return jsonify({'error': str(apiException.DonneeIntrouvableException("Professeur ", json_datas['idProf']))}), 400
+
             else:
                 return jsonify({'error': str(apiException.DonneeIntrouvableException("Ressource ", idRessource))}), 400
         else:
@@ -411,6 +413,7 @@ def UpdateRessource(idRessource) :
             return jsonify({'erreur': str(apiException.ParamètreInvalideException(k))}), 400
     req = "UPDATE edt.ressource SET "
     for key in datas.keys():
+        
         req += f"{key} = '{datas[key]}', "    
     
     #remove last comma
@@ -425,6 +428,7 @@ def UpdateRessource(idRessource) :
         return jsonify({'error': e}), 500
     
     return jsonify({'success': 'ressource updated'}), 200 
+
 
 
 @ressource.route('/ressource/supprimer/<idRessource>', methods=['DELETE'])
@@ -470,3 +474,4 @@ def supprimer_ressource(idRessource):
     
     connect_pg.disconnect(conn)
     return jsonify(idRessource)
+

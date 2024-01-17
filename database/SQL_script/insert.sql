@@ -7,8 +7,8 @@ INSERT INTO Utilisateur (FirstName, LastName, Username, PassWord) values ('Aya',
 INSERT INTO Utilisateur (FirstName, LastName, Username, PassWord) values ('Tsugaru ', 'Shinuchi', 'assistant', 'b654d98118d491d60f80cc28e3ac67ef');
 
 
--- Admin (idAdmin, idUtilisateur)
 INSERT INTO Admin (idUtilisateur) values (2);
+
 
 -- Semestre(idSemestre, Numero)
 INSERT INTO Semestre (Numero) values (3);
@@ -16,6 +16,7 @@ INSERT INTO Semestre (Numero) values (3);
 -- Ressource(idRessource, titre, numero, nbrHeureSemestre, codeCouleur, idSemestre)
 INSERT INTO Ressource (titre, numero, nbrHeureSemestre, idSemestre) values ('Dev', 'R3-04', 360000, '1');
 INSERT INTO Ressource (titre, numero, nbrHeureSemestre, idSemestre) values ('Math', 'R3-12', 360000, '1');
+
 
 
 -- Cours (idCours, HeureDebut, NombreHeure, Jour, idRessource, TypeCours)

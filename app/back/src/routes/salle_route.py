@@ -234,7 +234,7 @@ def add_salle():
             # Erreur inconnue
             return jsonify({'error': str(apiException.ActionImpossibleException("salle"))}), 500
 
-    return jsonify({"success" : "la salle a été ajouté"}), 200
+    return jsonify({"success" : "la salle a été ajouté" , "idSalle" : returnStatement }), 200
 
 
 
@@ -298,8 +298,10 @@ def add_equipements_of_salle(idSalle):
         return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
     query = "INSERT INTO edt.equiper (idSalle, idEquipement) VALUES "
     value_query = []
-    for data in json_data['data']:
-        value_query.append(f"({idSalle},'{data['idEquipement']}')")
+
+    for data in json_datas['idEquipement']:
+        value_query.append(f"({idSalle},'{data}')")
+
     query += ",".join(value_query) + " returning idEquipement"
 
     # TODO: find why only one id is return when multiple one are inserted
@@ -311,4 +313,33 @@ def add_equipements_of_salle(idSalle):
     connect_pg.disconnect(conn)
     return jsonify({"success": f"The equipements with the ids {returnStatement} were successfully created"}), 200    #{', '.join(tabIdEquipement)}
 
+
+
+
+
+
+
+@salle.route('/salle/update', methods=['PUT'])
+@jwt_required()
+def update_salle():
+    """Permet de modifier une salle via la route /salle/update
+    
+    :param salle: salle à modifier, spécifié dans le body
+    :type salle: json
+
+    :raises InsertionImpossibleException: Impossible de modifier la salle spécifié dans la table salle
+    
+    :return: message de succès
+    :rtype: str
+    """
+    json_datas = request.get_json()
+    if not json_datas:
+        return jsonify({'error ': 'missing json body'}), 400
+    query = f"update edt.salle set Numero='{json_datas['Numero']}', Capacite={json_datas['Capacite']} where idSalle={json_datas['idSalle']}"
+    conn = connect_pg.connect()
+    try:
+        returnStatement = connect_pg.execute_commands(conn, query)
+    except psycopg2.IntegrityError as e:
+        return jsonify({'error': str(apiException.InsertionImpossibleException("salle"))}), 500
+    return jsonify({'success': 'salle modifié'}), 200
 

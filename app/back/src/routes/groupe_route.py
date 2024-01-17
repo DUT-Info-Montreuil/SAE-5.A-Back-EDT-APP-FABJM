@@ -436,8 +436,10 @@ def add_groupe():
     if not json_data:
         return jsonify({'error ': 'missing json body'}), 400
     query_start = "Insert into edt.groupe (Nom, AnneeScolaire, Annee"
-    query_values = f"values ('{json_data['Nom']}', '{json_data['AnneeScolaire']}', '{json_data['Annee']}'"
-    if "idGroupe_parent" in json_data.keys():
+
+    query_values = f"values ('{json_datas['Nom']}', '{json_datas['AnneeScolaire']}', '{json_datas['Annee']}'"
+    if "idGroupe_parent" in json_datas.keys() and json_datas['idGroupe_parent'] != -1 : 
+
         query_start += ", idGroupe_parent"
         query_values += f", {json_data['idGroupe_parent']}"
     query_start += ") "

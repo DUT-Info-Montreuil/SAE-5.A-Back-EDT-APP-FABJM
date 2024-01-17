@@ -171,3 +171,88 @@ def supprimer_semestre(idSemestre):
     return jsonify({'success': 'semestre supprimé'}), 200
 
 
+@semestre.route('/semestre/update/<idSemestre>', methods=['PUT','GET'])
+@jwt_required()
+def upadateSemestre(idSemestre):
+    """Permet de mettre à jour un semestre via la route /semestre/update/<numeroSemestre>
+
+    :param numeroSemestre: numéro d'un semestre présent dans la base de donnée
+    :type numeroSemestre: int
+
+    :raises PermissionManquanteException: Si l'utilisateur n'a pas assez de droit pour mettre à jour un semestre présents dans la table semestre
+    :raises DonneeIntrouvableException: Impossible de trouver le semestre spécifié dans la table semestre
+    :raises ParamètreTypeInvalideException: Le type de le numéro de semestre est invalide, un string est attendue
+    :raises InsertionImpossibleException: Impossible de mettre à jour le semestre spécifié dans la table semestre
+
+    :return: le semestre qui correspond au numéro entré en paramètre
+    :rtype: json
+    """
+
+   
+    
+    conn = connect_pg.connect()
+    
+    if not perm.permissionCheck(get_jwt_identity() , 1 , conn):
+        print("get rekt")
+        return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
+
+
+    json_datas = request.get_json()
+    if not json_datas:
+        return jsonify({'error ': str(apiException.ParamètreBodyManquantException())}), 400
+
+    query = f"update edt.semestre set numero='{json_datas['Numero']}' where IdSemestre='{idSemestre}'"
+    
+    try:
+        returnStatement = connect_pg.execute_commands(conn, query)
+        
+    except psycopg2.IntegrityError as e:
+        if e.pgcode == errorcodes.UNIQUE_VIOLATION:
+            # Erreur violation de contrainte unique
+            return jsonify({'error': str(
+                apiException.DonneeExistanteException(json_datas['Numero'], "Numero", "semestre"))}), 400
+        else:
+            # Erreur inconnue
+            return jsonify({'error': str(apiException.InsertionImpossibleException("semestre"))}), 500
+
+    return jsonify({"success" : "semestre was updated"}), 200
+
+
+
+
+@semestre.route('/semestre/delete/<idSemestre>', methods=['DELETE'])
+@jwt_required()
+def deleteSemestre(idSemestre):
+
+    """Permet de supprimer un semestre via la route /semestre/delete/<idSemestre>
+
+    :param idSemestre: id d'un semestre présent dans la base de donnée
+    :type idSemestre: int
+
+    :raises PermissionManquanteException: Si l'utilisateur n'a pas assez de droit pour supprimer un semestre présents dans la table semestre
+    :raises DonneeIntrouvableException: Impossible de trouver le semestre spécifié dans la table semestre
+    :raises ParamètreTypeInvalideException: Le type de l'id de semestre est invalide, un int est attendue
+    :raises InsertionImpossibleException: Impossible de supprimer le semestre spécifié dans la table semestre
+
+    :return: le semestre qui correspond au numéro entré en paramètre
+    :rtype: json
+    """
+
+    conn = connect_pg.connect()
+    if not perm.permissionCheck(get_jwt_identity() , 1 , conn):
+        return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
+
+    query = f"delete from edt.semestre where IdSemestre='{idSemestre}'"
+    conn = connect_pg.connect()
+    try:
+        returnStatement = connect_pg.execute_commands(conn, query)
+    except psycopg2.IntegrityError as e:
+        if e.pgcode == errorcodes.UNIQUE_VIOLATION:
+            # Erreur violation de contrainte unique
+            return jsonify({'error': str(
+                apiException.DonneeExistanteException(idSemestre, "idSemestre", "semestre"))}), 400
+        else:
+            # Erreur inconnue
+            return jsonify({'error': str(apiException.InsertionImpossibleException("semestre"))}), 500
+
+    return jsonify({"success" : "semestre was deleted"}), 200

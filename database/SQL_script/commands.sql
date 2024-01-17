@@ -1,6 +1,8 @@
 -- Drop tables if they exist
 
+
 DROP SCHEMA IF EXISTS EDT cascade;
+
 
 CREATE SCHEMA EDT;
 SET SEARCH_PATH TO EDT;

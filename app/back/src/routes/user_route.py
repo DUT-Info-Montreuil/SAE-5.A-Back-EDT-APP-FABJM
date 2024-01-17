@@ -153,7 +153,7 @@ def get_prof_etendue():
     return jsonify(returnStatement)
 
 
-@user.route('/utilisateurs/getAllProf', methods=['GET','POST'])
+@user.route('/utilisateurs/getAllProf', methods=['GET'])
 @jwt_required()
 def get_prof():
     """Renvoit tous les profs via la route /utilisateurs/getAllProf
