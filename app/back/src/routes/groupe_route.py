@@ -124,18 +124,20 @@ def ajouter_cours(idGroupe):
 
     
     courGroupe = get_cours(str(json_datas['idCours']))
+    
     if type(courGroupe) != tuple :
         courGroupe = json.loads(get_cours(str(json_datas['idCours'])).data) 
-        HeureDebut = courGroupe[0]['HeureDebut']
-        NombreHeure = courGroupe[0]['NombreHeure']
+        print("CG =============" + str(courGroupe))
+        HeureDebut = courGroupe['HeureDebut']
+        NombreHeure = courGroupe['NombreHeure']
         HeureDebut = datetime.timedelta(hours = int(HeureDebut[:2]),minutes = int(HeureDebut[3:5]), seconds = 00)
         NombreHeure = datetime.timedelta(hours = int(NombreHeure[:2]),minutes = int(NombreHeure[3:5]), seconds = 00)
         HeureFin = str(HeureDebut + NombreHeure)
 
         query = f"""SELECT edt.cours.* FROM edt.cours inner join edt.etudier using(idCours)  where idGroupe = {idGroupe}
-        and ((HeureDebut <= '{courGroupe[0]['HeureDebut']}' and '{courGroupe[0]['HeureDebut']}'::time <=  (HeureDebut + NombreHeure::interval))
+        and ((HeureDebut <= '{courGroupe['HeureDebut']}' and '{courGroupe['HeureDebut']}'::time <=  (HeureDebut + NombreHeure::interval))
         or ( HeureDebut <= '{HeureFin}' and '{HeureFin}'::time <= (HeureDebut + NombreHeure::interval)))
-        and ('{courGroupe[0]['Jour']}' = Jour and idCours is not null) order by idCours asc
+        and ('{courGroupe['Jour']}' = Jour and idCours is not null) order by idCours asc
         """
 
         result = connect_pg.get_query(conn , query)

@@ -65,7 +65,7 @@ def get_prof_dispo():
     if HeureDebut < heure_ouverture_iut or HeureFin > heure_fermeture_iut:
         return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "L'iut est fermé durant la période spécifié"))}), 404
 
-    query = f""" select idprof,initiale, idsalle,firstname, lastname,idutilisateur 
+    query = f""" select distinct idprof,initiale, idsalle,firstname, lastname,idutilisateur 
     from edt.professeur full join edt.enseigner using(idProf) full join edt.cours
     using(idCours) inner join edt.utilisateur using(idUtilisateur)
      where (idProf is not null) and ( '{json_datas['HeureDebut']}' <  HeureDebut 
@@ -983,7 +983,7 @@ def get_all_manager():
         if rows == []:
             return jsonify({'erreur': str(apiException.DonneeIntrouvableException("Manager"))}), 400
         for row in rows:
-            returnStatement.append(get_manager_statement(row))
+            returnStatement.append(get_manager_statement(row)) #TODO : get_manager_statement n'existe pas
     except Exception as e:
         return jsonify({'error': str(apiException.ActionImpossibleException("Manager", "récupérer"))}), 500
     
