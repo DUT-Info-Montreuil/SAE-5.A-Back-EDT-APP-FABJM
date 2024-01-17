@@ -426,17 +426,15 @@ def modifier_cours(idCours):
     """
     json_data = request.get_json()
 
-    if (not idCours.isdigit() or type(json_data['idRessource']) != int):
-        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idCours ou idRessource", "numérique"))}), 400
+
+    if 'NombreHeure' not in json_data and 'idRessource' not in json_data:
+        return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
+
     
     if 'NombreHeure' in json_data and not verif.estDeTypeTime(json_data['NombreHeure']):
         return jsonify({'error': str(apiException.ParamètreTypeInvalideException("NombreHeure", "hh:mm:ss"))}), 400
     
-    
     cour = get_cours(idCours)
-    
-    if 'NombreHeure' not in json_data and 'idRessource' not in json_data:
-        return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
     
     query = "UPDATE edt.cours "
     if 'NombreHeure' in json_data:
@@ -547,7 +545,7 @@ def assignerProf(idCours):
         NombreHeure = datetime.timedelta(hours = int(NombreHeure[:2]),minutes = int(NombreHeure[3:5]), seconds = 00 )
         HeureFin = str(HeureDebut + NombreHeure)
 
-        if not verif.groupeEstDispo(json_data['idProf'], HeureDebut, HeureFin, cour['Jour'], conn):
+        if not verif.profEstDispo(json_data['idProf'], HeureDebut, HeureFin, cour['Jour'], conn, idCours):
             return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "Ce professeur n'est pas disponible durant la nouvelle période de cours spécifié"))}), 400
 
 
@@ -652,7 +650,7 @@ def attribuerSalle(idCours):
         NombreHeure = datetime.timedelta(hours = int(NombreHeure[:2]),minutes = int(NombreHeure[3:5]), seconds = 00)
         HeureFin = str(HeureDebut + NombreHeure)
 
-        if not verif.salleEstDispo(json_data['idSalle'], HeureDebut, HeureFin, coursSalle['Jour'], conn):
+        if not verif.salleEstDispo(json_data['idSalle'], HeureDebut, HeureFin, coursSalle['Jour'], conn,idCours):
             return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "Cette salle n'est pas disponible durant la nouvelle période de cours spécifié"))}), 400
     
         
@@ -992,3 +990,79 @@ def enlever_Prof(idCours):
 
     connect_pg.disconnect(conn)
     return jsonify(idCours)
+
+
+@cours.route('/cours/ajouterGroupe/<idCours>', methods=['POST', 'PUT'])
+@jwt_required()
+def ajouter_groupe(idCours):
+    """Permet d'ajouter un cours à un groupe via la route /cours/ajouterGroupe/<idCours>
+    
+    :param idCours: id du cours qui doit recevoir 
+    :type idCours: int
+
+    :param idGroupe: id du groupe à ajouter au cours spécifié dans le body
+    :type idGroupe: int
+
+    :raises ParamètreBodyManquantException: Si aucun paramètre d'entrée attendu n'est spécifié dans le body
+    :raises ParamètreTypeInvalideException: Le type de idCours ou idGroupe est invalide, une valeur numérique est attendue
+    :raises DonneeIntrouvableException: Si une des clées n'a pas pu être trouvé
+    :raises ActionImpossibleException: Impossible de réaliser l'insertion
+    :raises ParamètreInvalideException: Si le groupe n'est pas disponible à l'horaire spécifié
+
+    :return: id du groupe
+    :rtype: flask.wrappers.Response(json)
+    """
+    conn = connect_pg.connect()
+    json_data = request.get_json()
+
+    if 'idGroupe' not in json_data :
+        return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
+
+    if (not idCours.isdigit() or type(json_data['idGroupe']) != int   ):
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idCours ou idGroupe", "numérique"))}), 400
+    
+    courGroupe = get_cours(str(idCours))
+    if type(courGroupe) == tuple :
+        return jsonify({'error': str(apiException.ActionImpossibleException("cours"))}), 500
+
+    courGroupe = json.loads(get_cours(str(idCours)).data) 
+    HeureDebut = courGroupe['HeureDebut']
+    NombreHeure = courGroupe['NombreHeure']
+    HeureDebut = datetime.timedelta(hours = int(HeureDebut[:2]),minutes = int(HeureDebut[3:5]), seconds = 00)
+    NombreHeure = datetime.timedelta(hours = int(NombreHeure[:2]),minutes = int(NombreHeure[3:5]), seconds = 00)
+    HeureFin = str(HeureDebut + NombreHeure)
+
+    query = f"""SELECT edt.cours.* FROM edt.cours inner join edt.etudier using(idCours)  where idGroupe = {json_data['idGroupe']}
+    and ((HeureDebut <= '{courGroupe['HeureDebut']}' and '{courGroupe['HeureDebut']}'::time <=  (HeureDebut + NombreHeure::interval))
+    or ( HeureDebut <= '{HeureFin}' and '{HeureFin}'::time <= (HeureDebut + NombreHeure::interval)))
+    and ('{courGroupe['Jour']}' = Jour and idCours is not null) order by idCours asc
+    """
+
+    result = connect_pg.get_query(conn , query)
+    
+    if result != []:
+        return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "Ce groupe n'est pas disponible à la période spécifié"))}), 400
+    
+    returnStatement = {}
+    query = f"Insert into edt.etudier (idGroupe, idCours) values ('{json_data['idGroupe']}', '{idCours}') returning idCours"
+    
+    try:
+        returnStatement = connect_pg.execute_commands(conn, query)
+    except Exception as e:
+        if e.pgcode == "23503":# violation contrainte clée étrangère
+            if "cours" in str(e):
+                return jsonify({'error': str(apiException.DonneeIntrouvableException("Cours ", idCours))}), 400
+            else:
+                return jsonify({'error': str(apiException.DonneeIntrouvableException("Groupe ", json_data['idGroupe']))}), 400
+        
+        elif e.pgcode == "23505": # si existe déjà
+            messageId = f"idGroupe = {json_data['idGroupe']} et idCours = {idCours}"
+            messageColonne = f"idGroupe et idCours"
+            return jsonify({'error': str(apiException.DonneeExistanteException(messageId, messageColonne, "Etudier"))}), 400
+        
+        else:
+            # Erreur inconnue
+            return jsonify({'error': str(apiException.ActionImpossibleException("Etudier"))}), 500
+
+    connect_pg.disconnect(conn)
+    return jsonify(returnStatement)
