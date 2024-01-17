@@ -17,7 +17,7 @@ CREATE TABLE Groupe(
 );
 
 CREATE TABLE Salle(
-   idSalle SERIAL,
+   idSalle SERIAL ,
    nom VARCHAR(50) not null ,
    capacite INTEGER,
    PRIMARY KEY(idSalle),
@@ -121,16 +121,16 @@ CREATE TABLE Accuellir(
    idSalle INTEGER,
    idCours INTEGER,
    PRIMARY KEY(idSalle, idCours),
-   FOREIGN KEY(idSalle) REFERENCES Salle(idSalle),
-   FOREIGN KEY(idCours) REFERENCES Cours(idCours)
+   FOREIGN KEY(idSalle) REFERENCES Salle(idSalle) ON DELETE CASCADE , 
+   FOREIGN KEY(idCours) REFERENCES Cours(idCours) ON DELETE CASCADE
 );
 
 CREATE TABLE Equiper(
-   idSalle INTEGER,
+   idSalle INTEGER ,
    idEquipement INTEGER,
    PRIMARY KEY(idSalle, idEquipement),
-   FOREIGN KEY(idSalle) REFERENCES Salle(idSalle),
-   FOREIGN KEY(idEquipement) REFERENCES Equipement(idEquipement)
+   FOREIGN KEY(idSalle) REFERENCES Salle(idSalle) ON DELETE CASCADE , 
+   FOREIGN KEY(idEquipement) REFERENCES Equipement(idEquipement) ON DELETE CASCADE
 );
 
 CREATE TABLE Enseigner(

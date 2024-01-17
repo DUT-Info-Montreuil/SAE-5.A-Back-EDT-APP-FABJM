@@ -97,9 +97,9 @@ def update(table_name, where, key_to_return, data, possible_keys):
             # return jsonify({'error': ParamètreInvalideException(message=error_message)}), 400
         # Echaper au balise qui aurait pu être mit en input par l'utilisateur
         data[key] = escape(data[key])
-        tab_query.append(f"{key}='{data[key]}'")
+        tab_query.append(f"{key}='{data[key]}' ")
     # Create string of set value
-    value_to_set = ", ".join(tab_query)
+    value_to_set = ", ".join(tab_query) + " "
     return (update_query, (value_to_set, *tuple(value for value in where)))
 
 def delete(table_name, where, key_to_return):

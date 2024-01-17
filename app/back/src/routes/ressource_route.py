@@ -392,7 +392,7 @@ def UpdateRessource(idRessource) :
     json_data = request.get_json()
     keys = ["Titre", "NbrHeureSemestre", "CodeCouleur", "IdSemestre", "Numero"]
 
-    query = query_update(table_name, f"idRessource={idRessource}", json_data, keys)
+    query = conn.query_update(table_name, f"idRessource={idRessource}", json_data, keys)
     # Si query update return une error
     if type(query) == tuple:
         return query
