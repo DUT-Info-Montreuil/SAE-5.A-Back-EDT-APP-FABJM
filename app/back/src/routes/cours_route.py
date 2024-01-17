@@ -1064,3 +1064,27 @@ def ajouter_groupe(idCours):
 
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
+
+@cours.route('/cours/getAllCoursType/', methods=['GET','POST'])
+@jwt_required()
+def get_all_cours_type():
+    """Renvoit tous les types de cours via la route /cours/getAllCoursType/
+    
+    :raises DonneeIntrouvableException: Aucune donnée n'a pas être trouvé correspondant aux critères
+    :raises ActionImpossibleException: Si une erreur inconnue survient durant la récupération des données
+    
+    :return: tous les types de cours
+    :rtype: flask.wrappers.Response(json)
+    """
+    query = f"SELECT e.enumlabel FROM pg_enum e JOIN pg_type t ON e.enumtypid = t.oid WHERE t.typname = 'typecours' "
+
+    conn = connect_pg.connect()
+    try:
+        rows = connect_pg.get_query(conn, query)
+        print('---------------')
+        print(rows)
+        if rows == []:
+            return jsonify({'erreur': str(apiException.DonneeIntrouvableException("TypeCours"))}), 404
+    except Exception as e:
+        return jsonify({'erreur': str(apiException.ActionImpossibleException("TypeCours", "récupérer"))}), 500
+    return jsonify(rows)
