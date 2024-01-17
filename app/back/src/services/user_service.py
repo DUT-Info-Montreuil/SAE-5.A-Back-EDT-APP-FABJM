@@ -1,4 +1,4 @@
-def get_utilisateur_statement(row):
+def get_utilisateur_statement(row , p=None):
     """ 
     Fonction de mappage de la table utilisateur
     
@@ -8,13 +8,25 @@ def get_utilisateur_statement(row):
     :return: les données représentant un utilisateur
     :rtype: dictionnaire
     """
+    if p is not None:
+        return {
+            'IdUtilisateur':row[0],
+            'FirstName':row[1],
+            'LastName':row[2],
+            'Username':row[3],
+            'FirstLogin':row[4],
+            'role':p
+        }
+    
+    
     return {
         'IdUtilisateur':row[0],
         'FirstName':row[1],
         'LastName':row[2],
         'Username':row[3],
-        'PassWord':row[4],
-        'FirstLogin':row[5]
+        'FirstLogin':row[4],
+        
+          
     }
 
 def get_utilisateur_protected_statement(row):

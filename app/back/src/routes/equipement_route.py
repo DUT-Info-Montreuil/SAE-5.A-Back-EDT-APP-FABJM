@@ -43,7 +43,7 @@ def get_all_equipement():
     try:
         equipements = connect_pg.get_query(conn, query)
         if equipements == []:
-            return jsonify({'error': str(apiException.AucuneDonneeTrouverException("equipement"))}), 404
+            return jsonify([])
         for row in equipements:
             returnStatement.append(get_equipement_statement(row))
     except Exception as e:
@@ -108,9 +108,10 @@ def add_equipement():
 
 
     conn = connect_pg.connect()
-    permision = perm.getUserPermission(get_jwt_identity() , conn)[0]
 
-    if(permision != 0):
+   
+    if not (perm.permissionCheck(get_jwt_identity() , 0 , conn)):
+
         return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
     query = "INSERT INTO edt.equipement (Nom) VALUES "
     value_query = []
@@ -122,6 +123,7 @@ def add_equipement():
     try:
         returnStatement = connect_pg.execute_commands(conn, query)
     except Exception as e:
+        print(e)
         return jsonify({'error': str(apiException.ActionImpossibleException("equipement", "ajouter"))}), 500
 
     connect_pg.disconnect(conn)
@@ -251,7 +253,9 @@ def add_salle_of_equipement(idSalle):
     #add multiple equipement 
     for data in json_data['data']:
         
-        query = StartQuery + ","+f"({json_data['idEquipements']},'{idSalle}')"+" returning idEquipement"
+
+        query = StartQuery + ","+f"({json_data["idEquipements"]},'{idSalle}')"+" returning idEquipement"
+
         try : 
           result.append(connect_pg.execute_commands(conn, query))
         except Exception as e:
