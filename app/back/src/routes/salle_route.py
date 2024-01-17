@@ -203,6 +203,7 @@ def delete_salle(idSalle):
         returnStatement = connect_pg.execute_commands(conn, query)
         
     except(Exception) as e:
+        print(e)
         return jsonify({'error': str(apiException.ActionImpossibleException("salle","supprimé"))}), 500
     
     return jsonify({'success': 'salle supprimé'}), 200
@@ -231,6 +232,7 @@ def add_salle():
         returnStatement = connect_pg.execute_commands(conn, query)
         idSemestre = returnStatement
     except Exception as e:
+        print(e)
         if e.pgcode == errorcodes.UNIQUE_VIOLATION:
             # Erreur violation de contrainte unique
             return jsonify({'error': str(
@@ -271,13 +273,16 @@ def get_equipements_of_salle(idSalle):
     try:
         equipements = connect_pg.get_query(conn, query)
         if equipements == []:
-            return jsonify({'error': str(apiException.AucuneDonneeTrouverException("salle"))}), 404
+            return jsonify([])
         for row in equipements:
             returnStatement.append(get_equipement_statement(row))
     except(Exception) as e:
+        print(e)
         return jsonify({'error': str(apiException.ActionImpossibleException("salle", "récuperer"))}), 500
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
+    
+   
 
 @salle.route('/salle/add/equipement/<idSalle>', methods=['POST'])
 @jwt_required()
@@ -299,7 +304,7 @@ def add_equipements_of_salle(idSalle):
     conn = connect_pg.connect()
     permision = perm.getUserPermission(get_jwt_identity() , conn)[0]
 
-    if(permision != 0):
+    if not (perm.permissionCheck(get_jwt_identity(), 0 , conn)):
         return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
     query = "INSERT INTO edt.equiper (idSalle, idEquipement) VALUES "
     value_query = []

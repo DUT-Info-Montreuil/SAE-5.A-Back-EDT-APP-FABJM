@@ -55,7 +55,7 @@ def disconnect(conn):
         print('Database connection closed.')
 
 
-def execute_commands(conn, commands, param):
+def execute_commands(conn, commands, param=""):
     """Execute la commande sql
 
     :param conn: objet représentant la connection à la base de donnée
