@@ -108,3 +108,11 @@ class PermissionManquanteException(Exception):
     def __init__(self):
         self.message = f"Vous ne possédez pas d'assez de permission pour effectuer cette action"
         super().__init__(self.message)
+
+class AuthentificationFailedException(Exception): 
+    """Lever si l'authentification a échoué
+    
+	"""
+    def __init__(self):
+        self.message = f"L'authentification a échoué, accès refusé"
+        super().__init__(self.message)

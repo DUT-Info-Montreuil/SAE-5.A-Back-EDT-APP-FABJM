@@ -746,18 +746,17 @@ def auth_utilisateur():
 
     request.headers.get('Authorization')
     basic_auth = request.headers.get('Authorization')
-    if basic_auth is not None:
-        basic_auth = basic_auth.split(' ')
-        if len(basic_auth) != 2:
-            # return make_response(jsonify({'message': 'Basic auth mal formée !'}), 401)
-            print("todo")
-        basic_auth = base64.b64decode(basic_auth[1]).decode('utf-8')
-        basic_auth = basic_auth.split(':')
-        if len(basic_auth) != 2:
-            # return make_response(jsonify({'message': 'Basic auth mal formée !'}), 401)
-            print("todo")
-        username = basic_auth[0]
-        password = basic_auth[1]
+    if basic_auth is None:
+        return jsonify({'message': str(apiException.AuthentificationFailedException())}), 401
+    basic_auth = basic_auth.split(' ')
+    if len(basic_auth) != 2:
+        return jsonify({'message': str(apiException.AuthentificationFailedException())}), 401
+    basic_auth = base64.b64decode(basic_auth[1]).decode('utf-8')
+    basic_auth = basic_auth.split(':')
+    if len(basic_auth) != 2:
+        return jsonify({'message': str(apiException.AuthentificationFailedException())}), 401
+    username = basic_auth[0]
+    password = basic_auth[1]
     password = util.password_encode(password)
 
     # query = f"SELECT Password, FirstLogin , idutilisateur from edt.utilisateur where Username='{username}'"
