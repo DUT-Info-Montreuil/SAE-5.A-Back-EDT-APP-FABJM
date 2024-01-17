@@ -170,16 +170,16 @@ def ajouter_cours(idGroupe):
         return jsonify({'error': str(apiException.ActionImpossibleException("cours"))}), 500
 
     courGroupe = json.loads(get_cours(str(json_data['idCours'])).data) 
-    HeureDebut = courGroupe[0]['HeureDebut']
-    NombreHeure = courGroupe[0]['NombreHeure']
+    HeureDebut = courGroupe['HeureDebut']
+    NombreHeure = courGroupe['NombreHeure']
     HeureDebut = datetime.timedelta(hours = int(HeureDebut[:2]),minutes = int(HeureDebut[3:5]), seconds = 00)
     NombreHeure = datetime.timedelta(hours = int(NombreHeure[:2]),minutes = int(NombreHeure[3:5]), seconds = 00)
     HeureFin = str(HeureDebut + NombreHeure)
 
     query = f"""SELECT edt.cours.* FROM edt.cours inner join edt.etudier using(idCours)  where idGroupe = {idGroupe}
-    and ((HeureDebut <= '{courGroupe[0]['HeureDebut']}' and '{courGroupe[0]['HeureDebut']}'::time <=  (HeureDebut + NombreHeure::interval))
+    and ((HeureDebut <= '{courGroupe['HeureDebut']}' and '{courGroupe['HeureDebut']}'::time <=  (HeureDebut + NombreHeure::interval))
     or ( HeureDebut <= '{HeureFin}' and '{HeureFin}'::time <= (HeureDebut + NombreHeure::interval)))
-    and ('{courGroupe[0]['Jour']}' = Jour and idCours is not null) order by idCours asc
+    and ('{courGroupe['Jour']}' = Jour and idCours is not null) order by idCours asc
     """
 
     result = connect_pg.get_query(conn , query)
@@ -437,7 +437,7 @@ def add_groupe():
         return jsonify({'error ': 'missing json body'}), 400
     query_start = "Insert into edt.groupe (Nom, AnneeScolaire, Annee"
 
-    query_values = f"values ('{json_data['Nom']}', '{json_data['AnneeScolaire']}', '{json_data['Annee']}'"
+    query_values = f"values ('{json_data['Nom']}'"
     if "idGroupe_parent" in json_data.keys() and json_data['idGroupe_parent'] != -1 : 
 
         query_start += ", idGroupe_parent"
@@ -515,7 +515,7 @@ def update_groupe(idGroupe):
     json_data = request.get_json()
     if not json_data:
         return jsonify({'error ': 'missing json body'}), 400
-    key = ["Nom", "AnneeScolaire", "Annee", "idGroupe_parent"]
+    key = ["Nom", "idGroupe_parent"]
     for k in json_data.keys():
         if k not in key:
             return jsonify({'error': "missing or invalid key"}), 400
