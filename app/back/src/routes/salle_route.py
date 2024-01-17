@@ -22,7 +22,6 @@ salle = Blueprint('salle', __name__)
 # TODO: Update salle
 
 @salle.route('/salle/getDispo', methods=['GET', 'POST'])
-@jwt_required()
 def get_salle_dispo():
     """Renvoit toutes les salles disponible sur une période via la route /salle/getDispo
 
@@ -47,42 +46,72 @@ def get_salle_dispo():
     if not json_data:
         return jsonify({'error ': 'missing json body'}), 400
     
-    if 'HeureDebut' not in json_data or 'Jour' not in json_data or 'NombreHeure' not in json_data :
-        return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
-
-    if not verif.estDeTypeTime(json_data['HeureDebut']) or not verif.estDeTypeDate(json_data['Jour']) or not verif.estDeTypeTime(json_data['NombreHeure']):
-        return jsonify({'error': str(apiException.ParamètreInvalideException("HeureDebut, NombreHeure ou Jour"))}), 404
-
-    HeureDebut = json_data['HeureDebut']
-    NombreHeure = json_data['NombreHeure']
-    HeureDebut = datetime.timedelta(hours = int(HeureDebut[:2]),minutes = int(HeureDebut[3:5]), seconds = int(HeureDebut[6:8]))
-    NombreHeure = datetime.timedelta(hours = int(NombreHeure[:2]),minutes = int(NombreHeure[3:5]))
-    HeureFin = HeureDebut + NombreHeure
-
-    heure_ouverture_iut = datetime.timedelta(hours = 8)
-    heure_fermeture_iut = datetime.timedelta(hours = 19)
-
-    if HeureDebut < heure_ouverture_iut or HeureFin > heure_fermeture_iut:
-        return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "L'iut est fermé durant la période spécifié"))}), 400
-
-    query = f""" select edt.salle.* from edt.salle full join edt.accuellir using(idSalle) full join edt.cours
-    using(idCours) where (idSalle is not null) and ( '{json_data['HeureDebut']}' <  HeureDebut 
-    and  '{str(HeureFin)}' <= HeureDebut or '{json_data['HeureDebut']}'::time >=  (HeureDebut + NombreHeure::interval))  
-    or (HeureDebut is null) order by idSalle asc
-    """
+    heureDebut_str = json_data['HeureDebut']  #type: str  # "09:00:00"
+    nombreHeure_str = json_data['NombreHeure'] #"2024-01-15"
+    jour_str = json_data['Jour'] #"02:00:00"
+    
+    if not heureDebut_str or not nombreHeure_str or not jour_str:
+        return jsonify({'error ': 'missing json body'}), 400
+    
+    #heureApres = heureDebut + nombreHeure
+    #heureAvant = heureDebut - nombreHeure
+    salles = []
+    heureDebut = datetime.datetime.strptime(heureDebut_str, '%H:%M:%S').time()
+    nombreHeure = datetime.datetime.strptime(nombreHeure_str, '%H:%M:%S').time()
+    jour = datetime.datetime.strptime(jour_str, '%Y-%m-%d').date()
+    print(jour)
+    
+    debut = datetime.datetime.combine(jour, heureDebut)
+    fin = datetime.datetime.combine(jour, heureDebut) + datetime.timedelta(hours=nombreHeure.hour, minutes=nombreHeure.minute, seconds=nombreHeure.second)
+       
+    
     conn = connect_pg.connect()
-    returnStatement = []
+    query = f"select * from edt.salle;"
+    try:
+        salles = connect_pg.get_query(conn, query)
+    except:
+        return jsonify({'error': str(apiException.ActionImpossibleException("salle", "récuperer"))}), 500
+    
+        
+    
+    rows = []
+    query = f"select * from edt.accuellir inner join edt.cours using(idcours) where edt.cours.jour = '{jour}';"
     try:
         rows = connect_pg.get_query(conn, query)
-        if rows == []:
-            return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "Aucune salle disponible n'a été trouvé l'horaire spécifié"))}), 400
+    except:
+        return jsonify({'error': str(apiException.ActionImpossibleException("accuellir", "récuperer"))}), 500
         
+        
+    returnStatement = []
+    for salle in salles:
+        #if salle[0] is in rows 
+        print('------------salle : ', salle)
         for row in rows:
-            returnStatement.append(get_salle_statement(row))
-    except Exception as e:
-        return jsonify({'error': str(apiException.ActionImpossibleException("Salle, Etudier ou Cours", "récupérer"))}), 500
+            rowHeureDebut = row[2]
+            nombreHeure = row[3]
+            rowJour = row[4]
+            rowDebut = datetime.datetime.combine(rowJour, rowHeureDebut)
+            rowFin = datetime.datetime.combine(rowJour, rowHeureDebut) + datetime.timedelta(hours=nombreHeure.hour, minutes=nombreHeure.minute, seconds=nombreHeure.second)
+            if salle[0] == row[1]:
+                #if debut is between rowDebut and rowFin or if fin is between rowDebut and rowFin
+                if ((debut > rowDebut and debut < rowFin) or (fin > rowDebut and fin < rowFin)):
+                    print('salle non dispo : ', salle)
+                    salles.remove(salle)
+                    #remove every rows where row[1] == salle[0]
+                    rows.remove(row)
+                    
+                elif ((rowDebut > debut and rowDebut < fin) or (rowFin > debut and rowFin < fin)):
+                    print('salle non dispo : ', salle)
+                    salles.remove(salle)
+                    rows.remove(row)
+                #elif salle still in salles
+        if salle in salles:
+            print('salle dispo : ', salle)
+            returnStatement.append(get_salle_statement(salle))
+    print('returnStatement : ', returnStatement)
     connect_pg.disconnect(conn)
-    return jsonify(returnStatement)
+    return jsonify(returnStatement), 200
+    
 
 @salle.route('/salle/getAll', methods=['GET'])
 @jwt_required()
