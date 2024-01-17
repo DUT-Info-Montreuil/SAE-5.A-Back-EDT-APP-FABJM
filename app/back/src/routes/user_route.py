@@ -66,13 +66,15 @@ def get_prof_dispo():
     if HeureDebut < heure_ouverture_iut or HeureFin > heure_fermeture_iut:
         return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "L'iut est fermé durant la période spécifié"))}), 404
 
+    
+
     query = f""" select distinct idprof,initiale, idsalle,firstname, lastname,idutilisateur 
-    from edt.professeur full join edt.enseigner using(idProf) full join edt.cours
-    using(idCours) inner join edt.utilisateur using(idUtilisateur)
-     where (idProf is not null) and ( '{json_data['HeureDebut']}' <  HeureDebut 
-    and  '{str(HeureFin)}' <= HeureDebut or '{json_data['HeureDebut']}'::time >=  (HeureDebut + NombreHeure::interval)) 
-    or ('{json_data['Jour']}' != Jour and idProf is not null) or (HeureDebut is null) order by idProf asc
-    """
+        from edt.professeur full join edt.enseigner using(idProf) full join edt.cours
+        using(idCours) inner join edt.utilisateur using(idUtilisateur)
+        where (idCours is null ) or (jour = '{json_data['Jour']}' and
+        ('{HeureDebut}'::time > (HeureDebut + NombreHeure::interval)
+        or HeureDebut > '{HeureFin}' and idProf is not null )) order by idProf asc
+        """
     conn = connect_pg.connect()
     returnStatement = []
     try:

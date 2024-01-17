@@ -215,11 +215,13 @@ def get_groupe_dispo():
         return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "L'iut est fermé durant la période spécifié"))}), 404
 
 
-    query = f""" select distinct edt.groupe.*  from edt.groupe full join edt.etudier using(idGroupe) full join edt.cours
-    using(idCours) where (idGroupe is not null) and ( '{json_data['HeureDebut']}' <  HeureDebut 
-    and  '{str(HeureFin)}' <= HeureDebut or '{json_data['HeureDebut']}'::time >=  (HeureDebut + NombreHeure::interval))
-    or ('{json_data['Jour']}' != Jour and idGroupe is not null) or (HeureDebut is null) order by idGroupe asc
-    """
+    query = f""" select distinct edt.groupe.*  
+        from edt.groupe full join edt.etudier using(idGroupe) full join edt.cours
+        using(idCours) where (idCours is null ) or (jour = '{json_data['Jour']}' and
+        ('{HeureDebut}'::time > (HeureDebut + NombreHeure::interval)
+        or HeureDebut > '{HeureFin}' and idGroupe is not null )) order by idGroupe asc
+        """
+
     conn = connect_pg.connect()
     returnStatement = []
     try:

@@ -65,10 +65,14 @@ def get_salle_dispo():
     if HeureDebut < heure_ouverture_iut or HeureFin > heure_fermeture_iut:
         return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "L'iut est fermé durant la période spécifié"))}), 400
 
+
+    
+
     query = f""" select edt.salle.* from edt.salle full join edt.accuellir using(idSalle) full join edt.cours
-    using(idCours) where (idSalle is not null) and ( '{json_data['HeureDebut']}' <  HeureDebut 
-    and  '{str(HeureFin)}' <= HeureDebut or '{json_data['HeureDebut']}'::time >=  (HeureDebut + NombreHeure::interval))  
-    or (HeureDebut is null) order by idSalle asc
+    using(idCours) where (idCours is null ) or (jour = '{json_data['Jour']}' (and
+    '{HeureDebut}'::time > (HeureDebut + NombreHeure::interval)
+    or HeureDebut > '{HeureFin}' and idSalle is not null )) order by idSalle asc
+
     """
     conn = connect_pg.connect()
     returnStatement = []
@@ -80,6 +84,7 @@ def get_salle_dispo():
         for row in rows:
             returnStatement.append(get_salle_statement(row))
     except Exception as e:
+        print(e)
         return jsonify({'error': str(apiException.ActionImpossibleException("Salle, Etudier ou Cours", "récupérer"))}), 500
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
