@@ -217,7 +217,7 @@ def add_salle():
             # Erreur inconnue
             return jsonify({'error': str(apiException.ActionImpossibleException("salle"))}), 500
 
-    return jsonify({"success" : "la salle a été ajouté"}), 200
+    return jsonify({"success" : "la salle a été ajouté" , "idSalle" : returnStatement }), 200
 
 
 
@@ -278,8 +278,8 @@ def add_equipements_of_salle(idSalle):
         return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
     query = "INSERT INTO edt.equiper (idSalle, idEquipement) VALUES "
     value_query = []
-    for data in json_datas['data']:
-        value_query.append(f"({idSalle},'{data['idEquipement']}')")
+    for data in json_datas['idEquipement']:
+        value_query.append(f"({idSalle},'{data}')")
     query += ",".join(value_query) + " returning idEquipement"
 
     # TODO: find why only one id is return when multiple one are inserted
