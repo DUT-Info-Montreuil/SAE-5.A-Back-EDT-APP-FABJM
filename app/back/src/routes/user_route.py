@@ -10,6 +10,7 @@ from src.services.user_service import *
 import src.services.permision as perm
 import src.utilitary as util
 import src.services.verification as verif
+from src.services.user_service import get_professeur_statement
 
 import psycopg2
 from psycopg2 import errorcodes
@@ -53,39 +54,69 @@ def get_prof_dispo():
 
     if not verif.estDeTypeTime(json_data['HeureDebut']) or not verif.estDeTypeDate(json_data['Jour']) or not verif.estDeTypeTime(json_data['NombreHeure']):
         return jsonify({'error': str(apiException.ParamètreInvalideException("HeureDebut, NombreHeure ou Jour"))}), 404
-
-    HeureDebut = json_data['HeureDebut']
-    NombreHeure = json_data['NombreHeure']
-    HeureDebut = datetime.timedelta(hours = int(HeureDebut[:2]),minutes = int(HeureDebut[3:5]), seconds = int(HeureDebut[6:8]))
-    NombreHeure = datetime.timedelta(hours = int(NombreHeure[:2]),minutes = int(NombreHeure[3:5]))
-    HeureFin = HeureDebut + NombreHeure
-
-    heure_ouverture_iut = datetime.timedelta(hours = 8)
-    heure_fermeture_iut = datetime.timedelta(hours = 19)
-
-    if HeureDebut < heure_ouverture_iut or HeureFin > heure_fermeture_iut:
-        return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "L'iut est fermé durant la période spécifié"))}), 404
-
-    query = f""" select distinct idprof,initiale, idsalle,firstname, lastname,idutilisateur 
-    from edt.professeur full join edt.enseigner using(idProf) full join edt.cours
-    using(idCours) inner join edt.utilisateur using(idUtilisateur)
-     where (idProf is not null) and ( '{json_data['HeureDebut']}' <  HeureDebut 
-    and  '{str(HeureFin)}' <= HeureDebut or '{json_data['HeureDebut']}'::time >=  (HeureDebut + NombreHeure::interval)) 
-    or ('{json_data['Jour']}' != Jour and idProf is not null) or (HeureDebut is null) order by idProf asc
-    """
+    
+    heureDebut_str = json_data['HeureDebut']  #type: str  # "09:00:00"
+    nombreHeure_str = json_data['NombreHeure'] #"2024-01-15"
+    jour_str = json_data['Jour'] #"02:00:00"
+    
+    #heureApres = heureDebut + nombreHeure
+    #heureAvant = heureDebut - nombreHeure
+    salles = []
+    heureDebut = datetime.datetime.strptime(heureDebut_str, '%H:%M:%S').time()
+    nombreHeure = datetime.datetime.strptime(nombreHeure_str, '%H:%M:%S').time()
+    jour = datetime.datetime.strptime(jour_str, '%Y-%m-%d').date()
+    print(jour)
+    
+    debut = datetime.datetime.combine(jour, heureDebut)
+    fin = datetime.datetime.combine(jour, heureDebut) + datetime.timedelta(hours=nombreHeure.hour, minutes=nombreHeure.minute, seconds=nombreHeure.second)
+       
+    
     conn = connect_pg.connect()
-    returnStatement = []
+    query = f"select * from edt.Professeur;"
+    try:
+        profs = connect_pg.get_query(conn, query)
+    except:
+        return jsonify({'error': str(apiException.ActionImpossibleException("Professeur", "récuperer"))}), 500
+    
+        
+    
+    rows = []
+    query = f"select * from edt.Enseigner inner join edt.cours using(idcours) where edt.cours.jour = '{jour}';"
     try:
         rows = connect_pg.get_query(conn, query)
-        if rows == []:
-            return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "Aucun professeur disponible n'a été trouvé à la période spécifié"))}), 400
+    except:
+        return jsonify({'error': str(apiException.ActionImpossibleException("Enseigner", "récuperer"))}), 500
         
+        
+    returnStatement = []
+    for prof in profs:
+        #if prof[0] is in rows 
+        print('------------prof : ', prof)
         for row in rows:
-            returnStatement.append(get_professeur_statement_extended(row))
-    except Exception as e:
-        return jsonify({'error': str(apiException.ActionImpossibleException("Enseigner", "récupérer"))}), 500
+            rowHeureDebut = row[2]
+            nombreHeure = row[3]
+            rowJour = row[4]
+            rowDebut = datetime.datetime.combine(rowJour, rowHeureDebut)
+            rowFin = datetime.datetime.combine(rowJour, rowHeureDebut) + datetime.timedelta(hours=nombreHeure.hour, minutes=nombreHeure.minute, seconds=nombreHeure.second)
+            if prof[0] == row[1]:
+                #if debut is between rowDebut and rowFin or if fin is between rowDebut and rowFin
+                if ((debut > rowDebut and debut < rowFin) or (fin > rowDebut and fin < rowFin)):
+                    print('prof non dispo : ', prof)
+                    profs.remove(prof)
+                    #remove every rows where row[1] == prof[0]
+                    rows.remove(row)
+                    
+                elif ((rowDebut > debut and rowDebut < fin) or (rowFin > debut and rowFin < fin)):
+                    print('prof non dispo : ', prof)
+                    profs.remove(prof)
+                    rows.remove(row)
+                #elif prof still in profs
+        if prof in profs:
+            print('prof dispo : ', prof)
+            returnStatement.append(get_professeur_statement(prof))
+    print('returnStatement : ', returnStatement)
     connect_pg.disconnect(conn)
-    return jsonify(returnStatement)
+    return jsonify(returnStatement), 200
 
 
 
