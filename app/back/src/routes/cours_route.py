@@ -378,15 +378,15 @@ def deplacer_cours(idCours):
 
         HeureFin = str(HeureFin)
         
-        if not verif.groupeEstDispo(idGroupe, HeureDebut, HeureFin, Jour, conn):
+        if not verif.groupeEstDispo(idGroupe, HeureDebut, HeureFin, Jour, conn, idCours):
             return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "Ce groupe n'est pas disponible durant la nouvelle période de cours spécifié"))}), 400
         
         idProf = json.loads(get_prof_cours(idCours).data)[0]['idProf']
-        if not verif.groupeEstDispo(idProf, HeureDebut, HeureFin, Jour, conn):
+        if not verif.groupeEstDispo(idProf, HeureDebut, HeureFin, Jour, conn, idCours):
             return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "Ce professeur n'est pas disponible durant la nouvelle période de cours spécifié"))}), 400
 
         idSalle = json.loads(get_prof_cours(idCours).data)[0]['idSalle']
-        if not verif.salleEstDispo(idSalle, HeureDebut, HeureFin, Jour, conn):
+        if not verif.salleEstDispo(idSalle, HeureDebut, HeureFin, Jour, conn, idCours):
             return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "Cette salle n'est pas disponible durant la nouvelle période de cours spécifié"))}), 400
     
     query = "UPDATE edt.cours "
@@ -409,7 +409,7 @@ def deplacer_cours(idCours):
 @cours.route('/cours/modifierCours/<idCours>', methods=['PUT'])
 @jwt_required()
 def modifier_cours(idCours):
-    """Permet de modifier un cours via la route /cours/deplacer/<idCours>
+    """Permet de modifier un cours via la route /cours/modifierCours/<idCours>
     
     :param idCours: id du cours à modifier
     :type idCours: int
