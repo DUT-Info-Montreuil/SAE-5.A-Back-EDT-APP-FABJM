@@ -5,7 +5,37 @@ Fabrice
 Jérémy
 Maxime
 
-Bienvenue dans le projet Edt visant à mettre en place un emploie du temps.
+Bienvenue dans le guide pour installer la partie back-end du projet Edt visant à mettre en place un emploie du temps.
+
+Sur Docker : 
+    - Commencer par lancer la commande cd app/back
+	- Puis lancer la commande make compose 
+    - Ensuite ouvrez un autre terminal puis cherchez id du container de la db en cours à l'aide de la commande docker ps
+
+    Puis ouvrez le terminal de ce container que vous venez de trouver:
+    docker exec -it container_id bash
+
+    Enfin exécutez ces commandes dans les terminaux respectifs : 
+
+    Dans le terminal de la BDD :
+        su postgres -
+        cd
+        cd commands/SQL_script
+        psql
+        \i commands.sql
+
+    Dans le terminal du back (ici on ne prend pas en compte les tests) : 
+        python -m pip install --upgrade pip
+        pip install pipenv --upgrade
+        apt-get update
+        apt-get -y install libpq-dev gcc
+        pip install py-make
+        pip install -r requirements.txt
+        pip install flask_jwt_extended
+        cd ..
+        pip install -e .
+        cd /usr
+        python app/back/src/rest_api.py
 
 Pour Windows : 
     Pour utiliser et obtenir plus d'information sur ce projet :
