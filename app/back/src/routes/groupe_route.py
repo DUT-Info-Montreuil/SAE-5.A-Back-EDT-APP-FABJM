@@ -202,37 +202,70 @@ def get_groupe_dispo():
     if not verif.estDeTypeTime(json_data['HeureDebut']) or not verif.estDeTypeDate(json_data['Jour']) or not verif.estDeTypeTime(json_data['NombreHeure']):
         return jsonify({'error': str(apiException.ParamètreInvalideException("HeureDebut, NombreHeure ou Jour"))}), 404
 
-    HeureDebut = json_data['HeureDebut']
-    NombreHeure = json_data['NombreHeure']
-    HeureDebut = datetime.timedelta(hours = int(HeureDebut[:2]),minutes = int(HeureDebut[3:5]), seconds = 00)
-    NombreHeure = datetime.timedelta(hours = int(NombreHeure[:2]),minutes = int(NombreHeure[3:5]), seconds = 00)
-    HeureFin = HeureDebut + NombreHeure
-
-    heure_ouverture_iut = datetime.timedelta(hours = 8)
-    heure_fermeture_iut = datetime.timedelta(hours = 19)
-
-    if HeureDebut < heure_ouverture_iut or HeureFin > heure_fermeture_iut:
-        return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "L'iut est fermé durant la période spécifié"))}), 404
-
-
-    query = f""" select distinct edt.groupe.*  from edt.groupe full join edt.etudier using(idGroupe) full join edt.cours
-    using(idCours) where (idGroupe is not null) and ( '{json_data['HeureDebut']}' <  HeureDebut 
-    and  '{str(HeureFin)}' <= HeureDebut or '{json_data['HeureDebut']}'::time >=  (HeureDebut + NombreHeure::interval))
-    or ('{json_data['Jour']}' != Jour and idGroupe is not null) or (HeureDebut is null) order by idGroupe asc
-    """
+    heureDebut_str = json_data['HeureDebut']  #type: str  # "09:00:00"
+    nombreHeure_str = json_data['NombreHeure'] #"2024-01-15"
+    jour_str = json_data['Jour'] #"02:00:00"
+    
+    #heureApres = heureDebut + nombreHeure
+    #heureAvant = heureDebut - nombreHeure
+    groupes = []
+    heureDebut = datetime.datetime.strptime(heureDebut_str, '%H:%M:%S').time()
+    nombreHeure = datetime.datetime.strptime(nombreHeure_str, '%H:%M:%S').time()
+    jour = datetime.datetime.strptime(jour_str, '%Y-%m-%d').date()
+    print(jour)
+    
+    debut = datetime.datetime.combine(jour, heureDebut)
+    fin = datetime.datetime.combine(jour, heureDebut) + datetime.timedelta(hours=nombreHeure.hour, minutes=nombreHeure.minute, seconds=nombreHeure.second)
+       
+    
     conn = connect_pg.connect()
-    returnStatement = []
+    query = f"select * from edt.Groupe;"
+    try:
+        groupes = connect_pg.get_query(conn, query)
+    except:
+        return jsonify({'error': str(apiException.ActionImpossibleException("Groupe", "récuperer"))}), 500
+    
+    print("--------groupes-------", groupes)
+    
+    rows = []
+    query = f"select * from edt.Etudier inner join edt.cours using(idcours) where edt.cours.jour = '{jour}';"
     try:
         rows = connect_pg.get_query(conn, query)
-        if rows == []:
-            return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "Aucun groupe disponible n'a été trouvé à la période spécifié"))}), 400
+    except:
+        return jsonify({'error': str(apiException.ActionImpossibleException("Etudier", "récuperer"))}), 500
         
+        
+    returnStatement = []
+    for groupe in groupes:
+        is_dispo = True
+        #if groupe[0] is in rows 
+        print('------------groupe : ', groupe)
+        # tab_index_row_to_delete = []
+        # compteur_row = -1
         for row in rows:
-            returnStatement.append(get_groupe_statement(row))
-    except Exception as e:
-        return jsonify({'error': str(apiException.ActionImpossibleException("Etudier", "récupérer"))}), 500
+            # compteur_row += 1
+            rowHeureDebut = row[2]
+            nombreHeure = row[3]
+            rowJour = row[4]
+            rowDebut = datetime.datetime.combine(rowJour, rowHeureDebut)
+            rowFin = datetime.datetime.combine(rowJour, rowHeureDebut) + datetime.timedelta(hours=nombreHeure.hour, minutes=nombreHeure.minute, seconds=nombreHeure.second)
+            if groupe[0] == row[1]:
+                #if debut is between rowDebut and rowFin or if fin is between rowDebut and rowFin
+                if ((debut > rowDebut and debut < rowFin) or (fin > rowDebut and fin < rowFin)):
+                    print('groupe non dispo : ', groupe)
+                    is_dispo = False
+                    
+                elif ((rowDebut > debut and rowDebut < fin) or (rowFin > debut and rowFin < fin)):
+                    print('groupe non dispo : ', groupe)
+                    is_dispo = False
+
+        if is_dispo:
+            print('groupe dispo : ', groupe)
+            returnStatement.append(get_groupe_statement(groupe))
+    print(groupes)
+    print('returnStatement : ', returnStatement)
     connect_pg.disconnect(conn)
-    return jsonify(returnStatement)
+    return jsonify(returnStatement), 200
 
 
 @groupe.route('/groupe/get/<idGroupe>', methods=['GET'])

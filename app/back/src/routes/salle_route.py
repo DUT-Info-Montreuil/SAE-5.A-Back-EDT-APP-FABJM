@@ -84,6 +84,7 @@ def get_salle_dispo():
         
     returnStatement = []
     for salle in salles:
+        is_dispo = True
         #if salle[0] is in rows 
         print('------------salle : ', salle)
         for row in rows:
@@ -96,16 +97,13 @@ def get_salle_dispo():
                 #if debut is between rowDebut and rowFin or if fin is between rowDebut and rowFin
                 if ((debut > rowDebut and debut < rowFin) or (fin > rowDebut and fin < rowFin)):
                     print('salle non dispo : ', salle)
-                    salles.remove(salle)
-                    #remove every rows where row[1] == salle[0]
-                    rows.remove(row)
+                    is_dispo = False
                     
                 elif ((rowDebut > debut and rowDebut < fin) or (rowFin > debut and rowFin < fin)):
                     print('salle non dispo : ', salle)
-                    salles.remove(salle)
-                    rows.remove(row)
-                #elif salle still in salles
-        if salle in salles:
+                    is_dispo = False
+
+        if is_dispo:
             print('salle dispo : ', salle)
             returnStatement.append(get_salle_statement(salle))
     print('returnStatement : ', returnStatement)

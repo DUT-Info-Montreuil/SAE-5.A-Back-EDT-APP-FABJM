@@ -61,7 +61,7 @@ def get_prof_dispo():
     
     #heureApres = heureDebut + nombreHeure
     #heureAvant = heureDebut - nombreHeure
-    salles = []
+    profs = []
     heureDebut = datetime.datetime.strptime(heureDebut_str, '%H:%M:%S').time()
     nombreHeure = datetime.datetime.strptime(nombreHeure_str, '%H:%M:%S').time()
     jour = datetime.datetime.strptime(jour_str, '%Y-%m-%d').date()
@@ -78,7 +78,7 @@ def get_prof_dispo():
     except:
         return jsonify({'error': str(apiException.ActionImpossibleException("Professeur", "récuperer"))}), 500
     
-        
+    print("--------profs-------", profs)
     
     rows = []
     query = f"select * from edt.Enseigner inner join edt.cours using(idcours) where edt.cours.jour = '{jour}';"
@@ -90,9 +90,13 @@ def get_prof_dispo():
         
     returnStatement = []
     for prof in profs:
+        is_dispo = True
         #if prof[0] is in rows 
         print('------------prof : ', prof)
+        # tab_index_row_to_delete = []
+        # compteur_row = -1
         for row in rows:
+            # compteur_row += 1
             rowHeureDebut = row[2]
             nombreHeure = row[3]
             rowJour = row[4]
@@ -102,18 +106,16 @@ def get_prof_dispo():
                 #if debut is between rowDebut and rowFin or if fin is between rowDebut and rowFin
                 if ((debut > rowDebut and debut < rowFin) or (fin > rowDebut and fin < rowFin)):
                     print('prof non dispo : ', prof)
-                    profs.remove(prof)
-                    #remove every rows where row[1] == prof[0]
-                    rows.remove(row)
+                    is_dispo = False
                     
                 elif ((rowDebut > debut and rowDebut < fin) or (rowFin > debut and rowFin < fin)):
                     print('prof non dispo : ', prof)
-                    profs.remove(prof)
-                    rows.remove(row)
-                #elif prof still in profs
-        if prof in profs:
+                    is_dispo = False
+
+        if is_dispo:
             print('prof dispo : ', prof)
             returnStatement.append(get_professeur_statement(prof))
+    print(profs)
     print('returnStatement : ', returnStatement)
     connect_pg.disconnect(conn)
     return jsonify(returnStatement), 200
@@ -137,8 +139,7 @@ def get_utilisateur():
     if not perm.permissionCheck(get_jwt_identity() , 0 , conn):
         return jsonify({'erreur': str(apiException.PermissionManquanteException())}), 403
     
-    request = util.get("Utilisateur", key_to_return=["idUtilisateur", "FirstName", "LastName", "Username"])
-    rows = connect_pg.get_query(conn, request)
+    query = util.get("Utilisateur", key_to_return=["idUtilisateur", "FirstName", "LastName", "Username"])
     returnStatement = []
     try:
         rows = connect_pg.get_query(conn, query)
