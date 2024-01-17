@@ -1004,7 +1004,7 @@ def get_all_manager():
         if rows == []:
             return jsonify({'erreur': str(apiException.DonneeIntrouvableException("Manager"))}), 400
         for row in rows:
-            returnStatement.append(get_manager_statement(row))
+            returnStatement.append(get_manager_statement(row)) #TODO : get_manager_statement n'existe pas
     except Exception as e:
         return jsonify({'error': str(apiException.ActionImpossibleException("Manager", "récupérer"))}), 500
     

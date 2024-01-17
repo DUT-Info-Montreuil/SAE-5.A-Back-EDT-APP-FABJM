@@ -184,8 +184,28 @@ def ajouter_cours(idGroupe):
 
     result = connect_pg.get_query(conn , query)
     
-    if result != []:
-        return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "Ce groupe n'est pas disponible à la période spécifié"))}), 400
+    courGroupe = get_cours(str(json_datas['idCours']))
+    
+    if type(courGroupe) != tuple :
+        courGroupe = json.loads(get_cours(str(json_datas['idCours'])).data) 
+        print("CG =============" + str(courGroupe))
+        HeureDebut = courGroupe['HeureDebut']
+        NombreHeure = courGroupe['NombreHeure']
+        HeureDebut = datetime.timedelta(hours = int(HeureDebut[:2]),minutes = int(HeureDebut[3:5]), seconds = 00)
+        NombreHeure = datetime.timedelta(hours = int(NombreHeure[:2]),minutes = int(NombreHeure[3:5]), seconds = 00)
+        HeureFin = str(HeureDebut + NombreHeure)
+
+        query = f"""SELECT edt.cours.* FROM edt.cours inner join edt.etudier using(idCours)  where idGroupe = {idGroupe}
+        and ((HeureDebut <= '{courGroupe['HeureDebut']}' and '{courGroupe['HeureDebut']}'::time <=  (HeureDebut + NombreHeure::interval))
+        or ( HeureDebut <= '{HeureFin}' and '{HeureFin}'::time <= (HeureDebut + NombreHeure::interval)))
+        and ('{courGroupe['Jour']}' = Jour and idCours is not null) order by idCours asc
+        """
+
+        result = connect_pg.get_query(conn , query)
+        
+        if result != []:
+            return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "Ce groupe n'est pas disponible à la période spécifié"))}), 400
+
     
     returnStatement = {}
     query = f"Insert into edt.etudier (idGroupe, idCours) values ('{idGroupe}', '{json_data['idCours']}') returning idGroupe"

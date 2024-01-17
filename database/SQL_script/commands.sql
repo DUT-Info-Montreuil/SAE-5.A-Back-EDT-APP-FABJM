@@ -90,7 +90,10 @@ CREATE TABLE Eleve(
    FOREIGN KEY(idUtilisateur) REFERENCES Utilisateur(idUtilisateur)
 );
 
-Create type TypeCours as ENUM ('Amphi', 'Td', 'Tp', 'Sae');
+CREATE TYPE typecours AS ENUM ('Amphi', 'Td', 'Tp', 'Sae');
+
+
+
 
 CREATE TABLE Cours(
    idCours SERIAL,
