@@ -76,7 +76,7 @@ def estDeTypeDate(string):
     except IndexError:
         return False
     
-def groupeEstDispo(idGroupe, HeureDebut, HeureFin, Jour, conn):
+def groupeEstDispo(idGroupe, HeureDebut, HeureFin, Jour, conn, idCours):
     """Détermine si un groupe est disponible à l'horaire définie
 
     :param idGroupe: L'id d'un groupe
@@ -98,7 +98,7 @@ def groupeEstDispo(idGroupe, HeureDebut, HeureFin, Jour, conn):
     :rtype: bool
     """
 
-    query = f"""SELECT edt.cours.* FROM edt.cours inner join edt.etudier using(idCours)  where idGroupe = {idGroupe}
+    query = f"""SELECT edt.cours.* FROM edt.cours inner join edt.etudier using(idCours)  where idGroupe = {idGroupe} and idCours != {idCours}
     and ((HeureDebut <= '{HeureDebut}' and '{HeureDebut}'::time <=  (HeureDebut + NombreHeure::interval))
     or ( HeureDebut <= '{HeureFin}' and '{HeureFin}'::time <= (HeureDebut + NombreHeure::interval)))
     and ('{Jour}' = Jour and idCours is not null) order by idCours asc
@@ -112,7 +112,7 @@ def groupeEstDispo(idGroupe, HeureDebut, HeureFin, Jour, conn):
         return True
     
 
-def profEstDispo(idProf, HeureDebut, HeureFin, Jour, conn):
+def profEstDispo(idProf, HeureDebut, HeureFin, Jour, conn, idCours):
     """Détermine si un enseignant est disponible à l'horaire définie
 
     :param idGroupe: L'id d'un groupe
@@ -133,7 +133,7 @@ def profEstDispo(idProf, HeureDebut, HeureFin, Jour, conn):
     :return: Retourne True si le groupe est disponible, False sinon
     :rtype: bool
     """
-    query = f"""SELECT edt.cours.* FROM edt.cours inner join edt.enseigner using(idCours)  where idProf = {idProf}
+    query = f"""SELECT edt.cours.* FROM edt.cours inner join edt.enseigner using(idCours)  where idProf = {idProf} and idCours != {idCours}
     and ((HeureDebut <= '{HeureDebut}' and '{HeureDebut}'::time <=  (HeureDebut + NombreHeure::interval))
     or ( HeureDebut <= '{HeureFin}' and '{HeureFin}'::time <= (HeureDebut + NombreHeure::interval)))
     and ('{Jour}' = Jour and idCours is not null) order by idCours asc
@@ -147,7 +147,7 @@ def profEstDispo(idProf, HeureDebut, HeureFin, Jour, conn):
 
 
 
-def salleEstDispo(idSalle, HeureDebut, HeureFin, Jour, conn):
+def salleEstDispo(idSalle, HeureDebut, HeureFin, Jour, conn, idCours):
     """Détermine si une salle est disponible à l'horaire définie
 
     :param idGroupe: L'id d'un groupe
@@ -167,8 +167,8 @@ def salleEstDispo(idSalle, HeureDebut, HeureFin, Jour, conn):
     
     :return: Retourne True si le groupe est disponible, False sinon
     :rtype: bool
-    """
-    query = f"""SELECT edt.cours.* FROM edt.cours inner join edt.accuellir using(idCours)  where idSalle = {idSalle}
+    """ 
+    query = f"""SELECT edt.cours.* FROM edt.cours inner join edt.accuellir using(idCours)  where idSalle = {idSalle} and idCours != {idCours}
     and ((HeureDebut <= '{HeureDebut}' and '{HeureDebut}'::time <=  (HeureDebut + NombreHeure::interval))
     or ( HeureDebut <= '{HeureFin}' and '{HeureFin}'::time <= (HeureDebut + NombreHeure::interval)))
     and ('{Jour}' = Jour and idCours is not null) order by idCours asc
