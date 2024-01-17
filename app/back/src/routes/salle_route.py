@@ -29,7 +29,7 @@ def get_salle_dispo():
     :param HeureDebut: date du début de la période au format time(hh:mm:ss) spécifié dans le body
     :type HeureDebut: str 
 
-    :param NombreHeure: durée de la période spécifié dans le body
+    :param NombreHeure: durée de la période au format TIME(hh:mm:ss) spécifié dans le body
     :type NombreHeure: int
 
     :param Jour: date de la journée où la disponibilité des salles doit être vérifer au format DATE(yyyy-mm-dd)
@@ -84,7 +84,7 @@ def get_salle_dispo():
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 
-@salle.route('/salle/getAll')
+@salle.route('/salle/getAll', methods=['GET'])
 @jwt_required()
 def get_salle():
     """Renvoit toutes les salles via la route /salle/getAll
@@ -94,15 +94,18 @@ def get_salle():
     :return: toutes les salles
     :rtype: json
     """
-    query = "select * from edt.salle order by idsalle asc"
+    query = "SELECT * from edt.salle order by idsalle asc"
     conn = connect_pg.connect()
-    rows = connect_pg.get_query(conn, query)
+    
     returnStatement = []
     try:
+        rows = connect_pg.get_query(conn, query)
+        if rows == []:
+            return jsonify({'error': str(apiException.AucuneDonneeTrouverException("salle"))}), 404
         for row in rows:
             returnStatement.append(get_salle_statement(row))
-    except TypeError as e:
-        return jsonify({'error': str(apiException.AucuneDonneeTrouverException("salle"))}), 404
+    except(Exception) as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("salle", "récuperer"))}), 500
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 
@@ -120,19 +123,24 @@ def get_one_salle(idSalle):
     :return: la salle qui correspond à l'id du numéro entré en paramètre
     :rtype: json
     """
+    if (not idSalle.isdigit()):
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idSalle", "numérique"))}), 400
+    
 
-    query = f"select * from edt.salle where idSalle='{idSalle}'"
+    query = f"SELECT * from edt.salle where idSalle='{idSalle}'"
 
     conn = connect_pg.connect()
-    rows = connect_pg.get_query(conn, query)
+    
     returnStatement = {}
     if not idSalle.isdigit() or type(idSalle) is not str:
         return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idSalle", "numérique"))}), 400
     try:
-        if len(rows) > 0:
-            returnStatement = get_salle_statement(rows[0])
-    except TypeError as e:
-        return jsonify({'error': str(apiException.DonneeIntrouvableException("salle", idSalle))}), 404
+        rows = connect_pg.get_query(conn, query)
+        if len(rows) == 0:
+            return jsonify({'error': str(apiException.DonneeIntrouvableException("salle", idSalle))}), 404
+        returnStatement = get_salle_statement(rows[0])
+    except(Exception) as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("salle", "récuperer"))}), 500
     connect_pg.disconnect(conn)
     return jsonify(returnStatement), 200
 
@@ -149,6 +157,9 @@ def get_salle_cours(idCours):
     :return: l'id de la salle dans lequel se déroule cours
     :rtype: json
     """
+    if (not idCours.isdigit()):
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idCours", "numérique"))}), 400
+    
     query = f"select edt.salle.* from edt.salle inner join edt.accuellir  using(idSalle) inner join edt.cours using(idCours) where idCours={idCours} "
     returnStatement = []
     conn = connect_pg.connect()
@@ -156,8 +167,8 @@ def get_salle_cours(idCours):
         rows = connect_pg.get_query(conn, query)
         for row in rows:
             returnStatement.append(get_salle_statement(row))
-    except IndexError:
-        return jsonify({'error': str(apiException.DonneeIntrouvableException("Accuellir", idCours))}), 400
+    except(Exception) as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("accuellir", "récuperer"))}), 500
         
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
@@ -176,11 +187,17 @@ def delete_salle(idSalle):
     :return: message de succès
     :rtype: str
     """
+    if (not idSalle.isdigit()):
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idSalle", "numérique"))}), 400
+    
     query = f"delete from edt.salle where idSalle={idSalle}"
+    query2 = f"delete from edt.accuellir where idSalle={idSalle}"
     conn = connect_pg.connect()
     try:
+        returnStatement = connect_pg.execute_commands(conn, query2)
         returnStatement = connect_pg.execute_commands(conn, query)
-    except psycopg2.IntegrityError as e:
+        
+    except(Exception) as e:
         return jsonify({'error': str(apiException.ActionImpossibleException("salle","supprimé"))}), 500
     
     return jsonify({'success': 'salle supprimé'}), 200
@@ -199,20 +216,20 @@ def add_salle():
     :return: l'id de l'utilisateur crée
     :rtype: json
     """
-    json_datas = request.get_json()
-    if not json_datas:
+    json_data = request.get_json()
+    if not json_data:
         return jsonify({'error ': 'missing json body'}), 400
 
-    query = f"Insert into edt.salle (Numero, Capacite) values ('{json_datas['Numero']}',{json_datas['Capacite']}) returning idSalle"
+    query = f"Insert into edt.salle (Numero, Capacite) values ('{json_data['Numero']}',{json_data['Capacite']}) returning idSalle"
     conn = connect_pg.connect()
     try:
         returnStatement = connect_pg.execute_commands(conn, query)
         idSemestre = returnStatement
-    except psycopg2.IntegrityError as e:
+    except Exception as e:
         if e.pgcode == errorcodes.UNIQUE_VIOLATION:
             # Erreur violation de contrainte unique
             return jsonify({'error': str(
-                apiException.DonneeExistanteException(json_datas['Numero'], "Numero", "salle"))}), 400
+                apiException.DonneeExistanteException(json_data['Numero'], "Numero", "salle"))}), 400
         else:
             # Erreur inconnue
             return jsonify({'error': str(apiException.ActionImpossibleException("salle"))}), 500
@@ -244,13 +261,16 @@ def get_equipements_of_salle(idSalle):
 
     query = f"SELECT equipement.* from edt.equiper AS e NATURAL JOIN edt.equipement AS equipement WHERE e.idSalle={idSalle}"
 
-    equipements = connect_pg.get_query(conn, query)
+    
     returnStatement = []
     try:
+        equipements = connect_pg.get_query(conn, query)
+        if equipements == []:
+            return jsonify({'error': str(apiException.AucuneDonneeTrouverException("salle"))}), 404
         for row in equipements:
             returnStatement.append(get_equipement_statement(row))
-    except(TypeError) as e:
-        return jsonify({'error': str(apiException.AucuneDonneeTrouverException("equiper"))}), 404
+    except(Exception) as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("salle", "récuperer"))}), 500
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 
@@ -267,8 +287,8 @@ def add_equipements_of_salle(idSalle):
     :return: un tableau d'id d'equipement crééent
     :rtype: json
     """
-    json_datas = request.get_json()
-    if not json_datas:
+    json_data = request.get_json()
+    if not json_data:
         return jsonify({'error ': 'missing json body'}), 400
 
     conn = connect_pg.connect()
@@ -278,12 +298,17 @@ def add_equipements_of_salle(idSalle):
         return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
     query = "INSERT INTO edt.equiper (idSalle, idEquipement) VALUES "
     value_query = []
+
     for data in json_datas['idEquipement']:
         value_query.append(f"({idSalle},'{data}')")
+
     query += ",".join(value_query) + " returning idEquipement"
 
     # TODO: find why only one id is return when multiple one are inserted
-    returnStatement = connect_pg.execute_commands(conn, query)
+    try:
+        returnStatement = connect_pg.execute_commands(conn, query)
+    except(Exception) as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("groupe", "récuperer"))}), 500
     # TODO: handle error pair of key already exist
     connect_pg.disconnect(conn)
     return jsonify({"success": f"The equipements with the ids {returnStatement} were successfully created"}), 200    #{', '.join(tabIdEquipement)}

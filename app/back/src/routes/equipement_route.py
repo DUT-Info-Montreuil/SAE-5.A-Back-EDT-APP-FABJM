@@ -8,6 +8,8 @@ from src.config import config
 from src.services.equipement_service import get_equipement_statement
 from src.services.salle_service import get_salle_statement
 
+from src.utilitary import update
+
 import psycopg2
 from psycopg2 import errorcodes
 from psycopg2 import OperationalError, Error
@@ -22,7 +24,9 @@ equipement = Blueprint('equipement', __name__)
 def get_all_equipement():
     """Renvoit tous les equipements via la route /equipement/getAll
 
-    :raises PermissionManquanteException: L'utilisatuer n'a pas les droits pour avoir accés à cette route
+    :raises PermissionManquanteException: L'utilisateur n'a pas les droits pour avoir accés à cette route
+    :raises AucuneDonneeTrouverException: Si aucune données remplisssant les critères n'a été trouvé 
+    :raises ActionImpossibleException: Si une erreur inconnue est survenue lors de la récupération des données dans la table équipements
     
     :return:  tous les equipements
     :rtype: json
@@ -34,13 +38,16 @@ def get_all_equipement():
 
     query = f"SELECT * from edt.equipement"
 
-    equipements = connect_pg.get_query(conn, query)
+    
     returnStatement = []
     try:
+        equipements = connect_pg.get_query(conn, query)
+        if equipements == []:
+            return jsonify({'error': str(apiException.AucuneDonneeTrouverException("equipement"))}), 404
         for row in equipements:
             returnStatement.append(get_equipement_statement(row))
-    except(TypeError) as e:
-        return jsonify({'error': str(apiException.AucuneDonneeTrouverException("equipement"))}), 404
+    except Exception as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("equipement", "récupérer"))}), 500
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 
@@ -54,6 +61,7 @@ def get_equipement(filtre):
     
     :raises AucuneDonneeTrouverException: Aucune donnée n'a pas être trouvé correspont aux critère
     :raises PermissionManquanteException: L'utilisatuer n'a pas les droits pour avoir accés à cette route
+    :raises ActionImpossibleException: Si une erreur inconnue est survenue lors de la récupération des données dans la table équipements
     
     :return: Les équipements filtrés
     :rtype: json
@@ -70,29 +78,32 @@ def get_equipement(filtre):
     else:
         query = f"SELECT * from edt.equipement where Nom LIKE '%{filtre}%'"
 
-    equipements = connect_pg.get_query(conn, query)
+    
     returnStatement = []
     try:
+        equipements = connect_pg.get_query(conn, query)
+        if equipements == []:
+            return jsonify({'error': str(apiException.AucuneDonneeTrouverException("equipement"))}), 404
         for row in equipements:
             returnStatement.append(get_equipement_statement(row))
-    except(TypeError) as e:
-        return jsonify({'error': str(apiException.AucuneDonneeTrouverException("equipement"))}), 404
+    except Exception as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("equipement", "récupérer"))}), 500
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 
-# TODO: test route bellow
 @equipement.route('/equipement/add', methods=['POST'])
 @jwt_required()
 def add_equipement():
     """Permet d'ajouter un ou plusieurs equipements via la route /equipement/add
 
-    :raises PermissionManquanteException: L'utilisatuer n'a pas les droits pour avoir accés à cette route
+    :raises PermissionManquanteException: L'utilisateur n'a pas les droits pour avoir accés à cette route
+    :raises ActionImpossibleException: Si une erreur inconnue est survenue lors de la récupération des données dans la table équipements
 
     :return: un tableau d'id d'equipement crééent
     :rtype: json
     """
-    json_datas = request.get_json()
-    if not json_datas:
+    json_data = request.get_json()
+    if not json_data:
         return jsonify({'error ': 'missing json body'}), 400
 
 
@@ -103,12 +114,15 @@ def add_equipement():
         return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
     query = "INSERT INTO edt.equipement (Nom) VALUES "
     value_query = []
-    for data in json_datas['data']:
+    for data in json_data['data']:
         value_query.append(f"('{data['Nom']}')")
     query += ",".join(value_query) + " returning idEquipement"
 
     # TODO: find why only one id is return when multiple one are inserted
-    returnStatement = connect_pg.execute_commands(conn, query)
+    try:
+        returnStatement = connect_pg.execute_commands(conn, query)
+    except Exception as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("equipement", "ajouter"))}), 500
 
     connect_pg.disconnect(conn)
     return jsonify({"success": f"The equipements with the ids {returnStatement} were successfully created"}), 200    #{', '.join(tabIdEquipement)}
@@ -122,32 +136,32 @@ def update_equipement(idEquipement):
     :param idEquipement: l'id d'un equipement présent dans la base de donnée
     :type idEquipement: str
 
-    :raises DonneeIntrouvableException: Impossible de trouver le equipement spécifié dans la table equipement
+    :raises PermissionManquanteException: L'utilisateur n'a pas les droits pour avoir accés à cette route
+    :raises ActionImpossibleException: Si une erreur est survenue lors de la suppression
 
     :return: success
     :rtype: json
     """
-    json_datas = request.get_json()
-    if not json_datas:
+    json_data = request.get_json()
+    if not json_data:
         return jsonify({'error ': 'missing json body'}), 400
+    table_name = "Equipement"
     keys = ["Nom"]
-    tab_info = []
-    for key in json_datas.keys():
-        if key not in keys:
-            return jsonify({'error': "missing or invalid key"}), 400
-        tab_info.append(f"{key}='{json_datas[key]}'")
+    
+    query = update("Equipement", f"idEquipement={idEquipement}", json_data, keys)
+    # Si query update return une error
+    if type(query) == tuple:
+        return query
 
     conn = connect_pg.connect()
     permision = perm.getUserPermission(get_jwt_identity() , conn)
     if(permision != 0):
         return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
     
-    query = "UPDATE edt.equipement SET " + ", ".join(tab_info) + f" WHERE idEquipement={idEquipement} RETURNING *"
-
     try:
-        connect_pg.execute_commands(conn, query)
-    except TypeError as e:
-        return jsonify({'error': str(apiException.DonneeIntrouvableException("equipement", idEquipement))}), 404
+        connect_pg.execute_commands(conn, query[0], query[1])
+    except Exception as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("equipement", "mise à jour"))}), 500
     connect_pg.disconnect(conn)
     return jsonify({"success": f"the equipement with id {idEquipement} was successfully updated"}), 200
 
@@ -160,7 +174,7 @@ def delete_equipement(idEquipement):
     :param idEquipement: l'id d'un groupe présent dans la base de donnée
     :type idEquipement: str
 
-    :raises DonneeIntrouvableException: Impossible de trouver le groupe spécifié dans la table groupe
+    :raises ActionImpossibleException: Si une erreur est survenue lors de la suppression
 
     :return:  le parent du groupe a qui appartient cet id
     :rtype: json
@@ -169,8 +183,8 @@ def delete_equipement(idEquipement):
     query = f"DELETE FROM edt.Equipement WHERE idEquipement={idEquipement} RETURNING *"
     try:
         returnStatement = connect_pg.execute_commands(conn, query)
-    except(TypeError) as e:
-        return jsonify({'error': str(apiException.DonneeIntrouvableException("Equipement", idEquipement))}), 404
+    except Exception as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("equipement", "supprimer"))}), 500
     connect_pg.disconnect(conn)
     return jsonify({"success": f"The equipement with id {idEquipement} was successfully removed"}), 200
 
@@ -185,7 +199,8 @@ def get_salles_of_equipement(idEquipement):
     :param idEquipement: l'id d'un groupe présent dans la base de donnée
     :type idEquipement: str
 
-    :raises PermissionManquanteException: L'utilisatuer n'a pas les droits pour avoir accés à cette route
+    :raises PermissionManquanteException: L'utilisateur n'a pas les droits pour avoir accés à cette route
+    :raises ActionImpossibleException: Si une erreur est survenue lors de la récupération des données
     
     :return:  tous les equipements
     :rtype: json
@@ -203,8 +218,8 @@ def get_salles_of_equipement(idEquipement):
     try:
         for row in equipements:
             returnStatement.append(get_salle_statement(row))
-    except(TypeError) as e:
-        return jsonify({'error': str(apiException.AucuneDonneeTrouverException("equiper"))}), 404
+    except Exception as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("equipement", "récupérer"))}), 500
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 
@@ -221,8 +236,8 @@ def add_salle_of_equipement(idSalle):
     :return: un tableau d'id d'equipement crééent
     :rtype: json
     """
-    json_datas = request.get_json()
-    if not json_datas:
+    json_data = request.get_json()
+    if not json_data:
         return jsonify({'error ': 'missing json body'}), 400
 
     conn = connect_pg.connect()
@@ -230,14 +245,19 @@ def add_salle_of_equipement(idSalle):
 
     if(permision != 0):
         return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
+
     StartQuery = "INSERT INTO edt.equiper (idEquipement, idSalle) VALUES "
     result = []
     #add multiple equipement 
     for data in json_datas['data']:
         
         query = StartQuery + ","+f"({json_datas["idEquipements"]},'{idSalle}')"+" returning idEquipement"
-        result.append(connect_pg.execute_commands(conn, query))
+        try : 
+          result.append(connect_pg.execute_commands(conn, query))
+        except Exception as e:
+          return jsonify({'error': str(apiException.ActionImpossibleException("equipement", "récupérer"))}), 500
         query = ""
+
 
 
     connect_pg.disconnect(conn)

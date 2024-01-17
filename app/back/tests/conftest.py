@@ -19,8 +19,7 @@ def client(request):
     test_data = getattr(request, "param", None)  # Recevoir les arguments du test pour les données
     db_conn = sqlite3.connect(':memory:')
     app = create_app({'TESTING': True, 'DATABASE': db_conn})
-    
-    print(os.getcwd())
+
     
     with app.test_client() as client:
         init_bdd(db_conn, os.getcwd()+"/database/SQL_script/commands.sql")
