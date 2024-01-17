@@ -29,7 +29,7 @@ def get_salle_dispo():
     :param HeureDebut: date du début de la période au format time(hh:mm:ss) spécifié dans le body
     :type HeureDebut: str 
 
-    :param NombreHeure: durée de la période spécifié dans le body
+    :param NombreHeure: durée de la période au format TIME(hh:mm:ss) spécifié dans le body
     :type NombreHeure: int
 
     :param Jour: date de la journée où la disponibilité des salles doit être vérifer au format DATE(yyyy-mm-dd)
@@ -43,18 +43,18 @@ def get_salle_dispo():
     :return: toutes les salles disponibles
     :rtype: flask.wrappers.Response(json)
     """
-    json_datas = request.get_json()
-    if not json_datas:
+    json_data = request.get_json()
+    if not json_data:
         return jsonify({'error ': 'missing json body'}), 400
     
-    if 'HeureDebut' not in json_datas or 'Jour' not in json_datas or 'NombreHeure' not in json_datas :
+    if 'HeureDebut' not in json_data or 'Jour' not in json_data or 'NombreHeure' not in json_data :
         return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
 
-    if not verif.estDeTypeTime(json_datas['HeureDebut']) or not verif.estDeTypeDate(json_datas['Jour']) or not verif.estDeTypeTime(json_datas['NombreHeure']):
+    if not verif.estDeTypeTime(json_data['HeureDebut']) or not verif.estDeTypeDate(json_data['Jour']) or not verif.estDeTypeTime(json_data['NombreHeure']):
         return jsonify({'error': str(apiException.ParamètreInvalideException("HeureDebut, NombreHeure ou Jour"))}), 404
 
-    HeureDebut = json_datas['HeureDebut']
-    NombreHeure = json_datas['NombreHeure']
+    HeureDebut = json_data['HeureDebut']
+    NombreHeure = json_data['NombreHeure']
     HeureDebut = datetime.timedelta(hours = int(HeureDebut[:2]),minutes = int(HeureDebut[3:5]), seconds = int(HeureDebut[6:8]))
     NombreHeure = datetime.timedelta(hours = int(NombreHeure[:2]),minutes = int(NombreHeure[3:5]))
     HeureFin = HeureDebut + NombreHeure
@@ -63,11 +63,11 @@ def get_salle_dispo():
     heure_fermeture_iut = datetime.timedelta(hours = 19)
 
     if HeureDebut < heure_ouverture_iut or HeureFin > heure_fermeture_iut:
-        return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "L'iut est fermé durant la période spécifié"))}), 404
+        return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "L'iut est fermé durant la période spécifié"))}), 400
 
     query = f""" select edt.salle.* from edt.salle full join edt.accuellir using(idSalle) full join edt.cours
-    using(idCours) where (idSalle is not null) and ( '{json_datas['HeureDebut']}' <  HeureDebut 
-    and  '{str(HeureFin)}' <= HeureDebut or '{json_datas['HeureDebut']}'::time >=  (HeureDebut + NombreHeure::interval))  
+    using(idCours) where (idSalle is not null) and ( '{json_data['HeureDebut']}' <  HeureDebut 
+    and  '{str(HeureFin)}' <= HeureDebut or '{json_data['HeureDebut']}'::time >=  (HeureDebut + NombreHeure::interval))  
     or (HeureDebut is null) order by idSalle asc
     """
     conn = connect_pg.connect()
@@ -84,7 +84,7 @@ def get_salle_dispo():
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 
-@salle.route('/salle/getAll')
+@salle.route('/salle/getAll', methods=['GET'])
 @jwt_required()
 def get_salle():
     """Renvoit toutes les salles via la route /salle/getAll
@@ -94,15 +94,18 @@ def get_salle():
     :return: toutes les salles
     :rtype: json
     """
-    query = "select * from edt.salle order by idsalle asc"
+    query = "SELECT * from edt.salle order by idsalle asc"
     conn = connect_pg.connect()
-    rows = connect_pg.get_query(conn, query)
+    
     returnStatement = []
     try:
+        rows = connect_pg.get_query(conn, query)
+        if rows == []:
+            return jsonify({'error': str(apiException.AucuneDonneeTrouverException("salle"))}), 404
         for row in rows:
             returnStatement.append(get_salle_statement(row))
-    except TypeError as e:
-        return jsonify({'error': str(apiException.AucuneDonneeTrouverException("salle"))}), 404
+    except(Exception) as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("salle", "récuperer"))}), 500
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 
@@ -120,19 +123,24 @@ def get_one_salle(idSalle):
     :return: la salle qui correspond à l'id du numéro entré en paramètre
     :rtype: json
     """
+    if (not idSalle.isdigit()):
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idSalle", "numérique"))}), 400
+    
 
-    query = f"select * from edt.salle where idSalle='{idSalle}'"
+    query = f"SELECT * from edt.salle where idSalle='{idSalle}'"
 
     conn = connect_pg.connect()
-    rows = connect_pg.get_query(conn, query)
+    
     returnStatement = {}
     if not idSalle.isdigit() or type(idSalle) is not str:
         return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idSalle", "numérique"))}), 400
     try:
-        if len(rows) > 0:
-            returnStatement = get_salle_statement(rows[0])
-    except TypeError as e:
-        return jsonify({'error': str(apiException.DonneeIntrouvableException("salle", idSalle))}), 404
+        rows = connect_pg.get_query(conn, query)
+        if len(rows) == 0:
+            return jsonify({'error': str(apiException.DonneeIntrouvableException("salle", idSalle))}), 404
+        returnStatement = get_salle_statement(rows[0])
+    except(Exception) as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("salle", "récuperer"))}), 500
     connect_pg.disconnect(conn)
     return jsonify(returnStatement), 200
 
@@ -149,6 +157,9 @@ def get_salle_cours(idCours):
     :return: l'id de la salle dans lequel se déroule cours
     :rtype: json
     """
+    if (not idCours.isdigit()):
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idCours", "numérique"))}), 400
+    
     query = f"select edt.salle.* from edt.salle inner join edt.accuellir  using(idSalle) inner join edt.cours using(idCours) where idCours={idCours} "
     returnStatement = []
     conn = connect_pg.connect()
@@ -156,8 +167,8 @@ def get_salle_cours(idCours):
         rows = connect_pg.get_query(conn, query)
         for row in rows:
             returnStatement.append(get_salle_statement(row))
-    except IndexError:
-        return jsonify({'error': str(apiException.DonneeIntrouvableException("Accuellir", idCours))}), 400
+    except(Exception) as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("accuellir", "récuperer"))}), 500
         
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
@@ -176,6 +187,9 @@ def delete_salle(idSalle):
     :return: message de succès
     :rtype: str
     """
+    if (not idSalle.isdigit()):
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idSalle", "numérique"))}), 400
+    
     query = f"delete from edt.salle where idSalle={idSalle}"
     query2 = f"delete from edt.accuellir where idSalle={idSalle}"
     conn = connect_pg.connect()
@@ -183,7 +197,7 @@ def delete_salle(idSalle):
         returnStatement = connect_pg.execute_commands(conn, query2)
         returnStatement = connect_pg.execute_commands(conn, query)
         
-    except psycopg2.IntegrityError as e:
+    except(Exception) as e:
         return jsonify({'error': str(apiException.ActionImpossibleException("salle","supprimé"))}), 500
     
     return jsonify({'success': 'salle supprimé'}), 200
@@ -202,25 +216,25 @@ def add_salle():
     :return: l'id de l'utilisateur crée
     :rtype: json
     """
-    json_datas = request.get_json()
-    if not json_datas:
+    json_data = request.get_json()
+    if not json_data:
         return jsonify({'error ': 'missing json body'}), 400
 
-    query = f"Insert into edt.salle (Numero, Capacite) values ('{json_datas['Numero']}',{json_datas['Capacite']}) returning idSalle"
+    query = f"Insert into edt.salle (Nom, Capacite) values ('{json_data['Nom']}',{json_data['Capacite']}) returning idSalle"
     conn = connect_pg.connect()
     try:
         returnStatement = connect_pg.execute_commands(conn, query)
         idSemestre = returnStatement
-    except psycopg2.IntegrityError as e:
+    except Exception as e:
         if e.pgcode == errorcodes.UNIQUE_VIOLATION:
             # Erreur violation de contrainte unique
             return jsonify({'error': str(
-                apiException.DonneeExistanteException(json_datas['Numero'], "Numero", "salle"))}), 400
+                apiException.DonneeExistanteException(json_data['Nom'], "Nom", "salle"))}), 400
         else:
             # Erreur inconnue
             return jsonify({'error': str(apiException.ActionImpossibleException("salle"))}), 500
 
-    return jsonify({"success" : "la salle a été ajouté"}), 200
+    return jsonify({"success" : "la salle a été ajouté" , "idSalle" : returnStatement }), 200
 
 
 
@@ -240,20 +254,23 @@ def get_equipements_of_salle(idSalle):
     :rtype: json
     """
     conn = connect_pg.connect()
-    permision = perm.getUserPermission(get_jwt_identity() , conn)
+    permision = perm.getUserPermission(get_jwt_identity() , conn)[0]
 
     if(permision == 3):
         return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
 
     query = f"SELECT equipement.* from edt.equiper AS e NATURAL JOIN edt.equipement AS equipement WHERE e.idSalle={idSalle}"
 
-    equipements = connect_pg.get_query(conn, query)
+    
     returnStatement = []
     try:
+        equipements = connect_pg.get_query(conn, query)
+        if equipements == []:
+            return jsonify({'error': str(apiException.AucuneDonneeTrouverException("salle"))}), 404
         for row in equipements:
             returnStatement.append(get_equipement_statement(row))
-    except(TypeError) as e:
-        return jsonify({'error': str(apiException.AucuneDonneeTrouverException("equiper"))}), 404
+    except(Exception) as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("salle", "récuperer"))}), 500
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
 
@@ -270,25 +287,59 @@ def add_equipements_of_salle(idSalle):
     :return: un tableau d'id d'equipement crééent
     :rtype: json
     """
-    json_datas = request.get_json()
-    if not json_datas:
+    json_data = request.get_json()
+    if not json_data:
         return jsonify({'error ': 'missing json body'}), 400
 
     conn = connect_pg.connect()
-    permision = perm.getUserPermission(get_jwt_identity() , conn)
+    permision = perm.getUserPermission(get_jwt_identity() , conn)[0]
 
     if(permision != 0):
         return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
     query = "INSERT INTO edt.equiper (idSalle, idEquipement) VALUES "
     value_query = []
-    for data in json_datas['data']:
-        value_query.append(f"({idSalle},'{data['idEquipement']}')")
+
+    for data in json_data['idEquipement']:
+        value_query.append(f"({idSalle},'{data}')")
+
     query += ",".join(value_query) + " returning idEquipement"
 
     # TODO: find why only one id is return when multiple one are inserted
-    returnStatement = connect_pg.execute_commands(conn, query)
+    try:
+        returnStatement = connect_pg.execute_commands(conn, query)
+    except(Exception) as e:
+        return jsonify({'error': str(apiException.ActionImpossibleException("groupe", "récuperer"))}), 500
     # TODO: handle error pair of key already exist
     connect_pg.disconnect(conn)
     return jsonify({"success": f"The equipements with the ids {returnStatement} were successfully created"}), 200    #{', '.join(tabIdEquipement)}
 
+
+
+
+
+
+
+@salle.route('/salle/update', methods=['PUT'])
+@jwt_required()
+def update_salle():
+    """Permet de modifier une salle via la route /salle/update
+    
+    :param salle: salle à modifier, spécifié dans le body
+    :type salle: json
+
+    :raises InsertionImpossibleException: Impossible de modifier la salle spécifié dans la table salle
+    
+    :return: message de succès
+    :rtype: str
+    """
+    json_data = request.get_json()
+    if not json_data:
+        return jsonify({'error ': 'missing json body'}), 400
+    query = f"update edt.salle set Nom='{json_data['Nom']}', Capacite={json_data['Capacite']} where idSalle={json_data['idSalle']}"
+    conn = connect_pg.connect()
+    try:
+        returnStatement = connect_pg.execute_commands(conn, query)
+    except psycopg2.IntegrityError as e:
+        return jsonify({'error': str(apiException.InsertionImpossibleException("salle"))}), 500
+    return jsonify({'success': 'salle modifié'}), 200
 

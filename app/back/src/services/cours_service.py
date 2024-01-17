@@ -15,7 +15,33 @@ def get_cours_statement(row):
         'HeureDebut':str(row[1]),
         'NombreHeure':str(row[2]),
         'Jour':str(row[3]),
-        'idRessource':row[4]
+        'idRessource':row[4],
+        'typeCours':str(row[5])
+    }
+
+def get_coursRessource_statement(row):
+    """ 
+    Fonction de mappage de la table cours
+    
+    :param row: donnée représentant un cours
+    :type row: tableau
+    
+    :return: les données représentant un cours
+    :rtype: dictionnaire
+    """
+    return {
+        'idCours':row[0],
+        'HeureDebut':str(row[1]),
+        'NombreHeure':str(row[2]),
+        'Jour':str(row[3]),
+        'idRessource':row[4],
+        'typeCours':str(row[5]),
+        'idressource': row[6],
+        'titre': row[7],
+        'numero' : row[8],
+        'nbrheuresemestre': row[9], 
+        'codecouleur': row[10],
+        'idsemestre': row[11]
     }
 
 def get_cours_groupe_extended_statement(row):
@@ -67,7 +93,7 @@ def getCoursProf(idUtilisateur , conn):
     :rtype: list
     """
     idProf = connect_pg.get_query(conn , f"SELECT idProf FROM edt.professeur WHERE idutilisateur ={idUtilisateur}")[0][0]
-    result = connect_pg.get_query(conn , f"Select edt.cours.* from edt.cours inner join edt.enseigner as e1 using(idCours)  where e1.idProf = {idProf} order by idCours asc")
+    result = connect_pg.get_query(conn , f"Select distinct edt.cours.*, edt.ressource.* from edt.cours inner join edt.enseigner as e1 using(idCours) inner join edt.ressource using(idRessource)  where e1.idProf = {idProf} order by idCours asc")
     
     return result
 

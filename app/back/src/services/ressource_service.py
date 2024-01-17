@@ -1,3 +1,4 @@
+import datetime
 def get_ressource_statement(row):
     """ 
     Fonction de mappage de la table ressource
@@ -12,7 +13,7 @@ def get_ressource_statement(row):
         'idressource': row[0],
         'titre': row[1],
         'numero' : row[2],
-        'nbrheuresemestre': str(row[3]),
+        'nbrheuresemestre': row[3], 
         'codecouleur': row[4],
         'idsemestre': row[5]
     }
