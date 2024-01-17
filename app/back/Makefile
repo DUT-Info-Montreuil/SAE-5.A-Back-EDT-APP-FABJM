@@ -34,6 +34,9 @@ docker:
 	docker build . -t projet_edt
 	docker run -it --entrypoint /bin/bash --name projet_edt_instance projet_edt
 
+compose:
+	docker compose run --rm --entrypoint /bin/bash  --service-ports app
+
 initW:
 	pymake env
 	pymake setup
