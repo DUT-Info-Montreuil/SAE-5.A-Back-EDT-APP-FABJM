@@ -21,21 +21,17 @@ INSERT INTO Ressource (titre, numero, nbrHeureSemestre, idSemestre) values ('Mat
 
 -- Cours (idCours, HeureDebut, NombreHeure, Jour, idRessource, TypeCours)
 
-INSERT INTO Cours (HeureDebut, NombreHeure, Jour, idRessource) values ('20:18:06 ', '02:00:00', '2023-12-06', '1');
-INSERT INTO Cours (HeureDebut, NombreHeure, Jour, idRessource) values ('16:49:49 ', '02:00:00', '2023-10-06', '1');
+;
 INSERT INTO Cours (HeureDebut, NombreHeure, Jour, idRessource, TypeCours)
 VALUES 
-  ('10:00:00', '02:30:00', '2024-01-05', '1', 'Td'),
-  ('14:30:00', '03:00:00', '2024-01-10', '1', 'Td'),
-  ('09:15:00', '02:30:00', '2024-01-15', '1', 'Amphi'),
-  ('13:45:00', '02:00:00', '2024-01-20', '1', 'Sae'),
-  ('11:30:00', '03:00:00', '2024-01-25', '1', 'Tp'),
-  ('15:00:00', '02:30:00', '2024-01-30', '1', 'Amphi');
-
-
-
-INSERT INTO Cours (HeureDebut, NombreHeure, Jour, idRessource, TypeCours) values ('20:18:06 ', '02:00:00', '2023-12-06', '1', 'Sae');
-INSERT INTO Cours (HeureDebut, NombreHeure, Jour, idRessource, TypeCours) values ('16:49:49 ', '02:00:00', '2023-10-06', '1', 'Td');
+('20:18:06 ', '02:00:00', '2023-12-06', '1', 'Sae'),
+('16:49:49 ', '02:00:00', '2023-10-06', '1', 'Td'),
+('10:00:00', '02:30:00', '2024-01-05', '1', 'Td'),
+('14:30:00', '03:00:00', '2024-01-10', '1', 'Td'),
+('09:15:00', '02:30:00', '2024-01-15', '1', 'Amphi'),
+('13:45:00', '02:00:00', '2024-01-20', '1', 'Sae'),
+('11:30:00', '03:00:00', '2024-01-25', '1', 'Tp'),
+('15:00:00', '02:30:00', '2024-01-30', '1', 'Amphi');
 
 -- Salle (idSalle, nom ,capacite);
 INSERT INTO Salle (nom, capacite) values ('A2-05', 35);
@@ -49,9 +45,9 @@ INSERT INTO Professeur( initiale, idSalle, idUtilisateur) values ('AR', 1, 3);
 INSERT INTO Professeur( initiale, idSalle, idUtilisateur) values ('TS', 1, 4);
 
 -- Enseigner(idProf, idCours)
-INSERT INTO Enseigner(idProf, idCours) values (1,1);
 INSERT INTO Enseigner(idProf, idCours) 
 values 
+(1,1)
 (1,2),
 (1,3),
 (1,4),
