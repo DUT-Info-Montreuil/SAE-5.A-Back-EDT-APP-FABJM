@@ -43,18 +43,18 @@ def get_salle_dispo():
     :return: toutes les salles disponibles
     :rtype: flask.wrappers.Response(json)
     """
-    json_datas = request.get_json()
-    if not json_datas:
+    json_data = request.get_json()
+    if not json_data:
         return jsonify({'error ': 'missing json body'}), 400
     
-    if 'HeureDebut' not in json_datas or 'Jour' not in json_datas or 'NombreHeure' not in json_datas :
+    if 'HeureDebut' not in json_data or 'Jour' not in json_data or 'NombreHeure' not in json_data :
         return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
 
-    if not verif.estDeTypeTime(json_datas['HeureDebut']) or not verif.estDeTypeDate(json_datas['Jour']) or not verif.estDeTypeTime(json_datas['NombreHeure']):
+    if not verif.estDeTypeTime(json_data['HeureDebut']) or not verif.estDeTypeDate(json_data['Jour']) or not verif.estDeTypeTime(json_data['NombreHeure']):
         return jsonify({'error': str(apiException.ParamètreInvalideException("HeureDebut, NombreHeure ou Jour"))}), 404
 
-    HeureDebut = json_datas['HeureDebut']
-    NombreHeure = json_datas['NombreHeure']
+    HeureDebut = json_data['HeureDebut']
+    NombreHeure = json_data['NombreHeure']
     HeureDebut = datetime.timedelta(hours = int(HeureDebut[:2]),minutes = int(HeureDebut[3:5]), seconds = int(HeureDebut[6:8]))
     NombreHeure = datetime.timedelta(hours = int(NombreHeure[:2]),minutes = int(NombreHeure[3:5]))
     HeureFin = HeureDebut + NombreHeure
@@ -66,8 +66,8 @@ def get_salle_dispo():
         return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "L'iut est fermé durant la période spécifié"))}), 400
 
     query = f""" select edt.salle.* from edt.salle full join edt.accuellir using(idSalle) full join edt.cours
-    using(idCours) where (idSalle is not null) and ( '{json_datas['HeureDebut']}' <  HeureDebut 
-    and  '{str(HeureFin)}' <= HeureDebut or '{json_datas['HeureDebut']}'::time >=  (HeureDebut + NombreHeure::interval))  
+    using(idCours) where (idSalle is not null) and ( '{json_data['HeureDebut']}' <  HeureDebut 
+    and  '{str(HeureFin)}' <= HeureDebut or '{json_data['HeureDebut']}'::time >=  (HeureDebut + NombreHeure::interval))  
     or (HeureDebut is null) order by idSalle asc
     """
     conn = connect_pg.connect()
@@ -220,7 +220,7 @@ def add_salle():
     if not json_data:
         return jsonify({'error ': 'missing json body'}), 400
 
-    query = f"Insert into edt.salle (Numero, Capacite) values ('{json_data['Numero']}',{json_data['Capacite']}) returning idSalle"
+    query = f"Insert into edt.salle (Nom, Capacite) values ('{json_data['Nom']}',{json_data['Capacite']}) returning idSalle"
     conn = connect_pg.connect()
     try:
         returnStatement = connect_pg.execute_commands(conn, query)
@@ -229,7 +229,7 @@ def add_salle():
         if e.pgcode == errorcodes.UNIQUE_VIOLATION:
             # Erreur violation de contrainte unique
             return jsonify({'error': str(
-                apiException.DonneeExistanteException(json_data['Numero'], "Numero", "salle"))}), 400
+                apiException.DonneeExistanteException(json_data['Nom'], "Nom", "salle"))}), 400
         else:
             # Erreur inconnue
             return jsonify({'error': str(apiException.ActionImpossibleException("salle"))}), 500
@@ -332,10 +332,10 @@ def update_salle():
     :return: message de succès
     :rtype: str
     """
-    json_datas = request.get_json()
-    if not json_datas:
+    json_data = request.get_json()
+    if not json_data:
         return jsonify({'error ': 'missing json body'}), 400
-    query = f"update edt.salle set Numero='{json_datas['Numero']}', Capacite={json_datas['Capacite']} where idSalle={json_datas['idSalle']}"
+    query = f"update edt.salle set Nom='{json_data['Nom']}', Capacite={json_data['Capacite']} where idSalle={json_data['idSalle']}"
     conn = connect_pg.connect()
     try:
         returnStatement = connect_pg.execute_commands(conn, query)

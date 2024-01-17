@@ -44,18 +44,18 @@ def get_prof_dispo():
     :return: touts les professeurs disponibles
     :rtype: flask.wrappers.Response(json)
     """
-    json_datas = request.get_json()
-    if not json_datas:
+    json_data = request.get_json()
+    if not json_data:
         return jsonify({'error ': 'missing json body'}), 400
     
-    if 'HeureDebut' not in json_datas or 'Jour' not in json_datas or 'NombreHeure' not in json_datas :
+    if 'HeureDebut' not in json_data or 'Jour' not in json_data or 'NombreHeure' not in json_data :
         return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
 
-    if not verif.estDeTypeTime(json_datas['HeureDebut']) or not verif.estDeTypeDate(json_datas['Jour']) or not verif.estDeTypeTime(json_datas['NombreHeure']):
+    if not verif.estDeTypeTime(json_data['HeureDebut']) or not verif.estDeTypeDate(json_data['Jour']) or not verif.estDeTypeTime(json_data['NombreHeure']):
         return jsonify({'error': str(apiException.ParamètreInvalideException("HeureDebut, NombreHeure ou Jour"))}), 404
 
-    HeureDebut = json_datas['HeureDebut']
-    NombreHeure = json_datas['NombreHeure']
+    HeureDebut = json_data['HeureDebut']
+    NombreHeure = json_data['NombreHeure']
     HeureDebut = datetime.timedelta(hours = int(HeureDebut[:2]),minutes = int(HeureDebut[3:5]), seconds = int(HeureDebut[6:8]))
     NombreHeure = datetime.timedelta(hours = int(NombreHeure[:2]),minutes = int(NombreHeure[3:5]))
     HeureFin = HeureDebut + NombreHeure
@@ -69,9 +69,9 @@ def get_prof_dispo():
     query = f""" select distinct idprof,initiale, idsalle,firstname, lastname,idutilisateur 
     from edt.professeur full join edt.enseigner using(idProf) full join edt.cours
     using(idCours) inner join edt.utilisateur using(idUtilisateur)
-     where (idProf is not null) and ( '{json_datas['HeureDebut']}' <  HeureDebut 
-    and  '{str(HeureFin)}' <= HeureDebut or '{json_datas['HeureDebut']}'::time >=  (HeureDebut + NombreHeure::interval)) 
-    or ('{json_datas['Jour']}' != Jour and idProf is not null) or (HeureDebut is null) order by idProf asc
+     where (idProf is not null) and ( '{json_data['HeureDebut']}' <  HeureDebut 
+    and  '{str(HeureFin)}' <= HeureDebut or '{json_data['HeureDebut']}'::time >=  (HeureDebut + NombreHeure::interval)) 
+    or ('{json_data['Jour']}' != Jour and idProf is not null) or (HeureDebut is null) order by idProf asc
     """
     conn = connect_pg.connect()
     returnStatement = []
@@ -208,10 +208,10 @@ def get_prof_heure_travailler(idProf):
     conn = connect_pg.connect()
     querySae = ""
     try:
-        json_datas = request.get_json()
-        if 'pasSae' in json_datas:
-            if type(json_datas['pasSae']) == bool:
-                if json_datas['pasSae']:
+        json_data = request.get_json()
+        if 'pasSae' in json_data:
+            if type(json_data['pasSae']) == bool:
+                if json_data['pasSae']:
                     querySae += f" and (TypeCours != 'Sae') "
             else:
                 return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idProf", "bool"))}), 400
@@ -265,10 +265,10 @@ def get_prof_heure_prevue(idProf):
     conn = connect_pg.connect()
     querySae = ""
     try:
-        json_datas = request.get_json()
-        if 'pasSae' in json_datas:
-            if type(json_datas['pasSae']) == bool:
-                if json_datas['pasSae'] :
+        json_data = request.get_json()
+        if 'pasSae' in json_data:
+            if type(json_data['pasSae']) == bool:
+                if json_data['pasSae'] :
                     querySae += f" and (TypeCours != 'Sae') "
             else:
                 return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idProf", "bool"))}), 400
@@ -324,13 +324,13 @@ def get_prof_heure_travailler_mois(idProf):
     
     conn = connect_pg.connect()
 
-    json_datas = request.get_json()
-    if not json_datas:
+    json_data = request.get_json()
+    if not json_data:
         return jsonify({'error ': 'missing json body'}), 400
-    if 'mois' not in json_datas:
+    if 'mois' not in json_data:
         return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
     
-    mois = json_datas['mois']
+    mois = json_data['mois']
     
     
     query = f"""
@@ -343,8 +343,8 @@ def get_prof_heure_travailler_mois(idProf):
 
     timeLimit = None
 
-    if 'currentDay' in json_datas:
-        timeLimit = f" AND Jour >= '{mois}-01' AND Jour <= '{json_datas['currentDay']}';"
+    if 'currentDay' in json_data:
+        timeLimit = f" AND Jour >= '{mois}-01' AND Jour <= '{json_data['currentDay']}';"
     else:
         timeLimit = f" AND Jour >= '{mois}-01' AND Jour <= '{mois}-31';"
 
@@ -843,15 +843,15 @@ def changer_groupe_manager(idManager):
     
     """
 
-    json_datas = request.get_json()
+    json_data = request.get_json()
 
-    if 'idGroupe' not in json_datas :
+    if 'idGroupe' not in json_data :
         return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
 
-    if (not idManager.isdigit() or type(json_datas['idGroupe']) != int   ):
+    if (not idManager.isdigit() or type(json_data['idGroupe']) != int   ):
         return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idManager ou idGroupe", "numérique"))}), 400
     
-    query = f"update edt.manager set idGroupe='{json_datas['idGroupe']}' where idManager='{idManager}'"
+    query = f"update edt.manager set idGroupe='{json_data['idGroupe']}' where idManager='{idManager}'"
     conn = connect_pg.connect()
     try:
         connect_pg.execute_commands(conn, query)

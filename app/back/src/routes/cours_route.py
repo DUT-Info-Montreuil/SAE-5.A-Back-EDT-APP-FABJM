@@ -258,21 +258,21 @@ def get_cours_groupe_extended(idGroupe):
     :return: l'id de la salle dans lequel se déroule cours
     :rtype: json
     """
-    json_datas = request.get_json()
+    json_data = request.get_json()
     returnStatement = []
     conn = connect_pg.connect()
     
     if (not idGroupe.isdigit()):
         return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idCours", "numérique"))}), 400
     
-    if 'intervalleDebut' not in json_datas  or 'intervalleFin' not in json_datas :
+    if 'intervalleDebut' not in json_data  or 'intervalleFin' not in json_data :
         return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
     
-    if not verif.estDeTypeDate(json_datas['intervalleDebut']) or not verif.estDeTypeDate(json_datas['intervalleFin']):
+    if not verif.estDeTypeDate(json_data['intervalleDebut']) or not verif.estDeTypeDate(json_data['intervalleFin']):
         return jsonify({'error': str(apiException.ParamètreInvalideException("intervalleDebut, intervalleFin"))}), 404
     
-    intervalleDebut = json_datas['intervalleDebut']
-    intervalleFin = json_datas['intervalleFin']
+    intervalleDebut = json_data['intervalleDebut']
+    intervalleFin = json_data['intervalleFin']
     intervalleDebut = date(int(intervalleDebut[:4]), int(intervalleDebut[5:7]), int(intervalleDebut[8:10]))
     intervalleFin = date(int(intervalleFin[:4]), int(intervalleFin[5:7]), int(intervalleFin[8:10]))
 
@@ -284,7 +284,7 @@ def get_cours_groupe_extended(idGroupe):
     e1.idProf, e1.initiale, e1.idSalle, e1.idUtilisateur from edt.cours full join edt.accuellir using (idCours) full join edt.salle as s1 using(idSalle) 
     full join edt.ressource using(idRessource) full join edt.enseigner using(idCours) full join edt.etudier as e2 using(idCours) 
     full join edt.groupe as g1 using(idGroupe) full join edt.professeur as e1 using(idProf) where e2.idGroupe = {idGroupe} 
-    and ( jour >= '{json_datas["intervalleDebut"]}' and  jour <= '{json_datas["intervalleFin"]}')
+    and ( jour >= '{json_data["intervalleDebut"]}' and  jour <= '{json_data["intervalleFin"]}')
     """
 
     try:
@@ -329,19 +329,19 @@ def deplacer_cours(idCours):
     """
 
     conn = connect_pg.connect()
-    json_datas = request.get_json()
+    json_data = request.get_json()
 
-    if 'HeureDebut' not in json_datas and 'Jour' not in json_datas:
+    if 'HeureDebut' not in json_data and 'Jour' not in json_data:
         return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
 
     if (not idCours.isdigit()):
         return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idCours", "numérique"))}), 400
     
-    if 'HeureDebut' in json_datas and not verif.estDeTypeTime(json_datas['HeureDebut']):
+    if 'HeureDebut' in json_data and not verif.estDeTypeTime(json_data['HeureDebut']):
         return jsonify({'error': str(apiException.ParamètreTypeInvalideException("HeureDebut", "hh:mm:ss"))}), 400
     
 
-    if 'Jour' in json_datas and not verif.estDeTypeDate(json_datas['Jour']):
+    if 'Jour' in json_data and not verif.estDeTypeDate(json_data['Jour']):
         return jsonify({'error': str(apiException.ParamètreTypeInvalideException("Jour", "yyyy-mm-dd"))}), 400
     
     
@@ -352,13 +352,13 @@ def deplacer_cours(idCours):
     if type(cour) != tuple :
         cour = json.loads(cour.data) 
 
-        if 'HeureDebut' in json_datas :
-            HeureDebut = json_datas['HeureDebut']
+        if 'HeureDebut' in json_data :
+            HeureDebut = json_data['HeureDebut']
         else:
             HeureDebut = cour['HeureDebut']
         
-        if 'Jour' in json_datas :
-            Jour = json_datas['Jour']
+        if 'Jour' in json_data :
+            Jour = json_data['Jour']
         else:
             Jour = cour['Jour']
 
@@ -390,13 +390,13 @@ def deplacer_cours(idCours):
             return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "Cette salle n'est pas disponible durant la nouvelle période de cours spécifié"))}), 400
     
     query = "UPDATE edt.cours "
-    if 'HeureDebut' in json_datas:
-        query += f"SET HeureDebut = '{json_datas['HeureDebut']}'"
-    if 'Jour' in json_datas:
-        if 'HeureDebut' in json_datas:
-            query += f" , Jour = '{json_datas['Jour']}'"
+    if 'HeureDebut' in json_data:
+        query += f"SET HeureDebut = '{json_data['HeureDebut']}'"
+    if 'Jour' in json_data:
+        if 'HeureDebut' in json_data:
+            query += f" , Jour = '{json_data['Jour']}'"
         else:
-            query += f"SET Jour = '{json_datas['Jour']}'"
+            query += f"SET Jour = '{json_data['Jour']}'"
     query += f" where idCours={idCours}"
     
     try:
@@ -427,28 +427,28 @@ def modifier_cours(idCours):
     :return: id du cours modifier si présent
     :rtype: json
     """
-    json_datas = request.get_json()
+    json_data = request.get_json()
 
-    if (not idCours.isdigit() or type(json_datas['idRessource']) != int):
+    if (not idCours.isdigit() or type(json_data['idRessource']) != int):
         return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idCours ou idRessource", "numérique"))}), 400
     
-    if 'NombreHeure' in json_datas and not verif.estDeTypeTime(json_datas['NombreHeure']):
+    if 'NombreHeure' in json_data and not verif.estDeTypeTime(json_data['NombreHeure']):
         return jsonify({'error': str(apiException.ParamètreTypeInvalideException("NombreHeure", "hh:mm:ss"))}), 400
     
     
     cour = get_cours(idCours)
     
-    if 'NombreHeure' not in json_datas and 'idRessource' not in json_datas:
+    if 'NombreHeure' not in json_data and 'idRessource' not in json_data:
         return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
     
     query = "UPDATE edt.cours "
-    if 'NombreHeure' in json_datas:
-        query += f"SET NombreHeure = '{json_datas['NombreHeure']}'"
-    if 'idRessource' in json_datas:
-        if 'NombreHeure' in json_datas:
-            query += f" , idRessource = '{json_datas['idRessource']}'"
+    if 'NombreHeure' in json_data:
+        query += f"SET NombreHeure = '{json_data['NombreHeure']}'"
+    if 'idRessource' in json_data:
+        if 'NombreHeure' in json_data:
+            query += f" , idRessource = '{json_data['idRessource']}'"
         else:
-            query += f"SET idRessource = '{json_datas['idRessource']}'"
+            query += f"SET idRessource = '{json_data['idRessource']}'"
     query += f" where idCours={idCours}"
 
     conn = connect_pg.connect()
@@ -472,23 +472,23 @@ def modifier_cours(idCours):
     HeureDebut = datetime.timedelta(hours = int(cour['HeureDebut'][:2]),minutes = int(cour['HeureDebut'][3:5]), seconds = 00)
     HeureActuelle = str(datetime.datetime.now())
     HeureActuelle = datetime.timedelta(hours = int(HeureActuelle[11:13]),minutes = int(HeureActuelle[14:16]), seconds = 00)
-    newNombreHeure = (datetime.timedelta(hours = int(json_datas['NombreHeure'][:2]),minutes = int(json_datas['NombreHeure'][3:5]), seconds = 00)).total_seconds()
+    newNombreHeure = (datetime.timedelta(hours = int(json_data['NombreHeure'][:2]),minutes = int(json_data['NombreHeure'][3:5]), seconds = 00)).total_seconds()
     oldNombreHeure = (datetime.timedelta(hours = int(cour['NombreHeure'][:2]),minutes = int(cour['NombreHeure'][3:5]), seconds = 00)).total_seconds()
 
     if( jourCours > aujourdhui  or (jourCours == aujourdhui and HeureDebut > HeureActuelle)):
-        if ('NombreHeure' in json_datas and json_datas['NombreHeure'] != cour['NombreHeure']) and ('idRessource' not in json_datas or json_datas['idRessource'] == cour['idRessource']): # Si le nombreHeure a changé mais toujours dans la même ressource
+        if ('NombreHeure' in json_data and json_data['NombreHeure'] != cour['NombreHeure']) and ('idRessource' not in json_data or json_data['idRessource'] == cour['idRessource']): # Si le nombreHeure a changé mais toujours dans la même ressource
             query = f"update edt.ressource set nbrheuresemestre =  ((nbrheuresemestre + {oldNombreHeure}) - {newNombreHeure} )  where idRessource = {cour['idRessource']}" # pour mettre à jour le nombre d'heures
             
 
-        elif ('NombreHeure' not in json_datas or json_datas['NombreHeure'] == cour['NombreHeure']) and ('idRessource' in json_datas and json_datas['idRessource'] != cour['idRessource']): # Si le nombreHeure est inchangé mais que ce n'est plus la même ressource
+        elif ('NombreHeure' not in json_data or json_data['NombreHeure'] == cour['NombreHeure']) and ('idRessource' in json_data and json_data['idRessource'] != cour['idRessource']): # Si le nombreHeure est inchangé mais que ce n'est plus la même ressource
             query = f"update edt.ressource set nbrheuresemestre =  (nbrheuresemestre + {oldNombreHeure})  where idRessource = {cour['idRessource']}" 
-            query2 = f"update edt.ressource set nbrheuresemestre =  (nbrheuresemestre - {oldNombreHeure})  where idRessource = {json_datas['idRessource']}" 
+            query2 = f"update edt.ressource set nbrheuresemestre =  (nbrheuresemestre - {oldNombreHeure})  where idRessource = {json_data['idRessource']}" 
             connect_pg.execute_commands(conn, query2)
             
         
-        elif ('NombreHeure' in json_datas and json_datas['NombreHeure'] != cour['NombreHeure']) and  ('idRessource' in json_datas and json_datas['idRessource'] != cour['idRessource']): # Si le nombreHeure a changé et que ce n'est plus la même ressource
+        elif ('NombreHeure' in json_data and json_data['NombreHeure'] != cour['NombreHeure']) and  ('idRessource' in json_data and json_data['idRessource'] != cour['idRessource']): # Si le nombreHeure a changé et que ce n'est plus la même ressource
             query = f"update edt.ressource set nbrheuresemestre =  (nbrheuresemestre + {oldNombreHeure})  where idRessource = {cour['idRessource']}" 
-            query2 = f"update edt.ressource set nbrheuresemestre =  (nbrheuresemestre - {newNombreHeure})  where idRessource = {json_datas['idRessource']}" 
+            query2 = f"update edt.ressource set nbrheuresemestre =  (nbrheuresemestre - {newNombreHeure})  where idRessource = {json_data['idRessource']}" 
             connect_pg.execute_commands(conn, query2)
             
         try:
@@ -528,13 +528,13 @@ def assignerProf(idCours):
     :return: id du cours
     :rtype: int
     """
-    json_datas = request.get_json()
+    json_data = request.get_json()
     
-    if 'idProf' not in json_datas :
+    if 'idProf' not in json_data :
         return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
     
     
-    if (not idCours.isdigit() or type(json_datas['idProf']) != int   ):
+    if (not idCours.isdigit() or type(json_data['idProf']) != int   ):
         return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idCours ou idProf", "numérique"))}), 400
     
     returnStatement = {}
@@ -550,23 +550,23 @@ def assignerProf(idCours):
         NombreHeure = datetime.timedelta(hours = int(NombreHeure[:2]),minutes = int(NombreHeure[3:5]), seconds = 00 )
         HeureFin = str(HeureDebut + NombreHeure)
 
-        if not verif.groupeEstDispo(json_datas['idProf'], HeureDebut, HeureFin, cour['Jour'], conn):
+        if not verif.groupeEstDispo(json_data['idProf'], HeureDebut, HeureFin, cour['Jour'], conn):
             return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "Ce professeur n'est pas disponible durant la nouvelle période de cours spécifié"))}), 400
 
 
-    query = f"Insert into edt.enseigner (idProf, idCours) values ('{json_datas['idProf']}', '{idCours}') returning idCours"
+    query = f"Insert into edt.enseigner (idProf, idCours) values ('{json_data['idProf']}', '{idCours}') returning idCours"
     
     try:
         returnStatement = connect_pg.execute_commands(conn, query)
     except Exception as e:
         if e.pgcode == "23503":# violation contrainte clée étrangère
             if "prof" in str(e):
-                return jsonify({'error': str(apiException.DonneeIntrouvableException("Professeur ", json_datas['idProf']))}), 400
+                return jsonify({'error': str(apiException.DonneeIntrouvableException("Professeur ", json_data['idProf']))}), 400
             else:
                 return jsonify({'error': str(apiException.DonneeIntrouvableException("Cours ", idCours))}), 400
         
         elif e.pgcode == "23505": # si existe déjà
-            messageId = f"idCours = {idCours} et idProf = {json_datas['idProf']}"
+            messageId = f"idCours = {idCours} et idProf = {json_data['idProf']}"
             messageColonne = f"idCours et idProf"
             return jsonify({'error': str(apiException.DonneeExistanteException(messageId, messageColonne, "enseigner"))}), 400
         
@@ -860,18 +860,18 @@ def add_cours():
     :return: l'id du cours qui vient d'être créé
     :rtype: int
     """
-    json_datas = request.get_json()
-    if 'HeureDebut' not in json_datas or 'NombreHeure' not in json_datas or 'Jour' not in json_datas or 'idRessource' not in json_datas or 'typeCours' not in json_datas:
+    json_data = request.get_json()
+    if 'HeureDebut' not in json_data or 'NombreHeure' not in json_data or 'Jour' not in json_data or 'idRessource' not in json_data or 'typeCours' not in json_data:
         return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
     
-    if not verif.estDeTypeTime(json_datas['HeureDebut']) or not verif.estDeTypeDate(json_datas['Jour']) or not verif.estDeTypeTime(json_datas['NombreHeure']) or type(json_datas['idRessource']) != int:
+    if not verif.estDeTypeTime(json_data['HeureDebut']) or not verif.estDeTypeDate(json_data['Jour']) or not verif.estDeTypeTime(json_data['NombreHeure']) or type(json_data['idRessource']) != int:
         return jsonify({'error': str(apiException.ParamètreInvalideException("HeureDebut, NombreHeure, idRessource ou Jour"))}), 404
 
-    if type(json_datas['typeCours']) != str or json_datas['typeCours'] not in ['Amphi', 'Td', 'Tp', 'Sae']:
+    if type(json_data['typeCours']) != str or json_data['typeCours'] not in ['Amphi', 'Td', 'Tp', 'Sae']:
         return jsonify({'error': str(apiException.ParamètreInvalideException("typeCours"))}), 404
 
-    HeureDebut = json_datas['HeureDebut']
-    NombreHeure = json_datas['NombreHeure']
+    HeureDebut = json_data['HeureDebut']
+    NombreHeure = json_data['NombreHeure']
     HeureDebut = datetime.timedelta(hours = int(HeureDebut[:2]),minutes = int(HeureDebut[3:5]), seconds = int(HeureDebut[6:8]))
     NombreHeure = datetime.timedelta(hours = int(NombreHeure[:2]),minutes = int(NombreHeure[3:5]), seconds = 00)
     HeureFin = HeureDebut + NombreHeure
@@ -883,45 +883,45 @@ def add_cours():
         return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "L'iut est fermé à l'horaire spécifié"))}), 404
 
     conn = connect_pg.connect()
-    query = f"select NbrHeureSemestre from edt.ressource where idRessource = {json_datas['idRessource']}" # vérifier si il reste assez d'heures
+    query = f"select NbrHeureSemestre from edt.ressource where idRessource = {json_data['idRessource']}" # vérifier si il reste assez d'heures
     try:
         NbrHeureSemestre = str(connect_pg.get_query(conn, query)[0][0])
         if(NbrHeureSemestre == '0'):
             return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "Plus aucune heures est disponible pour la ressource spécifié"))}), 400
         
         NbrHeureSemestre = datetime.timedelta(seconds = int(NbrHeureSemestre) )
-        NombreHeure = datetime.timedelta(hours = int(json_datas['NombreHeure'][:2]),minutes = int(json_datas['NombreHeure'][3:5]))
+        NombreHeure = datetime.timedelta(hours = int(json_data['NombreHeure'][:2]),minutes = int(json_data['NombreHeure'][3:5]))
 
         if (NbrHeureSemestre - NombreHeure) < datetime.timedelta(hours = 00,minutes = 00)  :
             return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = f"La ressource spécifié ne possède pas le nombre d'heures demandé"))}), 400
     except psycopg2.IntegrityError as e:
         if e.pgcode == '23503':
             # Erreur violation de contrainte clée étrangère de la table Ressources
-            return jsonify({'error': str(apiException.DonneeIntrouvableException("Ressources", json_datas['idRessource']))}), 400
+            return jsonify({'error': str(apiException.DonneeIntrouvableException("Ressources", json_data['idRessource']))}), 400
         else:
             # Erreur inconnue
             return jsonify({'error': str(apiException.ActionImpossibleException("ressource", "récupérer"))}), 500
 
 
-    query = f"Insert into edt.cours (HeureDebut, NombreHeure, Jour, idRessource, typeCours) values ('{json_datas['HeureDebut']}', '{json_datas['NombreHeure']}', '{json_datas['Jour']}', '{json_datas['idRessource']}', '{json_datas['typeCours']}') returning idCours"
+    query = f"Insert into edt.cours (HeureDebut, NombreHeure, Jour, idRessource, typeCours) values ('{json_data['HeureDebut']}', '{json_data['NombreHeure']}', '{json_data['Jour']}', '{json_data['idRessource']}', '{json_data['typeCours']}') returning idCours"
     
     try:
         returnStatement = connect_pg.execute_commands(conn, query)
     except psycopg2.IntegrityError as e:
         if e.pgcode == '23503':
             # Erreur violation de contrainte clée étrangère de la table Ressources
-            return jsonify({'error': str(apiException.DonneeIntrouvableException("Ressources", json_datas['idRessource']))}), 400
+            return jsonify({'error': str(apiException.DonneeIntrouvableException("Ressources", json_data['idRessource']))}), 400
         else:
             # Erreur inconnue
             return jsonify({'error': str(apiException.ActionImpossibleException("cours"))}), 500
-    query = f"update edt.ressource set nbrheuresemestre = '{(int((NbrHeureSemestre - NombreHeure).total_seconds()))}'   where idRessource = {json_datas['idRessource']}" # pour mettre à jour le nombre d'heures
+    query = f"update edt.ressource set nbrheuresemestre = '{(int((NbrHeureSemestre - NombreHeure).total_seconds()))}'   where idRessource = {json_data['idRessource']}" # pour mettre à jour le nombre d'heures
     
     try:
         connect_pg.execute_commands(conn, query)
     except psycopg2.IntegrityError as e:
         if e.pgcode == '23503':
             # Erreur violation de contrainte clée étrangère de la table Ressources
-            return jsonify({'error': str(apiException.DonneeIntrouvableException("Ressources", json_datas['idRessource']))}), 400
+            return jsonify({'error': str(apiException.DonneeIntrouvableException("Ressources", json_data['idRessource']))}), 400
         else:
             # Erreur inconnue
             return jsonify({'error': str(apiException.ActionImpossibleException("ressource", "mettre à jour"))}), 500

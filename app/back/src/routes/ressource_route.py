@@ -131,26 +131,26 @@ def supprimer_responsable(idRessource):
     :return: id de la ressource
     :rtype: json
     """
-    json_datas = request.get_json()
+    json_data = request.get_json()
     if (not idRessource.isdigit() ):
         return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idRessource", "numérique"))}), 400
 
     
     
-    if 'idProf' not in json_datas :
+    if 'idProf' not in json_data :
         return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
 
-    if type(json_datas['idProf']) != int:
+    if type(json_data['idProf']) != int:
         return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idProf", "numérique"))}), 400
     
-    query = f"delete from edt.responsable where idRessource={idRessource} and idProf = {json_datas['idProf']}"
+    query = f"delete from edt.responsable where idRessource={idRessource} and idProf = {json_data['idProf']}"
     conn = connect_pg.connect()
     try:
         returnStatement = connect_pg.execute_commands(conn, query)
     except Exception as e:
         if e.pgcode == "23503":# violation contrainte clée étrangère
             if "prof" in str(e):
-                return jsonify({'error': str(apiException.DonneeIntrouvableException("Professeur ", json_datas['idProf']))}), 400
+                return jsonify({'error': str(apiException.DonneeIntrouvableException("Professeur ", json_data['idProf']))}), 400
 
             else:
                 return jsonify({'error': str(apiException.DonneeIntrouvableException("Ressource ", idRessource))}), 400

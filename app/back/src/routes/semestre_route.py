@@ -197,11 +197,11 @@ def upadateSemestre(idSemestre):
         return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
 
 
-    json_datas = request.get_json()
-    if not json_datas:
+    json_data = request.get_json()
+    if not json_data:
         return jsonify({'error ': str(apiException.ParamètreBodyManquantException())}), 400
 
-    query = f"update edt.semestre set numero='{json_datas['Numero']}' where IdSemestre='{idSemestre}'"
+    query = f"update edt.semestre set numero='{json_data['Numero']}' where IdSemestre='{idSemestre}'"
     
     try:
         returnStatement = connect_pg.execute_commands(conn, query)
@@ -210,7 +210,7 @@ def upadateSemestre(idSemestre):
         if e.pgcode == errorcodes.UNIQUE_VIOLATION:
             # Erreur violation de contrainte unique
             return jsonify({'error': str(
-                apiException.DonneeExistanteException(json_datas['Numero'], "Numero", "semestre"))}), 400
+                apiException.DonneeExistanteException(json_data['Numero'], "Numero", "semestre"))}), 400
         else:
             # Erreur inconnue
             return jsonify({'error': str(apiException.InsertionImpossibleException("semestre"))}), 500
