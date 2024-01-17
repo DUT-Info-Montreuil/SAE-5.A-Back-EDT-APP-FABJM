@@ -29,7 +29,7 @@ app = Flask(__name__)
 
 secret_key = os.urandom(32)
 app.config['SECRET_KEY'] = secret_key
-app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(minutes=15)
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=2)
 
 jwt = JWTManager(app)
 
