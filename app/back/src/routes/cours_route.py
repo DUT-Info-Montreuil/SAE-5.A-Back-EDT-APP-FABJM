@@ -291,12 +291,9 @@ def get_cours_groupe_extended(idGroupe):
         rows = connect_pg.get_query(conn , query)
         if rows == []:
             return jsonify({'erreur': str(apiException.DonneeIntrouvableException("Etudier",idGroupe))}), 400
-        print(rows)
         for row in rows:
             returnStatement.append(get_cours_groupe_extended_statement(row))
     except Exception as e:
-        print(row)
-        print(e)
         return jsonify({'error': str(apiException.ActionImpossibleException("Cours", "récupérer"))}), 500
         
     connect_pg.disconnect(conn)

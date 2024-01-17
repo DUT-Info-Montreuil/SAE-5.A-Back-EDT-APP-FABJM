@@ -369,7 +369,7 @@ def get_parent_groupe(idGroupe):
     if (not idGroupe.isdigit()):
         return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idGroupe", "numérique"))}), 400
     
-    query = f"SELECT * from edt.groupe where idGroupe=(SELECT idGroupe_parent from edt.groupe where idGroupe = '{idGroupe}')"
+    query = f"SELECT * from edt.groupe where idGroupe=(SELECT idGroupeParent from edt.groupe where idGroupe = '{idGroupe}')"
 
     conn = connect_pg.connect()
     
@@ -403,7 +403,7 @@ def get_all_children(idGroupe):
     if (not idGroupe.isdigit()):
         return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idGroupe", "numérique"))}), 400
     
-    query = f"SELECT * from edt.groupe where idGroupe_parent={idGroupe}"
+    query = f"SELECT * from edt.groupe where idGroupeParent={idGroupe}"
 
     conn = connect_pg.connect()
     
@@ -435,13 +435,13 @@ def add_groupe():
     json_data = request.get_json()
     if not json_data:
         return jsonify({'error ': 'missing json body'}), 400
-    query_start = "Insert into edt.groupe (Nom, AnneeScolaire, Annee"
+    query_start = "Insert into edt.groupe (Nom"
 
     query_values = f"values ('{json_data['Nom']}'"
-    if "idGroupe_parent" in json_data.keys() and json_data['idGroupe_parent'] != -1 : 
+    if "idGroupeParent" in json_data.keys() and json_data['idGroupeParent'] != -1 : 
 
-        query_start += ", idGroupe_parent"
-        query_values += f", {json_data['idGroupe_parent']}"
+        query_start += ", idGroupeParent"
+        query_values += f", {json_data['idGroupeParent']}"
     query_start += ") "
     query_values += ") returning idGroupe"
     query = query_start + query_values
@@ -515,7 +515,7 @@ def update_groupe(idGroupe):
     json_data = request.get_json()
     if not json_data:
         return jsonify({'error ': 'missing json body'}), 400
-    key = ["Nom", "idGroupe_parent"]
+    key = ["Nom", "idGroupeParent"]
     for k in json_data.keys():
         if k not in key:
             return jsonify({'error': "missing or invalid key"}), 400
