@@ -25,6 +25,7 @@ INSERT INTO Ressource (titre, numero, nbrHeureSemestre, idSemestre) values ('Mat
 INSERT INTO Cours (HeureDebut, NombreHeure, Jour, idRessource, TypeCours)
 VALUES 
 ('20:18:06 ', '02:00:00', '2023-12-06', '1', 'Sae'),
+('8:00:0 ', '02:00:00', '2023-12-06', '1', 'Sae'),
 ('16:49:49 ', '02:00:00', '2023-10-06', '1', 'Td'),
 ('10:00:00', '02:30:00', '2024-01-05', '1', 'Td'),
 ('14:30:00', '03:00:00', '2024-01-10', '1', 'Td'),
@@ -36,6 +37,10 @@ VALUES
 -- Salle (idSalle, nom ,capacite);
 INSERT INTO Salle (nom, capacite) values ('A2-05', 35);
 INSERT INTO Salle (nom, capacite) values ('A1-01', 20);
+INSERT INTO Salle (nom, capacite) values ('A1-02', 21);
+INSERT INTO Salle (nom, capacite) values ('A1-03', 22);
+INSERT INTO Salle (nom, capacite) values ('A1-04', 23);
+INSERT INTO Salle (nom, capacite) values ('A1-05', 24);
 
 -- Groupe(idGroupe ,nom,idGroupeParent)
 INSERT INTO Groupe(nom) values ('A1');
@@ -67,6 +72,9 @@ INSERT INTO Responsable(idProf, idRessource) values (1,2);
 
 -- Accuellir(idSalle, idCours)
 INSERT INTO Accuellir(idSalle, idCours) values (2,1);
+INSERT INTO Accuellir(idSalle, idCours) values (2,2);
+INSERT INTO Accuellir(idSalle, idCours) values (3,3);
+INSERT INTO Accuellir(idSalle, idCours) values (1,4);
 
 -- Manager(idManager, idProf, idGroupe)
 INSERT INTO Manager(idProf, idGroupe) values (2,1);
