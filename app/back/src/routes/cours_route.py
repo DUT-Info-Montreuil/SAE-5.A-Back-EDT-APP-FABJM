@@ -135,7 +135,7 @@ def get_cours_spe():
             if rows == []:
                 return jsonify({'error': str(apiException.DonneeIntrouvableException("enseigner"))}), 404
             for row in rows:
-                returnStatement.append(get_cours_statement(row))
+                returnStatement.append(get_coursRessource_statement(row))
         except(Exception) as e:
             return jsonify({'error': str(apiException.ActionImpossibleException("cours","récupérer"))}), 500
         connect_pg.disconnect(conn)

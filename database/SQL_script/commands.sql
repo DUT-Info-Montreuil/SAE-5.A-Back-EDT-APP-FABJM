@@ -129,7 +129,7 @@ CREATE TABLE Equiper(
    idSalle INTEGER,
    idEquipement INTEGER,
    PRIMARY KEY(idSalle, idEquipement),
-   FOREIGN KEY(idSalle) REFERENCES Salle(idSalle),
+   FOREIGN KEY(idSalle) REFERENCES Salle(idSalle) ON DELETE CASCADE,
    FOREIGN KEY(idEquipement) REFERENCES Equipement(idEquipement)
 );
 

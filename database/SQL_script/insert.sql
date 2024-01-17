@@ -47,7 +47,7 @@ INSERT INTO Professeur( initiale, idSalle, idUtilisateur) values ('TS', 1, 4);
 -- Enseigner(idProf, idCours)
 INSERT INTO Enseigner(idProf, idCours) 
 values 
-(1,1)
+(1,1),
 (1,2),
 (1,3),
 (1,4),
