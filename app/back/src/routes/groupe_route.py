@@ -39,7 +39,7 @@ def get_groupe():
     :rtype: json
     """
     conn = connect_pg.connect()
-    if (perm.getUserPermission(get_jwt_identity(), conn) == 2):
+    if (perm.getUserPermission(get_jwt_identity(), conn)[0] == 2):
         returnStatement = []
         try:
             groupes = getGroupeProf(get_jwt_identity(), conn)

@@ -886,11 +886,11 @@ def update_utilisateur(id):
     if 'role' in json_data.keys():
         return jsonify({'error ': 'le role ne peut pas etre modifié pour l\'instant'}), 400
     # TODO: finish role vérification (use Enum)
-        if (json_data['role'] != "admin" and json_data['role'] != "professeur" and json_data['role'] != "eleve" and json_data['role'] != "manager"):
-            return jsonify({'error ': 'le role doit etre admin ,professeur, eleve ou manager'}), 400
-    
-        if "info" not in json_data.keys():
-            return jsonify({'error': 'missing "info" part of the body'}), 400
+    if (json_data['role'] != "admin" and json_data['role'] != "professeur" and json_data['role'] != "eleve" and json_data['role'] != "manager"):
+        return jsonify({'error ': 'le role doit etre admin ,professeur, eleve ou manager'}), 400
+
+    if "info" not in json_data.keys():
+        return jsonify({'error': 'missing "info" part of the body'}), 400
     
     #req = "Insert into edt.utilisateur (FirstName, LastName, Username, PassWord) values ('{json_data['FirstName']}', '{json_data['LastName']}', '{json_data['Username']}', '{json_data['Password']}') returning IdUtilisateur" 
     json_data['Password'] = util.password_encode(json_data['Password'])
@@ -951,7 +951,7 @@ def delete_utilisateur(id):
     tabQuery.append(query)
     conn = connect_pg.connect()
 
-    permission = perm.getUserPermission(id, conn)
+    permission = perm.getUserPermission(id, conn)[0]
     
     if(permission[0] == 0):
         query2 = f"delete from edt.admin where idutilisateur={id}"
@@ -1110,4 +1110,4 @@ def getPermission():
     """
     user_id = get_jwt_identity()
     conn = connect_pg.connect()
-    return jsonify(perm.getUserPermission(user_id , conn))
+    return jsonify(perm.getUserPermission(user_id , conn)[0])

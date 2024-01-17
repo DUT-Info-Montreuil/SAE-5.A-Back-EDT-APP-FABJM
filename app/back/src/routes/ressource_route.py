@@ -208,7 +208,7 @@ def getAll_ressource():
     if not perm.permissionCheck(get_jwt_identity() , 3 , conn):
         return jsonify({'erreur': str(apiException.PermissionManquanteException())}), 403
 
-    if(perm.getUserPermission(get_jwt_identity() , conn) == 2):
+    if(perm.getUserPermission(get_jwt_identity() , conn)[0] == 2):
         
         returnStatement = []
         try:
@@ -222,7 +222,7 @@ def getAll_ressource():
         connect_pg.disconnect(conn)
         return jsonify(returnStatement)
     
-    elif(perm.getUserPermission(get_jwt_identity() , conn) == 3):
+    elif(perm.getUserPermission(get_jwt_identity() , conn)[0] == 3):
         
         returnStatement = []
         try:

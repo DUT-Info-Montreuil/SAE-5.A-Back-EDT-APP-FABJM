@@ -128,7 +128,7 @@ def get_cours_spe():
     """
 
     conn = connect_pg.connect()
-    if(perm.getUserPermission(get_jwt_identity() , conn) == 2):
+    if(perm.getUserPermission(get_jwt_identity() , conn)[0] == 2):
         returnStatement = []
         try:
             rows = getCoursProf(get_jwt_identity() , conn)
@@ -141,7 +141,7 @@ def get_cours_spe():
         connect_pg.disconnect(conn)
         return jsonify(returnStatement)
     
-    elif(perm.getUserPermission(get_jwt_identity() , conn) == 3):
+    elif(perm.getUserPermission(get_jwt_identity() , conn)[0] == 3):
         returnStatement = []
         try:
             idGroupe = connect_pg.get_query(conn , f"select idGroupe from edt.eleve where idUtilisateur ={get_jwt_identity()}")[0][0]

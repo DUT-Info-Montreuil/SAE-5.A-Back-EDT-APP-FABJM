@@ -63,7 +63,7 @@ def get_salle_dispo():
     heure_fermeture_iut = datetime.timedelta(hours = 19)
 
     if HeureDebut < heure_ouverture_iut or HeureFin > heure_fermeture_iut:
-        return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "L'iut est fermé durant la période spécifié"))}), 404
+        return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "L'iut est fermé durant la période spécifié"))}), 400
 
     query = f""" select edt.salle.* from edt.salle full join edt.accuellir using(idSalle) full join edt.cours
     using(idCours) where (idSalle is not null) and ( '{json_datas['HeureDebut']}' <  HeureDebut 
@@ -254,7 +254,7 @@ def get_equipements_of_salle(idSalle):
     :rtype: json
     """
     conn = connect_pg.connect()
-    permision = perm.getUserPermission(get_jwt_identity() , conn)
+    permision = perm.getUserPermission(get_jwt_identity() , conn)[0]
 
     if(permision == 3):
         return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
@@ -292,14 +292,14 @@ def add_equipements_of_salle(idSalle):
         return jsonify({'error ': 'missing json body'}), 400
 
     conn = connect_pg.connect()
-    permision = perm.getUserPermission(get_jwt_identity() , conn)
+    permision = perm.getUserPermission(get_jwt_identity() , conn)[0]
 
     if(permision != 0):
         return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
     query = "INSERT INTO edt.equiper (idSalle, idEquipement) VALUES "
     value_query = []
 
-    for data in json_datas['idEquipement']:
+    for data in json_data['idEquipement']:
         value_query.append(f"({idSalle},'{data}')")
 
     query += ",".join(value_query) + " returning idEquipement"
