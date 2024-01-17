@@ -254,7 +254,7 @@ def add_salle_of_equipement(idSalle):
     for data in json_data['data']:
         
 
-        query = StartQuery + ","+f"({json_data["idEquipements"]},'{idSalle}')"+" returning idEquipement"
+        query = StartQuery + ","+f"({json_data['idEquipements']},'{idSalle}')"+" returning idEquipement"
 
         try : 
           result.append(connect_pg.execute_commands(conn, query))
