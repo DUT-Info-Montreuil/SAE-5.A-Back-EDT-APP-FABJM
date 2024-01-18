@@ -8,7 +8,8 @@ from src.config import config
 from src.services.cours_service import *
 from src.services.user_service import get_professeur_statement
 
-from src.routes.groupe_route import get_groupe_cours 
+from src.routes.groupe_route import get_groupe_cours
+ 
 
 import psycopg2
 from psycopg2 import errorcodes
@@ -370,7 +371,7 @@ def deplacer_cours(idCours):
         if HeureDebut < heure_ouverture_iut or HeureFin > heure_fermeture_iut:
             return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "L'iut est fermé durant la période spécifié"))}), 404
 
-        idGroupe = json.loads(get_groupe_cours(idCours).data)[0]['IdGroupe']
+        idGroupe = json.loads((get_groupe_cours(idCours)).data)[0]['IdGroupe']
 
         HeureFin = str(HeureFin)
         
@@ -394,9 +395,8 @@ def deplacer_cours(idCours):
         else:
             query += f"SET Jour = '{json_data['Jour']}'"
     query += f" where idCours={idCours}"
-    
     try:
-        connect_pg.get_query(conn, query)
+        connect_pg.execute_commands(conn, query)
     except Exception as e:
         return jsonify({'error': str(apiException.ActionImpossibleException("Cours", "mettre à jour"))}), 500
     connect_pg.disconnect(conn)
@@ -815,9 +815,10 @@ def supprimer_cours(idCours):
     query = f"delete  from edt.cours where idCours={idCours}"
     query2 = f"delete  from edt.enseigner where idCours={idCours}"
     query3 = f"delete  from edt.etudier where idCours={idCours}"
-    query3 = f"delete  from edt.accuellir where idCours={idCours}"
+    query4 = f"delete  from edt.accuellir where idCours={idCours}"
     conn = connect_pg.connect()
     try:
+        connect_pg.execute_commands(conn, query4)
         connect_pg.execute_commands(conn, query3)
         connect_pg.execute_commands(conn, query2)
         connect_pg.execute_commands(conn, query)

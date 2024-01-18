@@ -128,7 +128,7 @@ def get_one_semestre(numeroSemestre):
     try:
         rows = connect_pg.get_query(conn, query)
         if len(rows) == 0:
-            return jsonify({'error': str(apiException.AucuneDonneeTrouverException("etudier"))}), 404
+            return jsonify({'error': str(apiException.AucuneDonneeTrouverException("semestre"))}), 404
         returnStatement = get_semestre_statement(rows[0])
     except(Exception) as e:
         return jsonify({'error': str(apiException.ActionImpossibleException("groupe", "récuperer"))}), 500

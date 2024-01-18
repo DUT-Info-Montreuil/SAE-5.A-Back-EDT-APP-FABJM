@@ -288,14 +288,6 @@ def get_one_groupe(idGroupe):
     
     query = f"SELECT * from edt.groupe where idGroupe='{idGroupe}'"
     conn = connect_pg.connect()
-    result = getGroupeProf(get_jwt_identity(), conn)
-    verification = False
-    for row in result:
-        if str(row[0]) == idGroupe:
-            verification = True
-
-    if not verification:
-        return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
         
     rows = connect_pg.get_query(conn, query)
     returnStatement = {}
@@ -484,7 +476,7 @@ def update_groupe(idGroupe):
 
     if req[-2:] == ", ":
         req = req[:-2]
-    req += f" WHERE idGroupe={idGroupe} RETURNING *"
+    req += f" WHERE idGroupe={idGroupe}"
 
     conn = connect_pg.connect()
     try:

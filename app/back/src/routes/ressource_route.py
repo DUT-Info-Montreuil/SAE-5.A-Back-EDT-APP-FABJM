@@ -6,7 +6,7 @@ import src.apiException as apiException
 
 
 from src.config import config
-from src.services.ressource_service import get_ressource_statement
+from src.services.ressource_service import *
 from src.routes.cours_route import supprimer_cours
 import src.services.permision as perm
 
@@ -160,38 +160,7 @@ def supprimer_responsable(idRessource):
     connect_pg.disconnect(conn)
     return jsonify(idRessource)
 
-def getRessourceProf(idUtilisateur , conn):
-    """ Renvoie les ressources au quelle enseigne un professeur
-    
-    :param idUtilisateur: idUtilisateur du professeur
-    :type idUtilisateur: int
-    
-    :param conn: la connection à une base de donnée
-    :type conn: une classe heritant de la classe mère Connexion
 
-    :return: retourne les ressources
-    :rtype: list
-    """
-    idProf = connect_pg.get_query(conn , f"SELECT idProf FROM edt.professeur WHERE idutilisateur ={idUtilisateur}")[0][0]
-    result = connect_pg.get_query(conn , f"SELECT edt.ressource.* from edt.ressource inner join edt.responsable as r1 using(idRessource)  where r1.idProf = {idProf} order by idRessource asc")
-    
-    return result
-
-def getRessourceEleve(idUtilisateur , conn):
-    """ Renvoie les ressources qu'un élève étudie
-    
-    :param idUtilisateur: idUtilisateur du professeur
-    :type idUtilisateur: int
-    
-    :param conn: la connection à une base de donnée
-    :type conn: une classe heritant de la classe mère Connexion
-
-    :return: retourne les ressources
-    :rtype: list
-    """
-    result = connect_pg.get_query(conn , f"SELECT edt.ressource.* from edt.ressource inner join edt.cours using(idRessource) inner join edt.etudier using(idCours) inner join edt.eleve as e1 using(idGroupe) where e1.idutilisateur ={idUtilisateur} order by idRessource asc")
-    
-    return result
 
 @ressource.route('/ressource/getAll', methods=['GET'])
 @jwt_required()
@@ -391,18 +360,13 @@ def UpdateRessource(idRessource) :
     table_name = "Ressource"
     json_data = request.get_json()
     keys = ["Titre", "NbrHeureSemestre", "CodeCouleur", "IdSemestre", "Numero"]
-
-    query = conn.query_update(table_name, f"idRessource={idRessource}", json_data, keys)
-    # Si query update return une error
-    if type(query) == tuple:
-        return query
     
     conn = connect_pg.connect()
     if not perm.permissionCheck(get_jwt_identity() , 1 , conn):
         return jsonify({'erreur': str(apiException.PermissionManquanteException())}), 403
 
-    if (not id.isdigit()):
-        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("id", "numérique"))}), 400
+    if (not idRessource.isdigit()):
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idRessource", "numérique"))}), 400
     
     datas = request.get_json()
     if not datas:
@@ -419,7 +383,7 @@ def UpdateRessource(idRessource) :
     #remove last comma
     if req[-2:] == ", ":
         req = req[:-2]
-    req += f" WHERE idressource = {id}"
+    req += f" WHERE idressource = {idRessource}"
     
     con = connect_pg.connect()
     try:
