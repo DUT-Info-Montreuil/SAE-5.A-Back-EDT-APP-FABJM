@@ -65,7 +65,7 @@ def add_one(table_name, key_to_return, data, possible_keys):
     # Create string of set value
     return (insert_query, (value_to_add))
 
-def update(table_name, where, key_to_return, data, possible_keys):
+def update(table_name, where, data, possible_keys, key_to_return=""):
     """
     Crée une requête pour mettre à jour une table dans la base de données.
 
@@ -86,21 +86,21 @@ def update(table_name, where, key_to_return, data, possible_keys):
     :rtype: tuple
     """
     update_query =  "UPDATE edt." + table_name + " SET %s WHERE "+" AND ".join([filtre+"=%s" for filtre in where.keys()])
-    if key_to_return:
+    if key_to_return != "":
         update_query += " RETURNING " + key_to_return
     tab_query = []
     for key in data.keys():
         # Est-ce que key est une clé possible
         if key not in possible_keys:
             error_message = f"Le paramètre {key} n'existe pas pour cette route"
-            return jsonify({'error': ParamètreInvalideException(key)}), 400
+            return False, (jsonify({'error': ParamètreInvalideException(key)}), 400)
             # return jsonify({'error': ParamètreInvalideException(message=error_message)}), 400
         # Echaper au balise qui aurait pu être mit en input par l'utilisateur
         data[key] = escape(data[key])
-        tab_query.append(f"{key}='{data[key]}' ")
+        tab_query.append(f"{key}='{data[key]}'")
     # Create string of set value
-    value_to_set = ", ".join(tab_query) + " "
-    return (update_query, (value_to_set, *tuple(value for value in where)))
+    value_to_set = ", ".join(tab_query)
+    return (update_query, (value_to_set, *tuple(where[key] for key in where.keys())))
 
 def delete(table_name, where, key_to_return):
     """
