@@ -108,8 +108,10 @@ def add_equipement():
 
 
     conn = connect_pg.connect()
+
    
     if not (perm.permissionCheck(get_jwt_identity() , 0 , conn)):
+
         return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
     query = "INSERT INTO edt.equipement (Nom) VALUES "
     value_query = []
@@ -154,7 +156,7 @@ def update_equipement(idEquipement):
         return query
 
     conn = connect_pg.connect()
-    permision = perm.getUserPermission(get_jwt_identity() , conn)
+    permision = perm.getUserPermission(get_jwt_identity() , conn)[0]
     if(permision != 0):
         return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
     
@@ -206,7 +208,7 @@ def get_salles_of_equipement(idEquipement):
     :rtype: json
     """
     conn = connect_pg.connect()
-    permision = perm.getUserPermission(get_jwt_identity() , conn)
+    permision = perm.getUserPermission(get_jwt_identity() , conn)[0]
 
     if(permision == 3):
         return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
@@ -241,7 +243,7 @@ def add_salle_of_equipement(idSalle):
         return jsonify({'error ': 'missing json body'}), 400
 
     conn = connect_pg.connect()
-    permision = perm.getUserPermission(get_jwt_identity() , conn)
+    permision = perm.getUserPermission(get_jwt_identity() , conn)[0]
 
     if(permision != 0):
         return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
@@ -251,7 +253,9 @@ def add_salle_of_equipement(idSalle):
     #add multiple equipement 
     for data in json_data['data']:
         
+
         query = StartQuery + ","+f"({json_data["idEquipements"]},'{idSalle}')"+" returning idEquipement"
+
         try : 
           result.append(connect_pg.execute_commands(conn, query))
         except Exception as e:

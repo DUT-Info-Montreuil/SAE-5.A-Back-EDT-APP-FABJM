@@ -43,18 +43,18 @@ def get_salle_dispo():
     :return: toutes les salles disponibles
     :rtype: flask.wrappers.Response(json)
     """
-    json_datas = request.get_json()
-    if not json_datas:
+    json_data = request.get_json()
+    if not json_data:
         return jsonify({'error ': 'missing json body'}), 400
     
-    if 'HeureDebut' not in json_datas or 'Jour' not in json_datas or 'NombreHeure' not in json_datas :
+    if 'HeureDebut' not in json_data or 'Jour' not in json_data or 'NombreHeure' not in json_data :
         return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
 
-    if not verif.estDeTypeTime(json_datas['HeureDebut']) or not verif.estDeTypeDate(json_datas['Jour']) or not verif.estDeTypeTime(json_datas['NombreHeure']):
+    if not verif.estDeTypeTime(json_data['HeureDebut']) or not verif.estDeTypeDate(json_data['Jour']) or not verif.estDeTypeTime(json_data['NombreHeure']):
         return jsonify({'error': str(apiException.ParamètreInvalideException("HeureDebut, NombreHeure ou Jour"))}), 404
 
-    HeureDebut = json_datas['HeureDebut']
-    NombreHeure = json_datas['NombreHeure']
+    HeureDebut = json_data['HeureDebut']
+    NombreHeure = json_data['NombreHeure']
     HeureDebut = datetime.timedelta(hours = int(HeureDebut[:2]),minutes = int(HeureDebut[3:5]), seconds = int(HeureDebut[6:8]))
     NombreHeure = datetime.timedelta(hours = int(NombreHeure[:2]),minutes = int(NombreHeure[3:5]))
     HeureFin = HeureDebut + NombreHeure
@@ -63,12 +63,16 @@ def get_salle_dispo():
     heure_fermeture_iut = datetime.timedelta(hours = 19)
 
     if HeureDebut < heure_ouverture_iut or HeureFin > heure_fermeture_iut:
-        return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "L'iut est fermé durant la période spécifié"))}), 404
+        return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "L'iut est fermé durant la période spécifié"))}), 400
+
+
+    
 
     query = f""" select edt.salle.* from edt.salle full join edt.accuellir using(idSalle) full join edt.cours
-    using(idCours) where (idSalle is not null) and ( '{json_datas['HeureDebut']}' <  HeureDebut 
-    and  '{str(HeureFin)}' <= HeureDebut or '{json_datas['HeureDebut']}'::time >=  (HeureDebut + NombreHeure::interval))  
-    or (HeureDebut is null) order by idSalle asc
+    using(idCours) where (idCours is null ) or (jour = '{json_data['Jour']}' (and
+    '{HeureDebut}'::time > (HeureDebut + NombreHeure::interval)
+    or HeureDebut > '{HeureFin}' and idSalle is not null )) order by idSalle asc
+
     """
     conn = connect_pg.connect()
     returnStatement = []
@@ -80,6 +84,7 @@ def get_salle_dispo():
         for row in rows:
             returnStatement.append(get_salle_statement(row))
     except Exception as e:
+        print(e)
         return jsonify({'error': str(apiException.ActionImpossibleException("Salle, Etudier ou Cours", "récupérer"))}), 500
     connect_pg.disconnect(conn)
     return jsonify(returnStatement)
@@ -220,7 +225,7 @@ def add_salle():
     json_data = request.get_json()
     if not json_data:
         return jsonify({'error ': 'missing json body'}), 400
-    print(json_data)
+
     query = f"Insert into edt.salle (Nom, Capacite) values ('{json_data['Nom']}',{json_data['Capacite']}) returning idSalle"
     conn = connect_pg.connect()
     try:
@@ -256,7 +261,7 @@ def get_equipements_of_salle(idSalle):
     :rtype: json
     """
     conn = connect_pg.connect()
-    permision = perm.getUserPermission(get_jwt_identity() , conn)
+    permision = perm.getUserPermission(get_jwt_identity() , conn)[0]
 
     if(permision == 3):
         return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
@@ -297,7 +302,7 @@ def add_equipements_of_salle(idSalle):
         return jsonify({'error ': 'missing json body'}), 400
 
     conn = connect_pg.connect()
-    permision = perm.getUserPermission(get_jwt_identity() , conn)
+    permision = perm.getUserPermission(get_jwt_identity() , conn)[0]
 
     if not (perm.permissionCheck(get_jwt_identity(), 0 , conn)):
         return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
@@ -337,10 +342,10 @@ def update_salle():
     :return: message de succès
     :rtype: str
     """
-    json_datas = request.get_json()
-    if not json_datas:
+    json_data = request.get_json()
+    if not json_data:
         return jsonify({'error ': 'missing json body'}), 400
-    query = f"update edt.salle set Numero='{json_datas['Numero']}', Capacite={json_datas['Capacite']} where idSalle={json_datas['idSalle']}"
+    query = f"update edt.salle set Nom='{json_data['Nom']}', Capacite={json_data['Capacite']} where idSalle={json_data['idSalle']}"
     conn = connect_pg.connect()
     try:
         returnStatement = connect_pg.execute_commands(conn, query)

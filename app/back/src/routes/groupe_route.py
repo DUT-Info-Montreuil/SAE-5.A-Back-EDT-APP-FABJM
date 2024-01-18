@@ -39,7 +39,7 @@ def get_groupe():
     :rtype: json
     """
     conn = connect_pg.connect()
-    if (perm.getUserPermission(get_jwt_identity(), conn) == 2):
+    if (perm.getUserPermission(get_jwt_identity(), conn)[0] == 2):
         returnStatement = []
         try:
             groupes = getGroupeProf(get_jwt_identity(), conn)
@@ -135,81 +135,7 @@ def get_groupe_manager(idManager):
     return jsonify(returnStatement)
 
 
-@groupe.route('/groupe/ajouterCours/<idGroupe>', methods=['POST', 'PUT'])
-@jwt_required()
-def ajouter_cours(idGroupe):
-    """Permet d'ajouter un cours à un groupe via la route /groupe/ajouterCours/<idGroupe>
-    
-    :param idCours: id du cours à ajouter spécifié dans le body
-    :type idCours: int
 
-    :param idGroupe: id du groupe qui doit recevoir un cours
-    :type idGroupe: int
-
-    :raises ParamètreBodyManquantException: Si aucun paramètre d'entrée attendu n'est spécifié dans le body
-    :raises ParamètreTypeInvalideException: Le type de idCours ou idGroupe est invalide, une valeur numérique est attendue
-    :raises DonneeIntrouvableException: Si une des clées n'a pas pu être trouvé
-    :raises ActionImpossibleException: Impossible de réaliser l'insertion
-    :raises ParamètreInvalideException: Si le groupe n'est pas disponible à l'horaire spécifié
-
-    :return: id du groupe
-    :rtype: flask.wrappers.Response(json)
-    """
-    from src.routes.cours_route import get_cours
-    conn = connect_pg.connect()
-    json_datas = request.get_json()
-
-    if 'idCours' not in json_datas :
-        return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
-
-    if (not idGroupe.isdigit() or type(json_datas['idCours']) != int   ):
-        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idCours ou idGroupe", "numérique"))}), 400
-    
-    courGroupe = get_cours(str(json_datas['idCours']))
-    if type(courGroupe) == tuple :
-        return jsonify({'error': str(apiException.ActionImpossibleException("cours"))}), 500
-
-    courGroupe = json.loads(get_cours(str(json_datas['idCours'])).data) 
-    HeureDebut = courGroupe[0]['HeureDebut']
-    NombreHeure = courGroupe[0]['NombreHeure']
-    HeureDebut = datetime.timedelta(hours = int(HeureDebut[:2]),minutes = int(HeureDebut[3:5]), seconds = 00)
-    NombreHeure = datetime.timedelta(hours = int(NombreHeure[:2]),minutes = int(NombreHeure[3:5]), seconds = 00)
-    HeureFin = str(HeureDebut + NombreHeure)
-
-    query = f"""SELECT edt.cours.* FROM edt.cours inner join edt.etudier using(idCours)  where idGroupe = {idGroupe}
-    and ((HeureDebut <= '{courGroupe[0]['HeureDebut']}' and '{courGroupe[0]['HeureDebut']}'::time <=  (HeureDebut + NombreHeure::interval))
-    or ( HeureDebut <= '{HeureFin}' and '{HeureFin}'::time <= (HeureDebut + NombreHeure::interval)))
-    and ('{courGroupe[0]['Jour']}' = Jour and idCours is not null) order by idCours asc
-    """
-
-    result = connect_pg.get_query(conn , query)
-    
-    if result != []:
-        return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "Ce groupe n'est pas disponible à la période spécifié"))}), 400
-    
-    returnStatement = {}
-    query = f"Insert into edt.etudier (idGroupe, idCours) values ('{idGroupe}', '{json_datas['idCours']}') returning idGroupe"
-    
-    try:
-        returnStatement = connect_pg.execute_commands(conn, query)
-    except Exception as e:
-        if e.pgcode == "23503":# violation contrainte clée étrangère
-            if "cours" in str(e):
-                return jsonify({'error': str(apiException.DonneeIntrouvableException("Cours ", json_datas['idCours']))}), 400
-            else:
-                return jsonify({'error': str(apiException.DonneeIntrouvableException("Groupe ", idGroupe))}), 400
-        
-        elif e.pgcode == "23505": # si existe déjà
-            messageId = f"idGroupe = {idGroupe} et idCours = {json_datas['idCours']}"
-            messageColonne = f"idGroupe et idCours"
-            return jsonify({'error': str(apiException.DonneeExistanteException(messageId, messageColonne, "Etudier"))}), 400
-        
-        else:
-            # Erreur inconnue
-            return jsonify({'error': str(apiException.ActionImpossibleException("Etudier"))}), 500
-
-    connect_pg.disconnect(conn)
-    return jsonify(returnStatement)
 
 @groupe.route('/groupe/enleverCours/<idCours>', methods=['DELETE'])
 @jwt_required()
@@ -266,18 +192,18 @@ def get_groupe_dispo():
     :return: touts les groupes disponibles
     :rtype: flask.wrappers.Response(json)
     """
-    json_datas = request.get_json()
-    if not json_datas:
+    json_data = request.get_json()
+    if not json_data:
         return jsonify({'error ': 'missing json body'}), 400
     
-    if 'HeureDebut' not in json_datas or 'Jour' not in json_datas or 'NombreHeure' not in json_datas :
+    if 'HeureDebut' not in json_data or 'Jour' not in json_data or 'NombreHeure' not in json_data :
         return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
 
-    if not verif.estDeTypeTime(json_datas['HeureDebut']) or not verif.estDeTypeDate(json_datas['Jour']) or not verif.estDeTypeTime(json_datas['NombreHeure']):
+    if not verif.estDeTypeTime(json_data['HeureDebut']) or not verif.estDeTypeDate(json_data['Jour']) or not verif.estDeTypeTime(json_data['NombreHeure']):
         return jsonify({'error': str(apiException.ParamètreInvalideException("HeureDebut, NombreHeure ou Jour"))}), 404
 
-    HeureDebut = json_datas['HeureDebut']
-    NombreHeure = json_datas['NombreHeure']
+    HeureDebut = json_data['HeureDebut']
+    NombreHeure = json_data['NombreHeure']
     HeureDebut = datetime.timedelta(hours = int(HeureDebut[:2]),minutes = int(HeureDebut[3:5]), seconds = 00)
     NombreHeure = datetime.timedelta(hours = int(NombreHeure[:2]),minutes = int(NombreHeure[3:5]), seconds = 00)
     HeureFin = HeureDebut + NombreHeure
@@ -289,11 +215,13 @@ def get_groupe_dispo():
         return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "L'iut est fermé durant la période spécifié"))}), 404
 
 
-    query = f""" select distinct edt.groupe.*  from edt.groupe full join edt.etudier using(idGroupe) full join edt.cours
-    using(idCours) where (idGroupe is not null) and ( '{json_datas['HeureDebut']}' <  HeureDebut 
-    and  '{str(HeureFin)}' <= HeureDebut or '{json_datas['HeureDebut']}'::time >=  (HeureDebut + NombreHeure::interval))
-    or ('{json_datas['Jour']}' != Jour and idGroupe is not null) or (HeureDebut is null) order by idGroupe asc
-    """
+    query = f""" select distinct edt.groupe.*  
+        from edt.groupe full join edt.etudier using(idGroupe) full join edt.cours
+        using(idCours) where (idCours is null ) or (jour = '{json_data['Jour']}' and
+        ('{HeureDebut}'::time > (HeureDebut + NombreHeure::interval)
+        or HeureDebut > '{HeureFin}' and idGroupe is not null )) order by idGroupe asc
+        """
+
     conn = connect_pg.connect()
     returnStatement = []
     try:
@@ -369,7 +297,7 @@ def get_parent_groupe(idGroupe):
     if (not idGroupe.isdigit()):
         return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idGroupe", "numérique"))}), 400
     
-    query = f"SELECT * from edt.groupe where idGroupe=(SELECT idGroupe_parent from edt.groupe where idGroupe = '{idGroupe}')"
+    query = f"SELECT * from edt.groupe where idGroupe=(SELECT idGroupeParent from edt.groupe where idGroupe = '{idGroupe}')"
 
     conn = connect_pg.connect()
     
@@ -403,7 +331,7 @@ def get_all_children(idGroupe):
     if (not idGroupe.isdigit()):
         return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idGroupe", "numérique"))}), 400
     
-    query = f"SELECT * from edt.groupe where idGroupe_parent={idGroupe}"
+    query = f"SELECT * from edt.groupe where idGroupeParent={idGroupe}"
 
     conn = connect_pg.connect()
     
@@ -515,7 +443,7 @@ def update_groupe(idGroupe):
     json_data = request.get_json()
     if not json_data:
         return jsonify({'error ': 'missing json body'}), 400
-    key = ["Nom", "AnneeScolaire", "Annee", "idGroupe_parent"]
+    key = ["Nom", "idGroupeParent"]
     for k in json_data.keys():
         if k not in key:
             return jsonify({'error': "missing or invalid key"}), 400
