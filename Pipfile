@@ -1,0 +1,28 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+flask = "*"
+flask_restful = "*"
+flask_cors = "*"
+psycopg2 = "*"
+setuptools = "*"
+werkzeug = "*"
+py-make = "*"
+configparser = "*"
+requests = "*"
+config = "*"
+
+
+[dev-packages]
+pytest = "*"
+pytest-html = "*"
+sphinx = "*"
+sphinx-autoapi = "*"
+pytest-flask = "*"
+
+
+[requires]
+python_version = "3.10"

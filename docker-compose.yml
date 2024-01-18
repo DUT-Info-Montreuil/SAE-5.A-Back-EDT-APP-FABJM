@@ -1,0 +1,9 @@
+version: "3.8"
+services:
+  app :
+    build: ./app/back
+    ports:
+      - "5000:5000"
+
+  db:
+    build: ./database/

@@ -7,6 +7,7 @@ instance/*
 .webassets-cache
 .env
 
+
 ### Flask.Python Stack ###
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -35,6 +36,10 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+tests/rapport.html
+Pipfile.lock
+assets/
+
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -448,6 +453,7 @@ poetry.toml
 pyrightconfig.json
 
 ### VisualStudioCode ###
+.vscode
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
@@ -467,3 +473,9 @@ pyrightconfig.json
 .ionide
 
 # End of https://www.toptal.com/developers/gitignore/api/pycharm,visualstudiocode,intellij,python,flask
+
+
+
+# delete generated file
+app/back/tests/rapport.html
+

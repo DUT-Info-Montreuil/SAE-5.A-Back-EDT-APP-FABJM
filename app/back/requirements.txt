@@ -1,0 +1,16 @@
+pytest
+flask
+setuptools
+pytest-flask
+sphinx
+sphinx-autoapi
+werkzeug
+py-make
+flask_restful
+configparser
+flask_cors
+psycopg2
+requests
+config
+pytest-html
+
