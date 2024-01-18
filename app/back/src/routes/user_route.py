@@ -580,16 +580,18 @@ def get_logged_user():
     conn = connect_pg.connect()
     
     
-    # query = f"select idUtilisateur,FirstName,LastName,Username from edt.utilisateur where idutilisateur = {user_id}"
-    request = util.get("Utilisateur", {"idUtilisateur": user_id}, ["idUtilisateur","FirstName","LastName","Username"])
-    user_rows = connect_pg.get_query(conn, request)
+    querry = f"select idUtilisateur,FirstName,LastName,Username from edt.utilisateur where idutilisateur = {user_id}"
+    #querry = util.get("Utilisateur", {"idUtilisateur": user_id}, ["idUtilisateur","FirstName","LastName","Username"])
     
+    user_rows = connect_pg.get_query(conn, querry)
+    
+    print(user_rows)
 
     if not user_rows:
         connect_pg.disconnect(conn)
         return jsonify({'erreur': str(apiException.AucuneDonneeTrouverException("utilisateur"))}), 404
     
-    user = get_utilisateur_protected_statement(user_rows)
+    user = get_utilisateur_protected_statement(user_rows[0])
     
     
     role_query = f"select IDAdmin from edt.admin where idUtilisateur = {user_id}"
@@ -597,35 +599,56 @@ def get_logged_user():
     
     if role_rows:
         role = {
-        "type": "Administrateur",
+        "type": "0",
         "id": role_rows[0][0]
         }
         user["role"] = role
         connect_pg.disconnect(conn)
         return jsonify(user)
     
+    
+    
+    
+    
+    
 
     role_query = f"SELECT p.idProf, p.initiale, s.nom FROM edt.professeur as p JOIN edt.salle as s ON p.idSalle = s.idSalle WHERE p.idUtilisateur = {user_id}"
 
     role_rows = connect_pg.get_query(conn, role_query)
 
-    if role_rows:
-        role = {
-        "type": "Enseignant",
-        "id": role_rows[0][0],
-        "initiale": role_rows[0][1],
-        "bureau": role_rows[0][2]
-        }
-        user["role"] = role
-        connect_pg.disconnect(conn)
-        return jsonify(user)
+    manager_query = f"SELECT * FROM edt.manager WHERE idProf = {role_rows[0][0]}"
+
+    
+    if not manager_query : 
+
+        if role_rows:
+            role = {
+            "type": "2",
+            "id": role_rows[0][0],
+            "initiale": role_rows[0][1],
+            "bureau": role_rows[0][2]
+            }
+            user["role"] = role
+            connect_pg.disconnect(conn)
+            return jsonify(user)
+    else :
+        if role_rows:
+            role = {
+            "type": "1",
+            "id": role_rows[0][0],
+            "initiale": role_rows[0][1],
+            "bureau": role_rows[0][2]
+            }
+            user["role"] = role
+            connect_pg.disconnect(conn)
+            return jsonify(user)
     
     role_query = f"select idEleve,idGroupe  from edt.eleve where idUtilisateur = {user_id}"
     role_rows = connect_pg.get_query(conn, role_query)
 
     if role_rows:
         role = {
-        "type": "Élève",
+        "type": "3",
         "id": role_rows[0][0],
         "idGroupe": role_rows[0][1]
         }
@@ -714,6 +737,8 @@ def add_utilisateur():
                 key.remove(k) 
         if len(key) != 0:
             return jsonify({'error ': 'missing ' + str(key)}), 400 
+        
+        user['Password'] = util.password_encode(user['Password'])
         
         query = f"Insert into edt.utilisateur (FirstName, LastName, Username, PassWord) values ('{user['FirstName']}', '{user['LastName']}', '{user['Username']}', '{user['Password']}') returning IdUtilisateur"
         conn = connect_pg.connect()
