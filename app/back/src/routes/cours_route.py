@@ -860,9 +860,13 @@ def add_cours():
     if 'HeureDebut' not in json_data or 'NombreHeure' not in json_data or 'Jour' not in json_data or 'idRessource' not in json_data or 'typeCours' not in json_data:
         return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
     
+    """
     if not verif.estDeTypeTime(json_data['HeureDebut']) or not verif.estDeTypeDate(json_data['Jour']) or not verif.estDeTypeTime(json_data['NombreHeure']) or type(json_data['idRessource']) != int:
         return jsonify({'error': str(apiException.ParamètreInvalideException("HeureDebut, NombreHeure, idRessource ou Jour"))}), 404
+    """
 
+    #if not verif.estDeTypeTime(json_data['HeureDebut']) or not verif.estDeTypeDate(json_data['Jour']) or not verif.estDeTypeTime(json_data['NombreHeure']) or type(json_data['idRessource']) != int:
+    
     if type(json_data['typeCours']) != str or json_data['typeCours'] not in ['Amphi', 'Td', 'Tp', 'Sae']:
         return jsonify({'error': str(apiException.ParamètreInvalideException("typeCours"))}), 404
 
@@ -876,7 +880,7 @@ def add_cours():
     heure_fermeture_iut = datetime.timedelta(hours = 19)
 
     if HeureDebut < heure_ouverture_iut or HeureFin > heure_fermeture_iut:
-        return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "L'iut est fermé à l'horaire spécifié"))}), 404
+        return jsonify({'error': str(apiException.ParamètreInvalideException(None, message = "L'iut est fermé à l'horaire spécifié"))}),400
 
     conn = connect_pg.connect()
     query = f"select NbrHeureSemestre from edt.ressource where idRessource = {json_data['idRessource']}" # vérifier si il reste assez d'heures
