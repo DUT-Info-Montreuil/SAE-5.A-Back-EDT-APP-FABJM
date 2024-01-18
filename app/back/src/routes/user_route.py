@@ -139,13 +139,14 @@ def get_utilisateur():
     if not perm.permissionCheck(get_jwt_identity() , 0 , conn):
         return jsonify({'erreur': str(apiException.PermissionManquanteException())}), 403
     
-    query = util.get("Utilisateur", key_to_return=["idUtilisateur", "FirstName", "LastName", "Username"])
+    query = util.get("Utilisateur", key_to_return=["idUtilisateur", "FirstName", "LastName", "Username", "FirstLogin"])
     returnStatement = []
     try:
         rows = connect_pg.get_query(conn, query)
         if rows == []:
             return jsonify([])
         for row in rows:
+            print(row)
             p = perm.getUserPermission(row[0] , conn)
             returnStatement.append(get_utilisateur_statement(row, p[0]))
     except(TypeError) as e:
@@ -678,7 +679,7 @@ def get_one_utilisateur(userName):
     if not perm.permissionCheck(get_jwt_identity() , 3 , conn):
         return jsonify({'error': 'not enough permission'}), 403
     
-    query = f"SELECT * from edt.utilisateur where Username='{userName}'"
+    (query, search_value) = util.get("Utilisateur", where={"Username":userName}, key_to_return=["idUtilisateur", "FirstName", "LastName", "Username", "FirstLogin"])
 
     conn = connect_pg.connect()
     
@@ -686,7 +687,7 @@ def get_one_utilisateur(userName):
     if (userName.isdigit() or type(userName) != str):
         return jsonify({'error': str(apiException.ParamètreTypeInvalideException("userName", "string"))}), 400
     try:
-        rows = connect_pg.get_query(conn, query)
+        rows = connect_pg.get_query(conn, query, search_value)
         if len(rows) == 0:
             return jsonify({'error': str(apiException.DonneeIntrouvableException("utilisateur", userName))}), 404
         returnStatement = get_utilisateur_statement(rows[0])
@@ -727,7 +728,7 @@ def add_utilisateur():
         return jsonify({'error ': 'le role doit etre admin ,professeur, eleve ou manager'}), 400
     for user in json_data['users']:
         conn = connect_pg.connect()
-
+        print(user)
         if "info" not in user.keys():
             return jsonify({'error': 'missing "info" part of the body'}), 400
         
@@ -770,11 +771,6 @@ def add_utilisateur():
                 if(user['info']['isManager'] ):
                     query = f"Insert into edt.manager (IdProf, idGroupe) values ('{returnStatement}' , '{user['info']['idgroupe']}') returning IdUtilisateur"
                     returnStatement = connect_pg.execute_commands(conn, query)
-                
-                
-
-            
-            
         except Exception as e :
             connect_pg.disconnect(conn)
             conn = connect_pg.connect()
