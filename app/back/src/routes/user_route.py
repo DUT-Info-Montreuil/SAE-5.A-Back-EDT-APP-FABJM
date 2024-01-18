@@ -1011,7 +1011,7 @@ def delete_utilisateur(id):
     tabQuery.append(query)
     conn = connect_pg.connect()
 
-    permission = perm.getUserPermission(id, conn)[0]
+    permission = perm.getUserPermission(id, conn)
     
     if(permission[0] == 0):
         query2 = f"delete from edt.admin where idutilisateur={id}"

@@ -150,18 +150,19 @@ def update_equipement(idEquipement):
     table_name = "Equipement"
     keys = ["Nom"]
     
-    query = update("Equipement", f"idEquipement={idEquipement}", json_data, keys)
-    # Si query update return une error
-    if type(query) == tuple:
-        return query
-
+    # (query, value_query) = update("Equipement", where={"idEquipement":idEquipement}, data=json_data, possible_keys=keys)
+    # # Si query update return une error
+    # if not query:
+    #     return value_query
+    query =  f"UPDATE edt.Equipement SET Nom='{json_data['Nom']}' WHERE idEquipement='{idEquipement}'"
+    # print(query, value_query)
     conn = connect_pg.connect()
     permision = perm.getUserPermission(get_jwt_identity() , conn)[0]
     if(permision != 0):
         return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
     
     try:
-        connect_pg.execute_commands(conn, query[0], query[1])
+        connect_pg.execute_commands(conn, query)
     except Exception as e:
         return jsonify({'error': str(apiException.ActionImpossibleException("equipement", "mise à jour"))}), 500
     connect_pg.disconnect(conn)
