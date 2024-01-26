@@ -26,6 +26,7 @@ def get_semestre():
     
     :raises PermissionManquanteException: Si l'utilisateur n'a pas assez de droit pour récupérer les données présents dans la table semestre
     :raises AucuneDonneeTrouverException: Si aucune donnée n'a été trouvé dans la table semestre
+    :raises ActionImpossibleException: Si une erreur inconnue est survenue lors de la récupération des données
     
     :return: tous les semestres
     :rtype: json
@@ -74,7 +75,6 @@ def add_semestre():
     if not perm.permissionCheck(get_jwt_identity() , 1 , conn):
         return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
 
-
     json_data = request.get_json()
     if not json_data:
         return jsonify({'error ': str(apiException.ParamètreBodyManquantException())}), 400
@@ -99,7 +99,7 @@ def add_semestre():
 @semestre.route('/semestre/get/<numeroSemestre>', methods=['GET', 'POST'])
 @jwt_required()
 def get_one_semestre(numeroSemestre):
-    """Renvoit un semestre spécifié par son numéro via la route /semestre/get<numeroSemestre>
+    """Renvoit un semestre spécifié par son numéro via la route /semestre/get/<numeroSemestre>
 
     :param numeroSemestre: numéro d'un semestre présent dans la base de donnée
     :type numeroSemestre: int
@@ -111,7 +111,6 @@ def get_one_semestre(numeroSemestre):
     :return: le semestre qui correspond au numéro entré en paramètre
     :rtype: json
     """
-
 
     conn = connect_pg.connect()
     if not perm.permissionCheck(get_jwt_identity() , 3 , conn):
@@ -174,7 +173,7 @@ def supprimer_semestre(idSemestre):
 @semestre.route('/semestre/update/<idSemestre>', methods=['PUT','GET'])
 @jwt_required()
 def upadateSemestre(idSemestre):
-    """Permet de mettre à jour un semestre via la route /semestre/update/<numeroSemestre>
+    """Permet de mettre à jour un semestre via la route /semestre/update/<idSemestre>
 
     :param numeroSemestre: numéro d'un semestre présent dans la base de donnée
     :type numeroSemestre: int
@@ -188,14 +187,10 @@ def upadateSemestre(idSemestre):
     :rtype: json
     """
 
-   
-    
     conn = connect_pg.connect()
     
     if not perm.permissionCheck(get_jwt_identity() , 1 , conn):
-        print("get rekt")
         return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
-
 
     json_data = request.get_json()
     if not json_data:

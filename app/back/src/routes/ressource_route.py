@@ -25,7 +25,7 @@ ressource = Blueprint('ressource', __name__)
 @ressource.route('/ressource/attribuerResponsable/<idRessource>', methods=['POST', 'PUT'])
 @jwt_required()
 def attribuerResponsable(idRessource):
-    """Permet d'attribuer une salle à un ressource via la route /ressource/attribuerResponsable
+    """Permet d'attribuer une salle à un ressource via la route /ressource/attribuerResponsable/<idRessource>
     
     :param idRessource: id du ressource qui doit recevoir une salle
     :type idRessource: int
@@ -43,7 +43,7 @@ def attribuerResponsable(idRessource):
     """
     json_data = request.get_json()
     if (not idRessource.isdigit()):
-        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idRessource", "numérique"))}), 400
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idRessource", "int"))}), 400
     
     
     if 'idProf' not in json_data :
@@ -127,6 +127,8 @@ def supprimer_responsable(idRessource):
     :raises ParamètreTypeInvalideException: Si le type de idRessource est invalide, une valeur numérique est attendue
     :raises DonneeIntrouvableException: Si la clée idRessource ou idProf n'a pas pu être trouvé
     :raises ActionImpossibleException: Si une erreur inconnue est survenue lors de l'insertion
+    :raises ParamètreBodyManquantException: Si aucun paramètre d'entrée attendu n'est spécifié dans le body
+
 
     :return: id de la ressource
     :rtype: json
@@ -135,8 +137,6 @@ def supprimer_responsable(idRessource):
     if (not idRessource.isdigit() ):
         return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idRessource", "numérique"))}), 400
 
-    
-    
     if 'idProf' not in json_data :
         return jsonify({'error': str(apiException.ParamètreBodyManquantException())}), 400
 
@@ -169,6 +169,7 @@ def getAll_ressource():
 
     :raises PermissionManquanteException: Si pas assez de droit pour récupérer toutes les données présentes dans la table ressource
     :raises AucuneDonneeTrouverException: Une aucune donnée n'a été trouvé dans la table ressource
+    :raises ActionImpossibleException: Si une erreur inconnue est survenue lors de la récupération des données
     
     :return:  toutes les resources
     :rtype: json
@@ -177,7 +178,7 @@ def getAll_ressource():
     if not perm.permissionCheck(get_jwt_identity() , 3 , conn):
         return jsonify({'erreur': str(apiException.PermissionManquanteException())}), 403
 
-    if(perm.getUserPermission(get_jwt_identity() , conn)[0] == 2):
+    if(perm.getUserPermission(get_jwt_identity() , conn)[0] == 2):# Si c'est un professeur
         
         returnStatement = []
         try:
@@ -191,7 +192,7 @@ def getAll_ressource():
         connect_pg.disconnect(conn)
         return jsonify(returnStatement)
     
-    elif(perm.getUserPermission(get_jwt_identity() , conn)[0] == 3):
+    elif(perm.getUserPermission(get_jwt_identity() , conn)[0] == 3):# Si c'est un élève
         
         returnStatement = []
         try:
@@ -228,6 +229,7 @@ def get_ressource_dispo():
 
     :raises PermissionManquanteException: Si pas assez de droit pour récupérer toutes les données présentes dans la table ressource
     :raises AucuneDonneeTrouverException: Une aucune donnée n'a été trouvé dans la table ressource
+    :raises ActionImpossibleException: Si une erreur inconnue est survenue lors de la récupération des données
     
     :return:  toutes les resources
     :rtype: json
@@ -236,7 +238,6 @@ def get_ressource_dispo():
     if not perm.permissionCheck(get_jwt_identity() , 3 , conn):
         return jsonify({'erreur': str(apiException.PermissionManquanteException())}), 403
     
-
     query = "select * from edt.ressource where NbrHeureSemestre > 0 order by idRessource asc"
     conn = connect_pg.connect()
     
@@ -273,7 +274,8 @@ def addRessource() :
 
     :raises PermissionManquanteException: Si l'utilisateur n'a pas assez de droit pour récupérer les données présents dans la table ressource
     :raises ParamètreBodyManquantException: Si le body n'a pas pu être trouvé ou un paramètre est manquant dans le body
-
+    :raises ActionImpossibleException: Si une erreur inconnue est survenue lors de l'insertion
+    
     :return:  ressource ajouté
     :rtype: json
     """
@@ -299,7 +301,7 @@ def addRessource() :
     try  :
         connect_pg.execute_commands(conn, query)
     except Exception as e: 
-        return jsonify({'error': e}), 500
+        return jsonify({'error': str(apiException.ActionImpossibleException("ressource", "insérer"))}), 500
     connect_pg.disconnect(conn)
     return jsonify({'success': 'ressource added'}), 200
 
@@ -314,6 +316,8 @@ def getRessource(id):
     
     :raises PermissionManquanteException: Si l'utilisateur n'a pas assez de droit pour récupérer les données présents dans la table ressource
     :raises AucuneDonneeTrouverException: Si aucune donnée n'a été trouvé dans la table ressource
+    :raises ParamètreTypeInvalideException: Si id n'est pas de type int
+    :raises ActionImpossibleException: Si une erreur inconnue est survenue lors de la récupération des données
     
     :return:  la ressource a qui appartient cette userNidame
     :rtype: json
@@ -324,7 +328,7 @@ def getRessource(id):
         return jsonify({'erreur': str(apiException.PermissionManquanteException())}), 403
     
     if (not id.isdigit()):
-        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("id", "numérique"))}), 400
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("id", "int"))}), 400
     
     query = f"SELECT * from edt.ressource where idressource = {id}"
     conn = connect_pg.connect()
@@ -352,6 +356,7 @@ def UpdateRessource(idRessource) :
     :raises PermissionManquanteException: Si l'utilisateur n'a pas assez de droit pour récupérer les données présents dans la table ressource
     :raises ParamètreBodyManquantException: Si le body est manquant
     :raises ParamètreInvalideException: Si un paramètre est invalide
+    :raises ActionImpossibleException: Si une erreur inconnue est survenue lors de la mise à jour des données
     
     :return:  la ressource a qui appartient cette userNidame
     :rtype: json
@@ -389,7 +394,7 @@ def UpdateRessource(idRessource) :
     try:
         connect_pg.execute_commands(con, req)
     except Exception as e:
-        return jsonify({'error': e}), 500
+        return jsonify({'error': str(apiException.ActionImpossibleException("ressource", "mise à jour"))}), 500
     
     return jsonify({'success': 'ressource updated'}), 200 
 
@@ -403,15 +408,15 @@ def supprimer_ressource(idRessource):
     :param idRessource: id du cours à supprimer
     :type idRessource: int
 
-    :raises ParamètreTypeInvalideException: Le type de idRessource est invalide, une valeur numérique est attendue
+    :raises ParamètreTypeInvalideException: Le type de idRessource est invalide, une valeur de type int est attendue
+    :raises ActionImpossibleException: Si une erreur inconnue est survenue lors de la récupération des données
 
     :return: id du cours supprimer si présent
     :rtype: json
     """
     
-
     if (not idRessource.isdigit()):
-        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idCours", "numérique"))}), 400
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idCours", "int"))}), 400
     
     conn = connect_pg.connect()
 
@@ -426,7 +431,6 @@ def supprimer_ressource(idRessource):
         for i in range(len(returnStatement[k])):
             supprimer_cours(str(returnStatement[k][i]))
 
-    
     query = f"delete  from edt.ressource where idRessource={idRessource}"
     query2 = f"delete  from edt.responsable where idRessource={idRessource}"
     
