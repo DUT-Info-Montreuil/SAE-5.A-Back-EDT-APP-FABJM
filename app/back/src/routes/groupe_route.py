@@ -39,7 +39,7 @@ def get_groupe():
     :rtype: json
     """
     conn = connect_pg.connect()
-    if (perm.getUserPermission(get_jwt_identity(), conn)[0] == 2):
+    if (perm.getUserPermission(get_jwt_identity(), conn)[0] == 2): # Si c'est un professeur
         returnStatement = []
         try:
             groupes = getGroupeProf(get_jwt_identity(), conn)
@@ -50,7 +50,7 @@ def get_groupe():
         except Exception as e:
             return jsonify({'error': str(apiException.ActionImpossibleException("groupe", "récupérer"))}), 500
         connect_pg.disconnect(conn)
-        return jsonify(returnStatement)
+        return jsonify(returnStatement)# renvoir les groupes auprès de qui il enseigne
 
     query = "SELECT * from edt.groupe order by IdGroupe asc"
     
@@ -111,13 +111,14 @@ def get_groupe_manager(idManager):
     
     :raises DonneeIntrouvableException: Aucune donnée n'a pas être trouvé correspondant aux critères
     :raises ActionImpossibleException: Si une erreur inconnue survient durant la récupération des données
+    :raises ParamètreTypeInvalideException: Si le idManager n'est pas de type int
     
     :return: le groupe
     :rtype: flask.wrappers.Response
     """
 
     if (not idManager.isdigit()):
-        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idManager", "numérique"))}), 400
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idManager", "int"))}), 400
 
     returnStatement = {}
     conn = connect_pg.connect()
@@ -145,7 +146,7 @@ def enlever_Cours(idCours):
     :param idCours: id du cours à enlever
     :type idCours: int
 
-    :raises ParamètreTypeInvalideException: Le type de idCours est invalide, une valeur numérique est attendue
+    :raises ParamètreTypeInvalideException: Le type de idCours est invalide, une valeur de type int est attendue
     :raises DonneeIntrouvableException: Si la clée spécifié pour la colonne idCours n'a pas pu être trouvé
     :raises ActionImpossibleException: Si une erreur inconnue est survenue lors de la suppression
 
@@ -153,7 +154,7 @@ def enlever_Cours(idCours):
     :rtype: flask.wrappers.Response(String)
     """
     if (not idCours.isdigit()):
-        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idCours", "numérique"))}), 400
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idCours", "int"))}), 400
     
     query = f"delete from edt.etudier where idCours={idCours}"
     conn = connect_pg.connect()
@@ -203,29 +204,23 @@ def get_groupe_dispo():
         return jsonify({'error': str(apiException.ParamètreInvalideException("HeureDebut, NombreHeure ou Jour"))}), 404
 
     heureDebut_str = json_data['HeureDebut']  #type: str  # "09:00:00"
-    nombreHeure_str = json_data['NombreHeure'] #"2024-01-15"
-    jour_str = json_data['Jour'] #"02:00:00"
+    nombreHeure_str = json_data['NombreHeure'] # format = "02:00:00"
+    jour_str = json_data['Jour']  #format ="2024-01-15"
     
-    #heureApres = heureDebut + nombreHeure
-    #heureAvant = heureDebut - nombreHeure
     groupes = []
     heureDebut = datetime.datetime.strptime(heureDebut_str, '%H:%M:%S').time()
     nombreHeure = datetime.datetime.strptime(nombreHeure_str, '%H:%M:%S').time()
     jour = datetime.datetime.strptime(jour_str, '%Y-%m-%d').date()
-    print(jour)
     
     debut = datetime.datetime.combine(jour, heureDebut)
     fin = datetime.datetime.combine(jour, heureDebut) + datetime.timedelta(hours=nombreHeure.hour, minutes=nombreHeure.minute, seconds=nombreHeure.second)
        
-    
     conn = connect_pg.connect()
     query = f"select * from edt.Groupe;"
     try:
         groupes = connect_pg.get_query(conn, query)
     except:
         return jsonify({'error': str(apiException.ActionImpossibleException("Groupe", "récuperer"))}), 500
-    
-    print("--------groupes-------", groupes)
     
     rows = []
     query = f"select * from edt.Etudier inner join edt.cours using(idcours) where edt.cours.jour = '{jour}';"
@@ -234,16 +229,10 @@ def get_groupe_dispo():
     except:
         return jsonify({'error': str(apiException.ActionImpossibleException("Etudier", "récuperer"))}), 500
         
-        
     returnStatement = []
     for groupe in groupes:
         is_dispo = True
-        #if groupe[0] is in rows 
-        print('------------groupe : ', groupe)
-        # tab_index_row_to_delete = []
-        # compteur_row = -1
         for row in rows:
-            # compteur_row += 1
             rowHeureDebut = row[2]
             nombreHeure = row[3]
             rowJour = row[4]
@@ -252,18 +241,13 @@ def get_groupe_dispo():
             if groupe[0] == row[1]:
                 #if debut is between rowDebut and rowFin or if fin is between rowDebut and rowFin
                 if ((debut > rowDebut and debut < rowFin) or (fin > rowDebut and fin < rowFin)):
-                    print('groupe non dispo : ', groupe)
                     is_dispo = False
                     
                 elif ((rowDebut > debut and rowDebut < fin) or (rowFin > debut and rowFin < fin)):
-                    print('groupe non dispo : ', groupe)
                     is_dispo = False
 
         if is_dispo:
-            print('groupe dispo : ', groupe)
             returnStatement.append(get_groupe_statement(groupe))
-    print(groupes)
-    print('returnStatement : ', returnStatement)
     connect_pg.disconnect(conn)
     return jsonify(returnStatement), 200
 
@@ -279,7 +263,8 @@ def get_one_groupe(idGroupe):
 
     :raises DonneeIntrouvableException: Impossible de trouver l'idGroupe spécifié dans la table groupe
     :raises ActionImpossibleException: Si une erreur est survenue lors de la récupération des données
-
+    :raises ParamètreTypeInvalideException: Le type de idGroupe est invalide, une valeur de type int est attendue
+    
     :return:  le groupe a qui appartient cet id
     :rtype: json
     """
@@ -312,13 +297,14 @@ def get_parent_groupe(idGroupe):
 
     :raises DonneeIntrouvableException: Impossible de trouver le groupe spécifié dans la table groupe
     :raises ActionImpossibleException: Si une erreur est survenue lors de la récupération des données
+    :raises ParamètreTypeInvalideException: Le type de idGroupe est invalide, une valeur de type int est attendue
 
     :return:  le parent du groupe a qui appartient cet id
     :rtype: json
     """
 
     if (not idGroupe.isdigit()):
-        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idGroupe", "numérique"))}), 400
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idGroupe", "int"))}), 400
     
     query = f"SELECT * from edt.groupe where idGroupe=(SELECT idGroupeParent from edt.groupe where idGroupe = '{idGroupe}')"
 
@@ -339,10 +325,10 @@ def get_parent_groupe(idGroupe):
 @groupe.route('/groupe/children/get/<idGroupe>', methods=['GET'])
 @jwt_required()
 def get_all_children(idGroupe):
-    """Renvoit le parent du groupe spécifié par son idGroupe via la route /groupe/parent/get/<idGroupe>
+    """Renvoit le parent du groupe spécifié par son idGroupe via la route /groupe/children/get/<idGroupe>
 
     :param idGroupe: l'id d'un groupe présent dans la base de donnée
-    :type idGroupe: str
+    :type idGroupe: int
 
     :raises DonneeIntrouvableException: Impossible de trouver le groupe spécifié dans la table groupe
     :raises ActionImpossibleException: Si une erreur est survenue lors de la récupération des données
@@ -352,7 +338,7 @@ def get_all_children(idGroupe):
     """
 
     if (not idGroupe.isdigit()):
-        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idGroupe", "numérique"))}), 400
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idGroupe", "int"))}), 400
     
     query = f"SELECT * from edt.groupe where idGroupeParent={idGroupe}"
 
@@ -420,7 +406,7 @@ def delete_groupe(idGroupe):
     Permet de supprimer un groupe via la route /groupe/delete/<idGroupe>
 
     :param idGroupe: l'id d'un groupe présent dans la base de donnée
-    :type idGroupe: str
+    :type idGroupe: int
 
     :raises DonneeIntrouvableException: Impossible de trouver le groupe spécifié dans la table groupe
 
@@ -429,15 +415,15 @@ def delete_groupe(idGroupe):
     """
 
     if (not idGroupe.isdigit()):
-        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idGroupe", "numérique"))}), 400
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idGroupe", "int"))}), 400
     
     conn = connect_pg.connect()
     query = f"DELETE from edt.groupe WHERE idgroupe={idGroupe}"
     query2 = f"DELETE from edt.etudier WHERE idgroupe={idGroupe}"
     query3 = f"DELETE from edt.eleve WHERE idgroupe={idGroupe}"
     try:
-        returnStatement = connect_pg.execute_commands(conn, query3)
-        returnStatement = connect_pg.execute_commands(conn, query2)
+        returnStatement = connect_pg.execute_commands(conn, query3) # on supprime d'abord les deépandances
+        returnStatement = connect_pg.execute_commands(conn, query2)# présentes dans les autres tables
         returnStatement = connect_pg.execute_commands(conn, query)
     except(Exception) as e:
         return jsonify({'error': str(apiException.ActionImpossibleException("groupe", "supprimer"))}), 500
@@ -456,12 +442,14 @@ def update_groupe(idGroupe):
     :type idGroupe: str
 
     :raises DonneeIntrouvableException: Impossible de trouver le groupe spécifié dans la table groupe
+    :raises ActionImpossibleException: Si une erreur est survenue lors de la récupération des données
+    :raises ParamètreTypeInvalideException: Le type de idGroupe est invalide, une valeur de type int est attendue
 
     :return: success
     :rtype: json
     """
     if (not idGroupe.isdigit()):
-        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idGroupe", "numérique"))}), 400
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idGroupe", "int"))}), 400
     
     json_data = request.get_json()
     if not json_data:
@@ -490,18 +478,21 @@ def update_groupe(idGroupe):
 @groupe.route('/groupe/getCoursGroupe/<idGroupe>', methods=['GET'])
 @jwt_required()
 def get_cours_groupe(idGroupe):
-    """Renvoit tous les cours du groupe spécifié par son idGroupe via la route /groupe/parent/get/<idGroupe>
+    """Renvoit tous les cours du groupe spécifié par son idGroupe via la route /groupe/getCoursGroupe/<idGroupe>
 
     :param idGroupe: l'id d'un groupe présent dans la base de donnée
-    :type idGroupe: str
+    :type idGroupe: int
 
     :raises DonneeIntrouvableException: Impossible de trouver le groupe spécifié dans la table groupe
+    :raises ActionImpossibleException: Si une erreur est survenue lors de la récupération des données
+    :raises ParamètreTypeInvalideException: Le type de idGroupe est invalide, une valeur de type int est attendue
+
 
     :return:  la liste des cours du groupe a qui appartient cet id
     :rtype: json
     """
     if (not idGroupe.isdigit()):
-        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idGroupe", "numérique"))}), 400
+        return jsonify({'error': str(apiException.ParamètreTypeInvalideException("idGroupe", "int"))}), 400
     
     query = f"select edt.cours.* from edt.groupe inner join edt.etudier using(idGroupe) inner join edt.cours using(idCours) where idGroupe={idGroupe}"
 

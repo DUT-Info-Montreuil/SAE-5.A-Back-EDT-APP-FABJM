@@ -25,7 +25,6 @@ def get_all_equipement():
     """Renvoit tous les equipements via la route /equipement/getAll
 
     :raises PermissionManquanteException: L'utilisateur n'a pas les droits pour avoir accés à cette route
-    :raises AucuneDonneeTrouverException: Si aucune données remplisssant les critères n'a été trouvé 
     :raises ActionImpossibleException: Si une erreur inconnue est survenue lors de la récupération des données dans la table équipements
     
     :return:  tous les equipements
@@ -38,7 +37,6 @@ def get_all_equipement():
 
     query = f"SELECT * from edt.equipement"
 
-    
     returnStatement = []
     try:
         equipements = connect_pg.get_query(conn, query)
@@ -69,7 +67,6 @@ def get_equipement(filtre):
 
     conn = connect_pg.connect()
   
-
     if not (perm.permissionCheck(get_jwt_identity() , 3 , conn)):
         return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
 
@@ -78,7 +75,6 @@ def get_equipement(filtre):
     else:
         query = f"SELECT * from edt.equipement where Nom LIKE '%{filtre}%'"
 
-    
     returnStatement = []
     try:
         equipements = connect_pg.get_query(conn, query)
@@ -106,13 +102,11 @@ def add_equipement():
     if not json_data:
         return jsonify({'error ': 'missing json body'}), 400
 
-
     conn = connect_pg.connect()
 
-   
     if not (perm.permissionCheck(get_jwt_identity() , 0 , conn)):
-
         return jsonify({'error': str(apiException.PermissionManquanteException())}), 403
+
     query = "INSERT INTO edt.equipement (Nom) VALUES "
     value_query = []
     for data in json_data['data']:
@@ -123,7 +117,6 @@ def add_equipement():
     try:
         returnStatement = connect_pg.execute_commands(conn, query)
     except Exception as e:
-        print(e)
         return jsonify({'error': str(apiException.ActionImpossibleException("equipement", "ajouter"))}), 500
 
     connect_pg.disconnect(conn)
@@ -150,12 +143,7 @@ def update_equipement(idEquipement):
     table_name = "Equipement"
     keys = ["Nom"]
     
-    # (query, value_query) = update("Equipement", where={"idEquipement":idEquipement}, data=json_data, possible_keys=keys)
-    # # Si query update return une error
-    # if not query:
-    #     return value_query
     query =  f"UPDATE edt.Equipement SET Nom='{json_data['Nom']}' WHERE idEquipement='{idEquipement}'"
-    # print(query, value_query)
     conn = connect_pg.connect()
     permision = perm.getUserPermission(get_jwt_identity() , conn)[0]
     if(permision != 0):
@@ -172,7 +160,7 @@ def update_equipement(idEquipement):
 @jwt_required()
 def delete_equipement(idEquipement):
     """
-    Permet de supprimer un groupe via la route /groupe/delete/<idEquipement>
+    Permet de supprimer un groupe via la route /equipement/delete/<idEquipement>
 
     :param idEquipement: l'id d'un groupe présent dans la base de donnée
     :type idEquipement: str
@@ -229,12 +217,16 @@ def get_salles_of_equipement(idEquipement):
 @equipement.route('/equipement/add/salle/<idSalle>', methods=['POST'])
 @jwt_required()
 def add_salle_of_equipement(idSalle):
-    """Permet d'ajouter une ou plusieurs salles a un équipement via la route /equipement/add/salle/<idEquipement>
+    """Permet d'ajouter une ou plusieurs salles a un équipement via la route /equipement/add/salle/<idSalle>
+
+    :param idSalle: id d'une salle présent dans la base de donnée
+    :type idSalle: int
 
     :param idEquipement: l'id d'un groupe présent dans la base de donnée
     :type idEquipement: str
 
-    :raises PermissionManquanteException: L'utilisatuer n'a pas les droits pour avoir accés à cette route
+    :raises PermissionManquanteException: L'utilisateur n'a pas les droits pour avoir accés à cette route
+    :raises ActionImpossibleException: Si une erreur survient lors de la récupération des données dans la table equipement
 
     :return: un tableau d'id d'equipement crééent
     :rtype: json
@@ -251,19 +243,12 @@ def add_salle_of_equipement(idSalle):
 
     StartQuery = "INSERT INTO edt.equiper (idEquipement, idSalle) VALUES "
     result = []
-    #add multiple equipement 
     for data in json_data['data']:
-        
-
         query = StartQuery + ","+f"({json_data['idEquipements']},'{idSalle}')"+" returning idEquipement"
-
         try : 
           result.append(connect_pg.execute_commands(conn, query))
         except Exception as e:
           return jsonify({'error': str(apiException.ActionImpossibleException("equipement", "récupérer"))}), 500
         query = ""
-
-
-
     connect_pg.disconnect(conn)
     return jsonify({"success": f"The equipements with the ids {result} were successfully created"}), 200    #{', '.join(tabIdEquipement)}
