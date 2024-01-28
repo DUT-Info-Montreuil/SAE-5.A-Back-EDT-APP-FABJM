@@ -7,6 +7,18 @@ Maxime
 
 Bienvenue dans le guide pour installer la partie back-end du projet Edt visant à mettre en place un emploie du temps.
 
+
+Pour lancer le projet il suffit de lancer le docker-compose.yml qui se situe dans le dossier "compose" avec la dommande suivante:
+
+````
+
+docker-compose up
+
+````
+
+
+
+
 Sur Docker : 
     - Commencer par lancer la commande cd app/back
 	- Puis lancer la commande make compose 
